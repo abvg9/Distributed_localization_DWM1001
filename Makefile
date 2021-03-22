@@ -88,8 +88,8 @@ PROJECT = dis_loc_dwm1001
 # WARNING!
 # In case of using eclipse, it is necessary that this variable contains the path
 # to the path Distributed_localization_DWM1001 project. In case of executing make
-# manually, this variable must be empty.
-PROJECT_DIRECTORY := /home/developer/ChibiOS-eclipse-workspace/Distributed_localization_DWM1001
+# manually try 'makefile PROJECT_DIRECTORY=./'
+PROJECT_DIRECTORY ?= /home/developer/ChibiOS-eclipse-workspace/Distributed_localization_DWM1001
 
 # Imported source files and paths
 CHIBIOS         := $(PROJECT_DIRECTORY)/ext/ChibiOS
@@ -112,10 +112,10 @@ include $(CHIBIOS)/os/hal/lib/streams/streams.mk
 include $(CHIBIOS)/os/rt/rt.mk
 include $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC/mk/port_v7m.mk
 # Other files (optional).
-include $(CHIBIOS)/test/lib/test.mk
-include $(CHIBIOS)/test/rt/rt_test.mk
-include $(CHIBIOS)/test/oslib/oslib_test.mk
-include $(CHIBIOS)/os/various/shell/shell.mk
+#include $(CHIBIOS)/test/lib/test.mk
+#include $(CHIBIOS)/test/rt/rt_test.mk
+#include $(CHIBIOS)/test/oslib/oslib_test.mk
+#include $(CHIBIOS)/os/various/shell/shell.mk
 
 # Define linker script file here
 LDSCRIPT= $(STARTUPLD_CONTRIB)/NRF52832.ld
