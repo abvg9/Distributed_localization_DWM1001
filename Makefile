@@ -5,7 +5,8 @@
 
 # Compiler options here.
 ifeq ($(USE_OPT),)
-  USE_OPT = -Os -ggdb -fomit-frame-pointer -falign-functions=16 -std=c11
+  # Warning, if you want to debug the code, substitute -Os to -O0
+  USE_OPT = -O0 -ggdb -fomit-frame-pointer -falign-functions=16 -std=c11
 endif
 
 # C specific options here (added to USE_OPT).
@@ -126,8 +127,9 @@ CSRC = $(ALLCSRC) \
        $(TESTSRC) \
        $(PROJECT_DIRECTORY)/src/main.c \
        $(PROJECT_DIRECTORY)/src/driver/led/led.c \
-       $(PROJECT_DIRECTORY)/src/driver/spi/spi.c \
+       $(PROJECT_DIRECTORY)/src/sal/dwm1000/dwm1000.c \
        $(PROJECT_DIRECTORY)/src/driver/button/button.c \
+       $(PROJECT_DIRECTORY)/src/sal/dwm1000/register/register.c \
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
@@ -159,8 +161,9 @@ ASMXSRC = $(ALLXASMSRC)
 
 INCDIR = $(CONFDIR) $(ALLINC) $(TESTINC) $(TESTHAL) \
 		 $(PROJECT_DIRECTORY)/src/driver/led \
-		 $(PROJECT_DIRECTORY)/src/driver/spi \
+		 $(PROJECT_DIRECTORY)/src/sal/dwm1000 \
 		 $(PROJECT_DIRECTORY)/src/driver/button \
+		 $(PROJECT_DIRECTORY)/src/sal/dwm1000/register \
 
 #
 # Project, sources and paths
@@ -190,7 +193,7 @@ BIN  = $(CP) -O binary
 SREC = $(CP) -O srec
 
 # ARM-specific options here
-AOPT =
+AOPT = 
 
 # THUMB-specific options here
 TOPT = -mthumb -DTHUMB
