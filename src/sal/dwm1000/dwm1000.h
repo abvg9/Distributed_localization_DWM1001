@@ -5,12 +5,20 @@
 #include <stdbool.h>
 #include "register.h"
 
-bool dwm_eneable(void);
+/* Frame of the SPI communication with the dwm1000. */
+typedef uint8_t* frame;
 
+/* Enable SPI driver to connect with the dwm1000. */
 void dwm_disable(void);
 
-void send_command(const command command, uint8_t rx_buf[]);
+/* Disable SPI driver to disconnect from the dwm1000. */
+bool dwm_eneable(void);
 
-void swap_frame(uint8_t frame[], size_t n);
+frame read_command(const register_id ri);
+
+bool write_command(const register_id ri);
+
+/* Reverse an uint8_t array. */
+frame swap_frame(frame frame, size_t n);
 
 #endif /* _DWM1000_H_ */
