@@ -463,7 +463,7 @@
  * @note    Disabling this option saves both code and data space.
  */
 #if !defined(SPI_USE_MUTUAL_EXCLUSION) || defined(__DOXYGEN__)
-#define SPI_USE_MUTUAL_EXCLUSION            FALSE
+#define SPI_USE_MUTUAL_EXCLUSION            TRUE
 #endif
 
 /**

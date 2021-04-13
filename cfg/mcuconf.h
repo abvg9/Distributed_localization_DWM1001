@@ -34,6 +34,8 @@
 /*
  * HAL driver system settings.
  */
+#define NRF_SERIES                 52
+
 #define NRF5_SERIAL_USE_UART0             TRUE
 #define NRF5_SERIAL_USE_HWFLOWCTRL        TRUE
 #define NRF5_RNG_USE_RNG0                 TRUE
@@ -45,7 +47,6 @@
 #define WDG_USE_TIMEOUT_CALLBACK    TRUE
 
 /* SPI */
-#define NRF_SERIES                 52
 #define NRF5_SPI_USE_SPI0          TRUE
 #define NRF5_SPI_USE_SPI1          FALSE
 #define SPI_SUPPORTS_CIRCULAR      FALSE

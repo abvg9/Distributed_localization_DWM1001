@@ -6,7 +6,7 @@
 # Compiler options here.
 ifeq ($(USE_OPT),)
   # Warning, if you want to debug the code, substitute -Os to -O0
-  USE_OPT = -O0 -ggdb -fomit-frame-pointer -falign-functions=16 -std=c11 -specs=nano.specs -specs=nosys.specs 
+  USE_OPT = -O0 -ggdb -fomit-frame-pointer -falign-functions=16 -std=c11 
 endif
 
 # C specific options here (added to USE_OPT).
@@ -127,9 +127,10 @@ CSRC = $(ALLCSRC) \
        $(TESTSRC) \
        $(PROJECT_DIRECTORY)/src/main.c \
        $(PROJECT_DIRECTORY)/src/driver/led/led.c \
-       $(PROJECT_DIRECTORY)/src/sal/dwm1000/dwm1000.c \
        $(PROJECT_DIRECTORY)/src/driver/button/button.c \
-       $(PROJECT_DIRECTORY)/src/sal/dwm1000/register/register.c \
+       $(PROJECT_DIRECTORY)/src/sal/dw1000/register/format/format.c \
+       $(PROJECT_DIRECTORY)/src/sal/dw1000/register/register.c \
+       $(PROJECT_DIRECTORY)/src/sal/dw1000/dw1000.c \
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
@@ -161,10 +162,10 @@ ASMXSRC = $(ALLXASMSRC)
 
 INCDIR = $(CONFDIR) $(ALLINC) $(TESTINC) $(TESTHAL) \
 		 $(PROJECT_DIRECTORY)/src/driver/led \
-		 $(PROJECT_DIRECTORY)/src/sal/dwm1000 \
 		 $(PROJECT_DIRECTORY)/src/driver/button \
-		 $(PROJECT_DIRECTORY)/src/sal/dwm1000/register \
-
+		 $(PROJECT_DIRECTORY)/src/sal/dw1000/register/format \
+		 $(PROJECT_DIRECTORY)/src/sal/dw1000/register \
+		 $(PROJECT_DIRECTORY)/src/sal/dw1000 \
 #
 # Project, sources and paths
 ##############################################################################
