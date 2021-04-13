@@ -1,19 +1,39 @@
+/*
+ * This file is part of the UCM-237 distribution (https://github.com/UCM-237/Distributed_localization_DWM1001).
+ * Copyright (c) 2021 Complutense university of Madrid, Madrid, Spain.
+ *
+ * Author: Alvaro Velasco Garcia. <https://github.com/abvg9>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 2.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
 #ifndef _REGISTER_H_
 #define _REGISTER_H_
 
-#include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include "format.h"
+#include "hal.h"
+#include <string.h>
 
-#define MAX_REG_ID_VALUE 0x3F
-#define REG_WRITE_FLAG   0X80
-
-/* Enumerate of the dwm1000 registers. */
+// Dwm1000 registers.
+// The values of the enumerates correspond to the memory addresses of the registers.
 typedef enum {
     DEV_ID      = 0x00,
     EUI         = 0x01,
     RESERVED_1  = 0X02,
-    PANADR      = 0x3,
+    PAN_ADR     = 0x03,
     SYS_CFG     = 0x04,
     RESERVED_2  = 0X05,
     SYS_TIME    = 0x06,
@@ -74,29 +94,31 @@ typedef enum {
     RESERVED_24 = 0X3F
 } register_id;
 
-/* Access permissions of the dwm1000 registers. */
-typedef enum {
-    RO, // Read only.
-    WO, // Write only.
-    RW, // Read and write.
-    RE  // Reserved.
-} register_access;
+// Factory value of the dev_id register.
+extern const dev_id_format DEFINED_DEV_ID;
 
-/* General command structure to interact with dwm1000 registers. */
-typedef struct {
-    const size_t tx_buf_size;
-    const size_t rx_buf_size;
-    const register_access ra : 2;
-    const int offset;
-} command;
+/**
+ * @brief Reads the value of a dw1000 register and loads it inside parsed_reg parameter.
+ *
+ * @param[in] reg_id: Register identifier to read.
+ * @param[in] offset: Indicates which sub-register will be read.
+ * @param[out] parsed_reg: Container in which will be loaded the value of the register.
+ *
+ * @return bool: If the read operation can be performed returns true, otherwise false.
+ *
+ */
+bool dw_read_reg(const register_id reg_id, const size_t offset, void* parsed_reg);
 
-/* Constant ID value of the dwm1000. */
-extern const uint8_t DEVICE_ID[4];
-
-bool is_access_permission_valid(const register_id id, const bool read);
-
-bool is_command_valid(const register_id id, const bool read);
-
-bool is_id_valid(const register_id id);
+/**
+ * @brief Writes a value into a dw1000 register.
+ *
+ * @param[in] reg_id: Register identifier to write.
+ * @param[in] offset: Indicates which sub-register will be write.
+ * @param[in] parsed_reg: Container which contains the value to be write.
+ *
+ * @return bool: If the write operation can be performed returns true, otherwise false.
+ *
+ */
+bool dw_write_reg(const register_id reg_id, const size_t offset, void* parsed_reg);
 
 #endif // _REGISTER_H_
