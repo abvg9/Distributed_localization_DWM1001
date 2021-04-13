@@ -1,97 +1,91 @@
-#include "dwm1000.h"
+/*
+ * This file is part of the UCM-237 distribution (https://github.com/UCM-237/Distributed_localization_DWM1001).
+ * Copyright (c) 2021 Complutense university of Madrid, Madrid, Spain.
+ *
+ * Author: Alvaro Velasco Garcia. <https://github.com/abvg9>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 2.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
-extern const command COMMAND_PANEL[];
+#include "dw1000.h"
 
-void dwm_disable(void) {
+const SPIConfig spi_cfg = { .end_cb = NULL, .ssport = IOPORT1, .sspad = SPI_SS,
+        .freq = NRF5_SPI_FREQ_2MBPS, .sckpad = SPI_SCK, .mosipad = SPI_MOSI,
+        .misopad = SPI_MISO, .lsbfirst = false, .mode = 2};
+
+void dw_disable(void) {
     spiStop(&SPID1);
+    DW_POWER_OFF;
 }
 
-bool dwm_eneable(void) {
+bool dw_eneable(void) {
 
-    SPIConfig spi_cfg = {
-            .end_cb = NULL,
-            .ssport = IOPORT1,
-            .sspad =  SPI_SS,
-            .freq = NRF5_SPI_FREQ_2MBPS,
-            .sckpad = SPI_SCK,
-            .mosipad = SPI_MOSI,
-            .misopad = SPI_MISO,
-            .lsbfirst = false,
-            .mode = 2
-    };
+    dw_reset();
 
     spiStart(&SPID1, &spi_cfg);
-    frame rx_buf = read_command(DEV_ID);
 
-    swap_frame(rx_buf, COMMAND_PANEL[DEV_ID].rx_buf_size);
+    dev_id_format dev_id_f;
+    bool ret = get_dev_id(&dev_id_f);
 
-    unsigned int i = 0;
-    while(i < COMMAND_PANEL[DEV_ID].rx_buf_size && DEVICE_ID[i] == rx_buf[i]) {
-        ++i;
-    }
-
-    free(rx_buf);
-    rx_buf = NULL;
-
-    return i == COMMAND_PANEL[DEV_ID].rx_buf_size;
-}
-
-frame read_command(const register_id ri) {
-
-    if(is_command_valid(ri, true)) {
-
-        frame tx_buf = malloc(sizeof(uint8_t) * COMMAND_PANEL[ri].tx_buf_size);
-        tx_buf[0] = ri;
-
-        frame rx_buf = malloc(sizeof(uint8_t) * COMMAND_PANEL[ri].rx_buf_size);
-
-        spiSelect(&SPID1);
-        spiSend(&SPID1, COMMAND_PANEL[ri].tx_buf_size, tx_buf);
-        spiReceive(&SPID1, COMMAND_PANEL[ri].rx_buf_size, rx_buf);
-        spiUnselect(&SPID1);
-
-        /* DEBUG */
-        uint8_t debug_offset[COMMAND_PANEL[ri].rx_buf_size];
-        for(unsigned int i = 0; i < COMMAND_PANEL[ri].rx_buf_size; ++i) {
-            debug_offset[i] = rx_buf[i + COMMAND_PANEL[ri].offset];
-        }
-
-        uint8_t debug_no_offset[COMMAND_PANEL[ri].rx_buf_size];
-        for(unsigned int i = 0; i < COMMAND_PANEL[ri].rx_buf_size; ++i) {
-            debug_no_offset[i] = rx_buf[i];
-        }
-
-        free(tx_buf);
-        tx_buf = NULL;
-
-        return rx_buf;
-    }
-
-    return NULL;
-}
-
-bool write_command(const register_id ri) {
-
-    if(is_command_valid(ri, false)) {
-        // ri | REG_WRITE_FLAG;
-        return true;
-    }
-
-    return false;
-}
-
-frame swap_frame(frame f, size_t n) {
-
-    unsigned int low;
-    unsigned int high;
-    uint8_t tmp = 0;
-    frame ret = f;
-
-    for(low = 0, high = n - 1; low < high; ++low, --high) {
-        tmp = ret[low];
-        ret[low] = ret[high];
-        ret[high] = tmp;
+    if (ret) {
+        ret &= DEFINED_DEV_ID.ridtag == dev_id_f.ridtag;
+        ret &= DEFINED_DEV_ID.model == dev_id_f.model;
+        ret &= DEFINED_DEV_ID.ver == dev_id_f.ver;
+        ret &= DEFINED_DEV_ID.rev == dev_id_f.rev;
     }
 
     return ret;
+}
+
+void dw_reset(void) {
+    DW_POWER_OFF;
+    chThdSleepMicroseconds(10);
+    DW_POWER_ON;
+}
+
+bool get_dev_id(dev_id_format *dev_id_f) {
+    return dw_read_reg(DEV_ID, 0, (void*) dev_id_f);
+}
+
+bool get_eui(eui_format* eui_f) {
+    return dw_read_reg(EUI, 0, (void*) eui_f);
+}
+
+bool set_eui(eui_format* eui_f) {
+    return dw_write_reg(EUI, 0, (void*) eui_f);
+}
+
+bool get_pan_adr(pan_adr_format *pan_adr_f) {
+    return dw_read_reg(PAN_ADR, 0, (void*) pan_adr_f);
+}
+
+bool set_pan_id(uint16_t *pan_id_f) {
+    return dw_write_reg(PAN_ADR, PAN_ID, (void*) pan_id_f);
+}
+
+bool set_pan_short_adr(uint16_t *short_addr_f) {
+    return dw_write_reg(PAN_ADR, SHORT_ADR, (void*) short_addr_f);
+}
+
+bool get_sys_cfg(sys_cfg_format* sys_cfg_f) {
+    return dw_read_reg(SYS_CFG, 0, (void*) sys_cfg_f);
+}
+
+bool set_sys_cfg(sys_cfg_format* sys_cfg_f) {
+    return dw_write_reg(SYS_CFG, 0, (void*) sys_cfg_f);
+}
+
+bool get_sys_time(double* seconds) {
+    return dw_read_reg(SYS_TIME, 0, (void*) seconds);
 }
