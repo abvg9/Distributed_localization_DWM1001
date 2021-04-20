@@ -20,7 +20,7 @@
 
 #include "dw1000.h"
 
-const SPIConfig spi_cfg = { .end_cb = NULL, .ssport = IOPORT1, .sspad = SPI_SS,
+static const SPIConfig spi_cfg = { .end_cb = NULL, .ssport = IOPORT1, .sspad = SPI_SS,
         .freq = NRF5_SPI_FREQ_2MBPS, .sckpad = SPI_SCK, .mosipad = SPI_MOSI,
         .misopad = SPI_MISO, .lsbfirst = false, .mode = 2};
 
@@ -70,12 +70,9 @@ bool get_pan_adr(pan_adr_format *pan_adr_f) {
     return dw_read_reg(PAN_ADR, 0, (void*) pan_adr_f);
 }
 
-bool set_pan_id(uint16_t *pan_id_f) {
-    return dw_write_reg(PAN_ADR, PAN_ID, (void*) pan_id_f);
-}
-
-bool set_pan_short_adr(uint16_t *short_addr_f) {
-    return dw_write_reg(PAN_ADR, SHORT_ADR, (void*) short_addr_f);
+bool set_pan_adr(pan_adr_format* pan_adr_f) {
+    return dw_write_reg(PAN_ADR, PAN_ID, (void*) pan_adr_f) &&
+           dw_write_reg(PAN_ADR, SHORT_ADR, (void*) pan_adr_f);
 }
 
 bool get_sys_cfg(sys_cfg_format* sys_cfg_f) {
@@ -88,4 +85,71 @@ bool set_sys_cfg(sys_cfg_format* sys_cfg_f) {
 
 bool get_sys_time(double* seconds) {
     return dw_read_reg(SYS_TIME, 0, (void*) seconds);
+}
+
+bool get_tx_fctrl(tx_fctrl_format* tx_fctrl_f) {
+    return dw_read_reg(TX_FCTRL, REST, (void*) tx_fctrl_f) &&
+           dw_read_reg(TX_FCTRL, IFSDELAY, (void*) tx_fctrl_f);
+}
+
+bool set_tx_fctrl(tx_fctrl_format* tx_fctrl_f) {
+    return dw_write_reg(TX_FCTRL, REST, (void*) tx_fctrl_f) &&
+           dw_write_reg(TX_FCTRL, IFSDELAY, (void*) tx_fctrl_f);
+}
+
+bool set_tx_buffer(uwb_frame frame, const uint16_t frame_size) {
+
+    const uint16_t offset = TX_BUFFER_MAX_SIZE - frame_size;
+    bool ret = false;
+
+    if(offset + frame_size <= TX_BUFFER_MAX_SIZE) {
+        ret = dw_write_reg(TX_BUFFER, offset, (void*) frame);
+    }
+
+    return ret;
+
+}
+
+bool get_dx_time(double* seconds) {
+    return dw_read_reg(DX_TIME, 0, (void*) seconds);
+}
+
+bool set_dx_time(double* seconds) {
+    return (*seconds <= DTR_COUNTER_WRAP_PERIOD) &&
+            dw_write_reg(DX_TIME, 0, (void*) seconds);
+}
+
+bool get_rx_fwto(double* seconds) {
+    return dw_read_reg(RX_FWTO, 0, (void*) seconds);
+}
+
+bool set_rx_fwto(double* seconds) {
+    return (*seconds <= RFR_COUNTER_WRAP_PERIOD) &&
+            dw_write_reg(RX_FWTO, 0, (void*) seconds);
+}
+
+bool get_sys_ctrl(sys_ctrl_format* sys_ctrl_f) {
+    return dw_read_reg(SYS_CTRL, 0, (void*) sys_ctrl_f);
+}
+
+bool set_sys_ctrl(sys_ctrl_format* sys_ctrl_f) {
+    return dw_write_reg(SYS_CTRL, 0, (void*) sys_ctrl_f);
+}
+
+bool get_sys_event_msk(sys_evt_msk_format* sys_evt_msk_f) {
+    return dw_read_reg(SYS_MASK, 0, (void*) sys_evt_msk_f);
+}
+
+bool set_sys_event_msk(sys_evt_msk_format* sys_evt_msk_f) {
+    return dw_write_reg(SYS_MASK, 0, (void*) sys_evt_msk_f);
+}
+
+bool get_sys_event_sts(sys_evt_sts_format* sys_evt_sts_f) {
+    return dw_read_reg(SYS_STATUS, OCT_0_TO_3, (void*) sys_evt_sts_f) &&
+           dw_read_reg(SYS_STATUS, OCT_4, (void*) sys_evt_sts_f);
+}
+
+bool set_sys_event_sts(sys_evt_sts_format* sys_evt_sts_f) {
+    return dw_write_reg(SYS_STATUS, OCT_0_TO_3, (void*) sys_evt_sts_f) &&
+           dw_write_reg(SYS_STATUS, OCT_4, (void*) sys_evt_sts_f);
 }
