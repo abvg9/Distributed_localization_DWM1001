@@ -35,25 +35,32 @@ typedef enum {
 
 // General command structure to interact with dwm1000 registers.
 typedef struct {
-    const size_t rx_buf_size;                           // Size of the received buffer.
-    const register_access ra;                           // Register access permission.
-    void (*formater)(spi_frame f, void* structure);     // Pointer to the function that formats the spi_frame.
-    size_t (*unformater)(void* structure, spi_frame f); // Pointer to the function that unformats the spi_frame.
+    const size_t rx_buf_size;                                                      // Size of the received buffer.
+    const register_access ra;                                                      // Register access permission.
+    void (*formater)(spi_frame f, void* structure, const size_t sub_register);     // Pointer to the function that formats the spi_frame.
+    size_t (*unformater)(void* structure, spi_frame f, const size_t sub_register); // Pointer to the function that unformats the spi_frame.
 } command;
 
 #define RESERVED_REGISTER {0U, RE, NULL, NULL}
 
 // Structure which contains all the registers information of the dw1000.
 const command COMMAND_PANEL[] = {
-        {4U, RO, dev_id_formater, NULL},                  // DEV_ID
-        {8U, RW, eui_formater, eui_unformater},           // EUI
-        RESERVED_REGISTER,                                // RESERVED_1
-        {4U, RW, pan_addr_formater, pan_addr_unformater}, // PAN_ADR
-        {4U, RW, sys_cfg_formater, sys_cfg_unformater},   // SYS_CFG
-        RESERVED_REGISTER,                                // RESERVED_2
-        {5U, RO, sys_time_formater, NULL},                // SYS_TIME
-        RESERVED_REGISTER,                                // RESERVED_3
-        {5U, RW, tx_fctrl_formater, tx_fctrl_unformater}, // TX_FCTRL
+        {4U, RO, dev_id_formater, NULL},                        // DEV_ID
+        {8U, RW, eui_formater, eui_unformater},                 // EUI
+        RESERVED_REGISTER,                                      // RESERVED_1
+        {4U, RW, pan_addr_formater, pan_addr_unformater},       // PAN_ADR
+        {4U, RW, sys_cfg_formater, sys_cfg_unformater},         // SYS_CFG
+        RESERVED_REGISTER,                                      // RESERVED_2
+        {5U, RO, sys_time_formater, NULL},                      // SYS_TIME
+        RESERVED_REGISTER,                                      // RESERVED_3
+        {4U, RW, tx_fctrl_formater, tx_fctrl_unformater},       // TX_FCTRL
+        {1024U, WO, NULL, tx_buffer_unformater},                // TX_BUFFER
+        {5U, RW, dx_time_formater, dx_time_unformater},         // DX_TIME
+        RESERVED_REGISTER,                                      // RESERVED_4
+        {2U, RW, rx_fwto_formater, rx_fwto_unformater},         // RX_FWTO
+        {4U, RW, tx_ctrl_formater, tx_ctrl_unformater},         // SYS_CTRL
+        {4U, RW, sys_evt_msk_formater, sys_evt_msk_unformater}, // SYS_MASK
+        {4U, RW, sys_evt_sts_formater, sys_evt_sts_unformater}, // SYS_STATUS
 };
 
 /**
@@ -176,7 +183,7 @@ bool dw_read_reg(const register_id reg_id, const size_t offset, void* parsed_reg
         spiUnselect(&SPID1);
         spiReleaseBus(&SPID1);
 
-        c.formater(rx, parsed_reg);
+        c.formater(rx, parsed_reg, offset);
 
         return true;
     }
@@ -194,7 +201,7 @@ bool dw_write_reg(const register_id reg_id, const size_t offset, void* parsed_re
         command c = COMMAND_PANEL[reg_id];
 
         uint8_t data[c.rx_buf_size];
-        size_t data_size = c.unformater(parsed_reg, data);
+        size_t data_size = c.unformater(parsed_reg, data, offset);
 
         uint8_t message[spi_header_size+data_size];
         memcpy(message, header, spi_header_size);
