@@ -54,13 +54,20 @@ const command COMMAND_PANEL[] = {
         {5U, RO, sys_time_formater, NULL},                      // SYS_TIME
         RESERVED_REGISTER,                                      // RESERVED_3
         {4U, RW, tx_fctrl_formater, tx_fctrl_unformater},       // TX_FCTRL
-        {1024U, WO, NULL, tx_buffer_unformater},                // TX_BUFFER
+        {128U, WO, NULL, tx_buffer_unformater},                 // TX_BUFFER
         {5U, RW, dx_time_formater, dx_time_unformater},         // DX_TIME
         RESERVED_REGISTER,                                      // RESERVED_4
         {2U, RW, rx_fwto_formater, rx_fwto_unformater},         // RX_FWTO
         {4U, RW, tx_ctrl_formater, tx_ctrl_unformater},         // SYS_CTRL
         {4U, RW, sys_evt_msk_formater, sys_evt_msk_unformater}, // SYS_MASK
         {4U, RW, sys_evt_sts_formater, sys_evt_sts_unformater}, // SYS_STATUS
+        {4U, RO, rx_finfo_formater, NULL},                      // RX_FINFO
+        {128U, RO, rx_buffer_formater, NULL},                   // RX_BUFFER
+        {4U, RO, rx_fqual_formater, NULL},                      // RX_FQUAL
+        {4U, RO, rx_ttcki_formater, NULL},                      // RX_TTCKI
+        {4U, RO, rx_ttcko_formater, NULL},                      // RX_TTCKO
+        {4U, RO, rx_time_formater, NULL},                       // RX_TIME
+        RESERVED_REGISTER,                                      // RESERVED_5
 };
 
 /**
@@ -163,6 +170,16 @@ size_t compose_spi_header(const register_id reg_id, size_t offset, const bool re
     return spi_header_size;
 }
 
+/**
+ * @brief Reads the value of a dw1000 register and loads it inside parsed_reg parameter.
+ *
+ * @param[in] reg_id: Register identifier to read.
+ * @param[in] offset: Indicates which sub-register will be read.
+ * @param[out] parsed_reg: Container in which will be loaded the value of the register.
+ *
+ * @return bool: If the read operation can be performed returns true, otherwise false.
+ *
+ */
 bool dw_read_reg(const register_id reg_id, const size_t offset, void* parsed_reg) {
 
     uint8_t header[3] = {0X00, 0X00, 0X00};
@@ -191,6 +208,16 @@ bool dw_read_reg(const register_id reg_id, const size_t offset, void* parsed_reg
     return false;
 }
 
+/**
+ * @brief Writes a value into a dw1000 register.
+ *
+ * @param[in] reg_id: Register identifier to write.
+ * @param[in] offset: Indicates which sub-register will be write.
+ * @param[in] parsed_reg: Container which contains the value to be write.
+ *
+ * @return bool: If the write operation can be performed returns true, otherwise false.
+ *
+ */
 bool dw_write_reg(const register_id reg_id, const size_t offset, void* parsed_reg) {
 
     uint8_t header[3] = {0X00, 0X00, 0X00};
@@ -220,4 +247,143 @@ bool dw_write_reg(const register_id reg_id, const size_t offset, void* parsed_re
     }
 
     return false;
+}
+
+/******* REGISTERS GETTERS AND SETTERS *******/
+
+bool get_dev_id(dev_id_format *dev_id_f) {
+    return dw_read_reg(DEV_ID, 0, (void*) dev_id_f);
+}
+
+bool get_eui(eui_format* eui_f) {
+    return dw_read_reg(EUI, 0, (void*) eui_f);
+}
+
+bool set_eui(eui_format* eui_f) {
+    return dw_write_reg(EUI, 0, (void*) eui_f);
+}
+
+bool get_pan_adr(pan_adr_format *pan_adr_f) {
+    return dw_read_reg(PAN_ADR, 0, (void*) pan_adr_f);
+}
+
+bool set_pan_adr(pan_adr_format* pan_adr_f) {
+    return dw_write_reg(PAN_ADR, PAN_ID, (void*) pan_adr_f) &&
+           dw_write_reg(PAN_ADR, SHORT_ADR, (void*) pan_adr_f);
+}
+
+bool get_sys_cfg(sys_cfg_format* sys_cfg_f) {
+    return dw_read_reg(SYS_CFG, 0, (void*) sys_cfg_f);
+}
+
+bool set_sys_cfg(sys_cfg_format* sys_cfg_f) {
+    return dw_write_reg(SYS_CFG, 0, (void*) sys_cfg_f);
+}
+
+bool get_sys_time(double* seconds) {
+    return dw_read_reg(SYS_TIME, 0, (void*) seconds);
+}
+
+bool get_tx_fctrl(tx_fctrl_format* tx_fctrl_f) {
+    return dw_read_reg(TX_FCTRL, REST, (void*) tx_fctrl_f) &&
+           dw_read_reg(TX_FCTRL, IFSDELAY, (void*) tx_fctrl_f);
+}
+
+bool set_tx_fctrl(tx_fctrl_format* tx_fctrl_f) {
+    return dw_write_reg(TX_FCTRL, REST, (void*) tx_fctrl_f) &&
+           dw_write_reg(TX_FCTRL, IFSDELAY, (void*) tx_fctrl_f);
+}
+
+bool set_tx_buffer(uwb_frame frame, const uint16_t frame_size) {
+
+    const uint16_t offset = TX_RX_BUFFER_MAX_SIZE - frame_size;
+    bool ret = false;
+
+    if(offset + frame_size <= TX_RX_BUFFER_MAX_SIZE) {
+        ret = dw_write_reg(TX_BUFFER, offset, (void*) frame);
+    }
+
+    return ret;
+
+}
+
+bool get_dx_time(double* seconds) {
+    return dw_read_reg(DX_TIME, 0, (void*) seconds);
+}
+
+bool set_dx_time(double* seconds) {
+    return (*seconds <= DTR_COUNTER_WRAP_PERIOD) &&
+            dw_write_reg(DX_TIME, 0, (void*) seconds);
+}
+
+bool get_rx_fwto(double* seconds) {
+    return dw_read_reg(RX_FWTO, 0, (void*) seconds);
+}
+
+bool set_rx_fwto(double* seconds) {
+    return (*seconds <= RFR_COUNTER_WRAP_PERIOD) &&
+            dw_write_reg(RX_FWTO, 0, (void*) seconds);
+}
+
+bool get_sys_ctrl(sys_ctrl_format* sys_ctrl_f) {
+    return dw_read_reg(SYS_CTRL, 0, (void*) sys_ctrl_f);
+}
+
+bool set_sys_ctrl(sys_ctrl_format* sys_ctrl_f) {
+    return dw_write_reg(SYS_CTRL, 0, (void*) sys_ctrl_f);
+}
+
+bool get_sys_event_msk(sys_evt_msk_format* sys_evt_msk_f) {
+    return dw_read_reg(SYS_MASK, 0, (void*) sys_evt_msk_f);
+}
+
+bool set_sys_event_msk(sys_evt_msk_format* sys_evt_msk_f) {
+    return dw_write_reg(SYS_MASK, 0, (void*) sys_evt_msk_f);
+}
+
+bool get_sys_event_sts(sys_evt_sts_format* sys_evt_sts_f) {
+    return dw_read_reg(SYS_STATUS, SES_OCT_0_TO_3, (void*) sys_evt_sts_f) &&
+           dw_read_reg(SYS_STATUS, SES_OCT_4, (void*) sys_evt_sts_f);
+}
+
+bool set_sys_event_sts(sys_evt_sts_format* sys_evt_sts_f) {
+    return dw_write_reg(SYS_STATUS, SES_OCT_0_TO_3, (void*) sys_evt_sts_f) &&
+           dw_write_reg(SYS_STATUS, SES_OCT_4, (void*) sys_evt_sts_f);
+}
+
+bool get_rx_finfo(rx_finfo_format* rx_finfo_f) {
+    return dw_read_reg(RX_FINFO, 0, (void*) rx_finfo_f);
+}
+
+bool get_rx_buffer(uwb_frame frame, const uint16_t frame_size) {
+
+    const uint16_t offset = TX_RX_BUFFER_MAX_SIZE - frame_size;
+    bool ret = false;
+
+    if(offset + frame_size <= TX_RX_BUFFER_MAX_SIZE) {
+        ret = dw_read_reg(RX_BUFFER, offset, (void*) frame);
+    }
+
+    return ret;
+}
+
+bool get_rx_fqual(rx_fqual_format* rx_fqual_f) {
+    return dw_read_reg(RX_FQUAL, FP_AMPL2_STD_NOISE, (void*) rx_fqual_f) &&
+           dw_read_reg(RX_FQUAL, CIR_PWR_PP_AMPL3, (void*) rx_fqual_f);
+}
+
+bool get_rx_ttcki(rx_ttcki_value* rx_ttcki) {
+    return dw_read_reg(RX_TTCKI, 0, (void*) rx_ttcki);
+}
+
+bool get_rx_ttcko(rx_ttcko_format* rx_ttcko_f) {
+    return dw_read_reg(RX_TTCKO, RX_TTCKO_OCT_0_TO_3, (void*) rx_ttcko_f) &&
+           dw_read_reg(RX_TTCKO, RX_TTCKO_OCT_4, (void*) rx_ttcko_f) ;
+}
+
+bool get_rx_time(rx_time_format* rx_time_f) {
+    return dw_read_reg(RX_TIME, RX_TIME_OCT_0_TO_3, (void*) rx_time_f) &&
+           dw_read_reg(RX_TIME, RX_TIME_OCT_4_TO_7, (void*) rx_time_f) &&
+           dw_read_reg(RX_TIME, RX_TIME_OCT_8_TO_11, (void*) rx_time_f) &&
+           dw_read_reg(RX_TIME, RX_TIME_OCT_12_TO_13, (void*) rx_time_f);
 }
