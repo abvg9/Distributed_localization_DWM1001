@@ -206,7 +206,7 @@ size_t tx_fctrl_unformater(void* format, spi_frame fr, const size_t sub_register
 
 size_t tx_buffer_unformater(void *format, spi_frame fr, const size_t sub_register) {
 
-    const size_t buffer_size = TX_BUFFER_MAX_SIZE - sub_register;
+    const size_t buffer_size = TX_RX_BUFFER_MAX_SIZE - sub_register;
 
     uint8_t* buffer = (uint8_t*) format;
 
@@ -392,7 +392,7 @@ void sys_evt_sts_formater(spi_frame fr, void *format, const size_t sub_register)
 
     sys_evt_sts_format *sys_evt_sts_f = ((sys_evt_sts_format*) format);
 
-     if(sub_register == OCT_0_TO_3) {
+     if(sub_register == SES_OCT_0_TO_3) {
 
          sys_evt_sts_f->icrbp = (fr[3] & 0b10000000) >> 7;
          sys_evt_sts_f->hsrbp = (fr[3] & 0b01000000) >> 6;
@@ -429,7 +429,7 @@ void sys_evt_sts_formater(spi_frame fr, void *format, const size_t sub_register)
          sys_evt_sts_f->cplock = (fr[0] & 0b00000010) >> 1;
          sys_evt_sts_f->irqs = fr[0] & 0b00000001;
 
-     } else if(sub_register == OCT_4) {
+     } else if(sub_register == SES_OCT_4) {
          sys_evt_sts_f->txpute = (fr[0] & 0b00000100) >> 2;
          sys_evt_sts_f->rxprej = (fr[0] & 0b00000010) >> 1;
          sys_evt_sts_f->rxrscs = fr[0] & 0b00000001;
@@ -441,7 +441,7 @@ size_t sys_evt_sts_unformater(void *format, spi_frame fr, const size_t sub_regis
 
     sys_evt_sts_format *sys_evt_sts_f = ((sys_evt_sts_format*) format);
 
-     if(sub_register == OCT_0_TO_3) {
+     if(sub_register == SES_OCT_0_TO_3) {
 
          fr[3] = sys_evt_sts_f->icrbp << 7;
          fr[3] |= sys_evt_sts_f->hsrbp << 6;
@@ -480,7 +480,7 @@ size_t sys_evt_sts_unformater(void *format, spi_frame fr, const size_t sub_regis
 
          return 4;
 
-     } else if(sub_register == OCT_4) {
+     } else if(sub_register == SES_OCT_4) {
 
          fr[0] = sys_evt_sts_f->txpute << 2;
          fr[0] |= sys_evt_sts_f->rxprej << 1;
@@ -490,4 +490,97 @@ size_t sys_evt_sts_unformater(void *format, spi_frame fr, const size_t sub_regis
      }
 
      return 0;
+}
+
+void rx_finfo_formater(spi_frame fr, void *format, const size_t sub_register) {
+
+    rx_finfo_format *rx_finfo_f = ((rx_finfo_format*) format);
+
+    rx_finfo_f->rxpacc = ((uint16_t)fr[3]) << 4 | ((fr[2] & 0b11110000) >> 4);
+    rx_finfo_f->rxnspl_rxpsr =  ((fr[1] & 0b00011000) >> 1) | ((fr[2] & 0b00001100) >> 2);
+    rx_finfo_f->rxprfr = fr[2] & 0b00000011;
+    rx_finfo_f->rng = (fr[1] & 0b10000000) >> 7;
+    rx_finfo_f->rxbr = (fr[1] & 0b01100000) >> 5;
+    rx_finfo_f->rxfle = ((fr[1] && 0b00000011) << 1)  | ((fr[0] & 0b10000000) >> 7);
+    rx_finfo_f->rxflen = fr[0] & 0b01111111;
+
+}
+
+void rx_buffer_formater(spi_frame fr, void *format, const size_t sub_register) {
+
+    const size_t buffer_size = TX_RX_BUFFER_MAX_SIZE - sub_register;
+
+    uint8_t* buffer = (uint8_t*) format;
+
+    int i;
+    for( i = buffer_size-1; i >= 0; --i) {
+        buffer[i] = fr[i];
+    }
+
+}
+
+void rx_fqual_formater(spi_frame fr, void *format, const size_t sub_register) {
+
+    rx_fqual_format *rx_fqual_f = ((rx_fqual_format*) format);
+
+    if(sub_register == FP_AMPL2_STD_NOISE) {
+
+        rx_fqual_f->fp_ampl2 = ((uint16_t)fr[3] << 8) | fr[2];
+        rx_fqual_f->std_noise = ((uint16_t)fr[1] << 8) | fr[0];
+
+    } else if(sub_register == CIR_PWR_PP_AMPL3) {
+
+        rx_fqual_f->cir_pwr = ((uint16_t)fr[3] << 8) | fr[2];
+        rx_fqual_f->pp_ampl3 = ((uint16_t)fr[1] << 8) | fr[0];
+    }
+}
+
+void rx_ttcki_formater(spi_frame fr, void *format, const size_t sub_register) {
+
+    rx_ttcki_value* rx_ttcki = (rx_ttcki_value*) format;
+    *rx_ttcki = (((uint32_t)fr[3]) << 24) | (((uint32_t)fr[2]) << 16) | (((uint32_t)fr[1]) << 8) | fr[0];
+
+}
+
+void rx_ttcko_formater(spi_frame fr, void *format, const size_t sub_register) {
+
+    rx_ttcko_format* rx_ttcko_f = (rx_ttcko_format*) format;
+
+    if(sub_register == RX_TTCKO_OCT_0_TO_3) {
+        rx_ttcko_f->rsmpdel = fr[3];
+        rx_ttcko_f->rxtofs = (((uint32_t)(fr[2] & 0b00000111)) << 16)  | (((uint16_t) fr[1]) << 8) | fr[0];
+    } else if(sub_register == RX_TTCKO_OCT_4) {
+        rx_ttcko_f->rcphase = calculate_phase( (fr[0] & 0b01111111) );
+    }
+}
+
+void rx_time_formater(spi_frame fr, void *format, const size_t sub_register) {
+
+    rx_time_format* rx_time_f = (rx_time_format*) format;
+
+    if(sub_register == RX_TIME_OCT_0_TO_3) {
+
+        rx_time_f->rx_stamp = calculate_stamp( ((((uint32_t)fr[3]) << 24) | (((uint32_t)fr[2]) << 16) |
+                (((uint16_t)fr[1]) << 8) | fr[0]) );
+
+    } else if(sub_register == RX_TIME_OCT_4_TO_7) {
+
+        rx_time_f->fp_ampl1 = fr[3];
+
+        rx_time_f->fp_index = (((uint16_t)fr[2]) << 8) | fr[1];
+
+        rx_time_f->rx_stamp += calculate_stamp( ((uint64_t)fr[0] << 32));
+
+    } else if(sub_register == RX_TIME_OCT_8_TO_11) {
+
+        rx_time_f->rx_rawst = (((uint32_t)fr[3]) << 16) | (((uint16_t)fr[2]) << 8) | fr[1];
+
+        rx_time_f->fp_ampl1 |= ((uint16_t)fr[0]) << 8;
+
+    } else if(sub_register == RX_TIME_OCT_12_TO_13) {
+
+        rx_time_f->rx_rawst |= ((uint64_t)fr[1] << 32) | ((uint32_t)fr[0] << 24);
+
+    }
+
 }

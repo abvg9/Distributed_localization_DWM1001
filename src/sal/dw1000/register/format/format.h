@@ -35,10 +35,10 @@ typedef uint8_t *uwb_frame;
 
 // Structure of the device identifier register.
 typedef struct {
-    unsigned int ridtag :16; // Register identification tag.
-    unsigned int model :8;   // Device model.
-    unsigned int ver :4;     // Version.
-    unsigned int rev :4;     // Revision.
+    uint16_t ridtag;     // Register identification tag.
+    uint8_t model;       // Device model.
+    unsigned int ver :4; // Version.
+    unsigned int rev :4; // Revision.
 } dev_id_format;
 
 /**
@@ -203,21 +203,21 @@ void sys_time_formater(spi_frame fr, void *format, const size_t sub_register);
 
 /******* TX_FCTRL *******/
 
-// Possible values of the transmit bit rate field.
+// Possible values of the transmit/receive bit rate field.
 typedef enum {
     KBPS110 = 0b00,
     KBPS850 = 0b01,
     MBPS6_8 = 0b10,
     TXPRF_RESERVED = 0b10, // This value should be 0b11, but this is to prevent used it.
-} transmit_bit_rate;
+} transmit_receive_bit_rate;
 
-// Possible values of the transmit pulse repetition frequency field.
+// Possible values of the transmit/receive pulse repetition frequency field.
 typedef enum {
-    MHZ4 = 0b00,
-    MHZ16 = 0b01,
-    MHZ64 = 0b10,
-    TXBR_RESERVED = 0b10 // This value should be 0b11, but this is to prevent used it.
-} transmit_pulse_repetition_freq;
+    TRPR_MHZ4 = 0b00,
+    TRPR_MHZ16 = 0b01,
+    TRPR_MHZ64 = 0b10,
+    TRPR_RESERVED = 0b10 // This value should be 0b11, but this is to prevent used it.
+} transmit_receive_pulse_repetition_freq;
 
 // Possible values of the preamble extension and transmit preamble symbol repetitions fields.
 typedef enum {
@@ -233,14 +233,14 @@ typedef enum {
 
 // Structure of the transmit frame control register.
 typedef struct {
-    unsigned int txboffs :10;              // Transmit buffer index offset.
-    preamble_lenght_selection pe_txpsr :4; // Preamble extension and transmit preamble symbol repetitions.
-    transmit_pulse_repetition_freq txprf;  // Transmit pulse repetition frequency.
-    unsigned int tr :1;                    // Transmit ranging enable.
-    transmit_bit_rate txbr;                // Transmit bit rate.
-    unsigned int tfle :3;                  // Transmit frame length extension.
-    unsigned int tflen :7;                 // Transmit frame length.
-    unsigned int ifsdelay :8;              // Inter-frame spacing.
+    unsigned int txboffs :10;                      // Transmit buffer index offset.
+    preamble_lenght_selection pe_txpsr :4;         // Preamble extension and transmit preamble symbol repetitions.
+    transmit_receive_pulse_repetition_freq txprf;  // Transmit pulse repetition frequency.
+    unsigned int tr :1;                            // Transmit ranging enable.
+    transmit_receive_bit_rate txbr;                // Transmit bit rate.
+    unsigned int tfle :3;                          // Transmit frame length extension.
+    unsigned int tflen :7;                         // Transmit frame length.
+    uint8_t ifsdelay;                              // Inter-frame spacing.
 } tx_fctrl_format;
 
 // Fields of the transmit frame control register.
@@ -277,7 +277,7 @@ size_t tx_fctrl_unformater(void *format, spi_frame fr, const size_t sub_register
 
 /******* TX_BUFFER *******/
 
-#define TX_BUFFER_MAX_SIZE 1024
+#define TX_RX_BUFFER_MAX_SIZE 128
 
 /**
  * @brief Formats an uint8_t* to a spi_frame.
@@ -460,26 +460,26 @@ size_t sys_evt_msk_unformater(void *format, spi_frame fr, const size_t sub_regis
 
 /******* SYS_STATUS *******/
 
-// Fields of the transmit frame control register.
+// Fields of the system events status register.
 typedef enum {
-    OCT_0_TO_3 = 0,
-    OCT_4 = 4
+    SES_OCT_0_TO_3 = 0,
+    SES_OCT_4 = 4
 } sys_evt_sts_subregister;
 
 // Structure of the system event status register.
 typedef struct {
-    unsigned int icrbp :1;     // IC side receive buffer pointer.
-    unsigned int hsrbp :1;     // Host side receive buffer pointer.
+    unsigned int icrbp :1;     // IC side receive buffer pointer. (READ ONLY)
+    unsigned int hsrbp :1;     // Host side receive buffer pointer. (READ ONLY)
     unsigned int affrej :1;    // Automatic frame filtering rejection.
     unsigned int txberr :1;    // Transmit buffer error.
-    unsigned int hpdwarn :1;   // Half period delay warning.
+    unsigned int hpdwarn :1;   // Half period delay warning. (READ ONLY)
     unsigned int rxsfdto :1;   // Receive SFD timeout.
     unsigned int clkpll_ll :1; // Clock PLL losing lock.
     unsigned int rfpll_ll :1;  // RF PLL losing lock.
     unsigned int slp2init :1;  // SLEEP to INIT.
     unsigned int gpioirq :1;   // GPIO interrupt.
     unsigned int rxpto :1;     // Preamble detection timeout.
-    unsigned int rxovrr :1;    // Receiver overrun.
+    unsigned int rxovrr :1;    // Receiver overrun. (READ ONLY)
     unsigned int ldeerr :1;    // Leading edge detection processing error.
     unsigned int rxrfto :1;    // Receive frame wait timeout.
     unsigned int rxrfsl :1;    // Receiver reed solomon frame sync loss.
@@ -498,8 +498,8 @@ typedef struct {
     unsigned int aat :1;       // Automatic acknowledge trigger.
     unsigned int esyncr :1;    // External sync clock reset.
     unsigned int cplock :1;    // Clock PLL lock.
-    unsigned int irqs :1;      // Interrupt request status.
-    unsigned int txpute :1;    // Transmit power up time error.
+    unsigned int irqs :1;      // Interrupt request status. (READ ONLY)
+    unsigned int txpute :1;    // Transmit power up time error. (READ ONLY)
     unsigned int rxprej :1;    // Receiver preamble rejection.
     unsigned int rxrscs :1;    // Receiver Reed-solomon correction status.
 } sys_evt_sts_format;
@@ -529,5 +529,175 @@ void sys_evt_sts_formater(spi_frame fr, void *format, const size_t sub_register)
  *
  */
 size_t sys_evt_sts_unformater(void *format, spi_frame fr, const size_t sub_register);
+
+/******* RX_FINFO *******/
+
+// Structure of the rx frame information register.
+typedef struct {
+    unsigned int rxpacc :12;                          // Preamble accumulation count.
+    preamble_lenght_selection rxnspl_rxpsr: 4;        // Receive non-standard preamble length and RX preamble repetition.
+    transmit_receive_pulse_repetition_freq rxprfr :2; // RX pulse repetition rate report.
+    unsigned int rng :1;                              // Receiver ranging.
+    transmit_receive_bit_rate rxbr;                   // Receive bit rate report.
+    unsigned int rxfle :3;                            // Receive frame length extension.
+    unsigned int rxflen :7;                           // Receive frame length.
+} rx_finfo_format;
+
+/**
+ * @brief Formats a spi_frame to a rx_finfo_format structure.
+ *
+ * @param[in] fr: The spi_frame to initialize the structure.
+ * @param[out] format: Structure which will contains the spi_frame formatted.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @note: This function must receive a rx_finfo_format structure to work.
+ *
+ */
+void rx_finfo_formater(spi_frame fr, void *format, const size_t sub_register);
+
+/******* RX_BUFFER *******/
+
+/**
+ * @brief Formats a spi_frame to an uint8_t*.
+ *
+ * @param[in] fr: spi_frame to initialize the array(format).
+ * @param[out] format: Array which will contains the spi_frame formatted.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @note: This function must receive a uint8_t* array to work.
+ *
+ */
+void rx_buffer_formater(spi_frame fr, void *format, const size_t sub_register);
+
+/******* RX_FQUAL *******/
+
+// Fields of the rx frame quality information register.
+typedef enum {
+    FP_AMPL2_STD_NOISE = 0,
+    CIR_PWR_PP_AMPL3 = 4
+} rx_finfo_subregister;
+
+// Structure of the rx frame quality information register.
+typedef struct {
+    uint16_t fp_ampl2;  // First path amplitude point 2.
+    uint16_t std_noise; // Standard deviation of noise.
+    uint16_t cir_pwr;   // Channel impulse response power.
+    uint16_t pp_ampl3;  // First path amplitude point 3.
+} rx_fqual_format;
+
+/**
+ * @brief Formats a spi_frame to an rx_fqual_format.
+ *
+ * @param[in] fr: spi_frame to initialize the structure(format).
+ * @param[out] format: Structure which will contains the spi_frame formatted.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @note: This function must receive a rx_fqual_format to work.
+ *
+ */
+void rx_fqual_formater(spi_frame fr, void *format, const size_t sub_register);
+
+/******* RX_TTCKI *******/
+
+// Possible values of the rx_ttcki register.
+typedef enum {
+    RX_TTCKI_NONE = 0,
+    RX_TTCKI_MHZ16 = 0x01F00000,
+    RX_TTCKI_MHZPRF = 0x01FC0000
+} rx_ttcki_value;
+
+/**
+ * @brief Formats a spi_frame to a rx_ttcki_value.
+ *
+ * @param[in] fr: spi_frame to initialize the rx_ttcki_value(format).
+ * @param[out] format: Structure which will contains the spi_frame formatted.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @note: This function must receive a rx_ttcki_value to work.
+ *
+ */
+void rx_ttcki_formater(spi_frame fr, void *format, const size_t sub_register);
+
+/******* RX_TTCKO *******/
+
+#define PHASE_ADJUSTMENT_PRECISION 2.8125 // 360.0/pow(2, 7)
+#define calculate_phase(register_value) register_value * PHASE_ADJUSTMENT_PRECISION
+
+// Fields of the receiver time tracking offset register.
+typedef enum {
+    RX_TTCKO_OCT_0_TO_3 = 0,
+    RX_TTCKO_OCT_4 = 4
+} rx_ttcko_subregister;
+
+// Structure of the receiver time tracking offset register.
+typedef struct {
+    uint8_t rsmpdel;         // Reports an internal re-sampler delay value.
+    signed int rxtofs: 19;   // RX time tracking offset.
+    unsigned int rcphase :9; // Reports the receive carrier phase adjustment at time the ranging
+                             // Time stamp is made. This field contains the value in degrees.
+                             // Therefore its maximum value must be 360
+} rx_ttcko_format;
+
+/**
+ * @brief Formats a spi_frame to a rx_ttcko_format.
+ *
+ * @param[in] fr: spi_frame to initialize the rx_ttcko_format(format).
+ * @param[out] format: Structure which will contains the spi_frame formatted.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @note: This function must receive a rx_ttcko_format to work.
+ *
+ */
+void rx_ttcko_formater(spi_frame fr, void *format, const size_t sub_register);
+
+/******* RX_TIME *******/
+
+#define RX_TX_STAMP_RESOLUTION (1.0/(128*499.2*pow(10, 6))) // (seconds)
+#define calculate_stamp(register_value) register_value * RX_TX_STAMP_RESOLUTION
+
+// Fields of the receiver time stamp register.
+typedef enum {
+    RX_TIME_OCT_0_TO_3 = 0,
+    RX_TIME_OCT_4_TO_7 = 0X04,
+    RX_TIME_OCT_8_TO_11 = 0X08,
+    RX_TIME_OCT_12_TO_13 = 0X0C
+} rx_time_subregister;
+
+// Structure of the receiver time stamp register.
+typedef struct {
+    double rx_stamp;   // Reports the the fully adjusted time of reception.
+    uint16_t fp_index; // Reporting the position within the accumulator that the
+                       // LDE algorithm has determined to be the first path.
+    uint16_t fp_ampl1; // Reporting the magnitude of the leading edge signal seen in
+                       // the accumulator data memory during the LDE algorithm’s analysis.
+    uint64_t rx_rawst; // Reports the Raw Time stamp for the frame.
+} rx_time_format;
+
+/**
+ * @brief Formats a spi_frame to a rx_time_format.
+ *
+ * @param[in] fr: spi_frame to initialize the rx_time_format(format).
+ * @param[out] format: Structure which will contains the spi_frame formatted.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @note: This function must receive a rx_time_format to work.
+ *
+ */
+void rx_time_formater(spi_frame fr, void *format, const size_t sub_register);
+
+/******* TX_TIME *******/
+
+// Fields of the transmit time stamp register.
+typedef enum {
+    TX_TIME_OCT_0_TO_3 = 0,
+    TX_TIME_OCT_4_TO_7 = 0X04,
+    TX_TIME_OCT_8_TO_9 = 0X08,
+} tx_time_subregister;
+
+// Structure of the transmit time stamp register.
+typedef struct {
+    uint64_t tx_stamp; // Reports the the fully adjusted time of reception.
+    uint64_t tx_rawst; // Reports the Raw Time stamp for the frame.
+} tx_time_format;
 
 #endif // _FORMAT_H_
