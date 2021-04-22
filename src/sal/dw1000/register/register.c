@@ -54,7 +54,7 @@ const command COMMAND_PANEL[] = {
         {5U, RO, sys_time_formater, NULL},                      // SYS_TIME
         RESERVED_REGISTER,                                      // RESERVED_3
         {4U, RW, tx_fctrl_formater, tx_fctrl_unformater},       // TX_FCTRL
-        {128U, WO, NULL, tx_buffer_unformater},                 // TX_BUFFER
+        {1024U, WO, NULL, tx_buffer_unformater},                // TX_BUFFER
         {5U, RW, dx_time_formater, dx_time_unformater},         // DX_TIME
         RESERVED_REGISTER,                                      // RESERVED_4
         {2U, RW, rx_fwto_formater, rx_fwto_unformater},         // RX_FWTO
@@ -62,12 +62,20 @@ const command COMMAND_PANEL[] = {
         {4U, RW, sys_evt_msk_formater, sys_evt_msk_unformater}, // SYS_MASK
         {4U, RW, sys_evt_sts_formater, sys_evt_sts_unformater}, // SYS_STATUS
         {4U, RO, rx_finfo_formater, NULL},                      // RX_FINFO
-        {128U, RO, rx_buffer_formater, NULL},                   // RX_BUFFER
+        {1024U, RO, rx_buffer_formater, NULL},                  // RX_BUFFER
         {4U, RO, rx_fqual_formater, NULL},                      // RX_FQUAL
         {4U, RO, rx_ttcki_formater, NULL},                      // RX_TTCKI
         {4U, RO, rx_ttcko_formater, NULL},                      // RX_TTCKO
         {4U, RO, rx_time_formater, NULL},                       // RX_TIME
         RESERVED_REGISTER,                                      // RESERVED_5
+        {4U, RO, tx_time_formater, NULL},                       // TX_TIME
+        {2U, RW, tx_antd_formater, tx_antd_unformater},         // TX_ANTD
+        {4U, RO, sys_state_formater, NULL},                     // SYS_STATE
+        {4U, RW, ack_resp_t_formater, ack_resp_t_unformater},   // ACK_RESP_T
+        RESERVED_REGISTER,                                      // RESERVED_6
+        RESERVED_REGISTER,                                      // RESERVED_7
+        {4U, RW, rx_sniff_formater, rx_sniff_unformater},       // RX_SNIFF
+        {4U, RW, tx_power_formater, tx_power_unformater},       // TX_POWER
 };
 
 /**
@@ -313,7 +321,7 @@ bool get_dx_time(double* seconds) {
 
 bool set_dx_time(double* seconds) {
     return (*seconds <= DTR_COUNTER_WRAP_PERIOD) &&
-            dw_write_reg(DX_TIME, 0, (void*) seconds);
+           (*seconds >= 0.0) && dw_write_reg(DX_TIME, 0, (void*) seconds);
 }
 
 bool get_rx_fwto(double* seconds) {
@@ -322,7 +330,7 @@ bool get_rx_fwto(double* seconds) {
 
 bool set_rx_fwto(double* seconds) {
     return (*seconds <= RFR_COUNTER_WRAP_PERIOD) &&
-            dw_write_reg(RX_FWTO, 0, (void*) seconds);
+           (*seconds >= 0.0) && dw_write_reg(RX_FWTO, 0, (void*) seconds);
 }
 
 bool get_sys_ctrl(sys_ctrl_format* sys_ctrl_f) {
@@ -386,4 +394,51 @@ bool get_rx_time(rx_time_format* rx_time_f) {
            dw_read_reg(RX_TIME, RX_TIME_OCT_4_TO_7, (void*) rx_time_f) &&
            dw_read_reg(RX_TIME, RX_TIME_OCT_8_TO_11, (void*) rx_time_f) &&
            dw_read_reg(RX_TIME, RX_TIME_OCT_12_TO_13, (void*) rx_time_f);
+}
+
+bool get_tx_time(tx_time_format* tx_time_f) {
+    return dw_read_reg(TX_TIME, TX_TIME_OCT_0_TO_3, (void*) tx_time_f) &&
+           dw_read_reg(TX_TIME, TX_TIME_OCT_4_TO_7, (void*) tx_time_f) &&
+           dw_read_reg(TX_TIME, TX_TIME_OCT_8_TO_9, (void*) tx_time_f);
+}
+
+bool get_tx_antd(double* seconds) {
+    return dw_read_reg(TX_ANTD, 0, (void*) seconds);
+}
+
+bool set_tx_antd(double* seconds) {
+    return (*seconds <= TX_ANTD_WRAP_PERIOD) &&
+           (*seconds >= 0.0) && dw_write_reg(TX_ANTD, 0, (void*) seconds);
+}
+
+bool get_sys_status(sys_status_format* sys_status_f) {
+    return dw_read_reg(SYS_STATUS, 0, (void*) sys_status_f);
+}
+
+bool get_ack_resp_t(ack_resp_t_format* ack_resp_t_f) {
+    return dw_read_reg(ACK_RESP_T, 0, (void*) ack_resp_t_f);
+}
+
+bool set_ack_resp_t(ack_resp_t_format* ack_resp_t_f) {
+    return (ack_resp_t_f->w4r_tim <= W4RTIM_WRAP_PERIOD) &&
+           (ack_resp_t_f->w4r_tim >= 0.0) &&
+           dw_write_reg(ACK_RESP_T, 0, (void*) ack_resp_t_f);
+}
+
+bool get_rx_sniff(rx_sniff_format* rx_sniff_f) {
+    return dw_read_reg(RX_SNIFF, 0, (void*) rx_sniff_f);
+}
+
+bool set_rx_sniff(rx_sniff_format* rx_sniff_f) {
+    return (rx_sniff_f->sniff_offt <= SNIFF_OFFT_WRAP_PERIOD) &&
+           (rx_sniff_f->sniff_offt >= 0.0) &&
+           dw_write_reg(RX_SNIFF, 0, (void*) rx_sniff_f);
+}
+
+bool get_tx_power(tx_power_format* tx_power_f) {
+    return dw_read_reg(TX_POWER, 0, (void*) tx_power_f);
+}
+
+bool set_tx_power(tx_power_format* tx_power_f) {
+    return dw_write_reg(TX_POWER, 0, (void*) tx_power_f);
 }

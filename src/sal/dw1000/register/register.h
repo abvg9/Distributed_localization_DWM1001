@@ -68,8 +68,9 @@ typedef enum {
     EXT_SYNC    = 0X24,
     ACC_MEM     = 0X25,
     GPIO_CTRL   = 0X26,
-    RESERVED_9  = 0X27,
-    DRX_CONF    = 0X28,
+    DRX_CONF    = 0X27,
+    RF_CONF     = 0x28,
+    RESERVED_9 = 0X29,
     TX_CAL      = 0X2A,
     FS_CTRL     = 0X2B,
     AON         = 0X2C,
@@ -209,6 +210,10 @@ bool set_tx_fctrl(tx_fctrl_format* tx_fctrl_f);
  * @param[out] frame: Message to store in the transmit buffer register.
  * @param[in] frame_size: Size in bytes of the given uwb_frame.
  *
+ * @note: Depend on the phr_mode selected in the system configuration register
+ *        this buffer can be from 127 bytes of size(phr_mode = standard) or
+ *        1024 bytes(long_size).
+ *
  * @return bool: True if the register can be set, otherwise false.
  *
  */
@@ -331,6 +336,10 @@ bool get_rx_finfo(rx_finfo_format* rx_finfo_f);
  * @param[out] frame: Array in which will be load the transmit buffer register.
  * @param[in] frame_size: Number of bytes to read from the transmit buffer register.
  *
+ * @note: Depend on the phr_mode selected in the system configuration register
+ *        this buffer can be from 127 bytes of size(phr_mode = standard) or
+ *        1024 bytes(long_size).
+ *
  * @return bool: True if the register can be set, otherwise false.
  *
  */
@@ -375,5 +384,105 @@ bool get_rx_ttcko(rx_ttcko_format* rx_ttcko_f);
  *
  */
 bool get_rx_time(rx_time_format* rx_time_f);
+
+/**
+ * @brief Gets the transmitter time stamp register value.
+ *
+ * @param[in] tx_time_f: Structure in will be stored the value of the register.
+ *
+ * @return bool: Returns true if the register can be gotten, otherwise false.
+ *
+ */
+bool get_tx_time(tx_time_format* tx_time_f);
+
+/**
+ * @brief Gets the transmitter antenna delay register value.
+ *
+ * @param[in] seconds: Value in will be stored the value of the register.
+ *
+ * @return bool: Returns true if the register can be gotten, otherwise false.
+ *
+ */
+bool get_tx_antd(double* seconds);
+
+/**
+ * @brief Sets the transmitter antenna delay register value.
+ *
+ * @param[in] seconds: Value that contains the value that will be written in the register.
+ *
+ * @return bool: Returns true if the register can be set, otherwise false.
+ *
+ */
+bool set_tx_antd(double* seconds);
+
+/**
+ * @brief Gets the system status register value.
+ *
+ * @param[in] sys_status_f: Structure in will be stored the value of the register.
+ *
+ * @return bool: Returns true if the register can be gotten, otherwise false.
+ *
+ */
+bool get_sys_status(sys_status_format* sys_status_f);
+
+/**
+ * @brief Gets the acknowledgment time and response time register value.
+ *
+ * @param[in] ack_resp_t_f: Structure in will be stored the value of the register.
+ *
+ * @return bool: Returns true if the register can be gotten, otherwise false.
+ *
+ */
+bool get_ack_resp_t(ack_resp_t_format* ack_resp_t_f);
+
+/**
+ * @brief Sets the acknowledgment time and response time register value.
+ *
+ * @param[in] ack_resp_t_f: Structure that contains the value that will be written in the register.
+ *
+ * @return bool: Returns true if the register can be set, otherwise false.
+ *
+ */
+bool set_ack_resp_t(ack_resp_t_format* ack_resp_t_f);
+
+/**
+ * @brief Gets the sniff mode configuration register value.
+ *
+ * @param[in] rx_sniff_f: Structure in will be stored the value of the register.
+ *
+ * @return bool: Returns true if the register can be gotten, otherwise false.
+ *
+ */
+bool get_rx_sniff(rx_sniff_format* rx_sniff_f);
+
+/**
+ * @brief Sets the sniff mode configuration register value.
+ *
+ * @param[in] rx_sniff_f: Structure that contains the value that will be written in the register.
+ *
+ * @return bool: Returns true if the register can be set, otherwise false.
+ *
+ */
+bool set_rx_sniff(rx_sniff_format* rx_sniff_f);
+
+/**
+ * @brief Gets the tx power control register value.
+ *
+ * @param[in] tx_power_f: Structure in will be stored the value of the register.
+ *
+ * @return bool: Returns true if the register can be gotten, otherwise false.
+ *
+ */
+bool get_tx_power(tx_power_format* tx_power_f);
+
+/**
+ * @brief Sets the tx power control register value.
+ *
+ * @param[in] tx_power_f: Structure that contains the value that will be written in the register.
+ *
+ * @return bool: Returns true if the register can be set, otherwise false.
+ *
+ */
+bool set_tx_power(tx_power_format* tx_power_f);
 
 #endif // _REGISTER_H_
