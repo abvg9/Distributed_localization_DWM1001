@@ -23,8 +23,49 @@
 
 #include "register.h"
 
-#define DW_POWER_ON  palSetPad(IOPORT1, DW_RST);
-#define DW_POWER_OFF palClearPad(IOPORT1, DW_RST);
+#define dw_power_on  palSetPad(IOPORT1, DW_RST)
+#define dw_power_off palClearPad(IOPORT1, DW_RST)
+
+/**
+ * @brief Calculates the clock offset between two dw1000 devices.
+ *
+ * @param[in] rx_ttcko_f: Structure which contains the receiver time tracking offset.
+ * @param[in] rx_ttcki: Value that contains the receiver time tracking interval.
+ *
+ * @return double: Clock offset in ppm units.
+ *
+ */
+double calculate_clock_offset(const rx_ttcko_format rx_ttcko_f, const rx_ttcki_value rx_ttcki);
+
+/**
+ * @brief Calculates the estimated signal power of a received message.
+ *
+ * @param[in] rx_fqual_format: Structure which contains the fp_ampl2 and fp_ampl3 values.
+ * @param[in] rx_finfo_format: Structure which contains the rxpacc and rxprfr values.
+ *
+ * @note: Estimated power level = 10 * log10( cir_pwr * 2¹⁷/ rxpacc) - rxprfr
+ * @note: This function may be used to check the deviation of the calculate_signal_power()
+ *        function.
+ *
+ * @return double: Estimated signal power in units of dBm.
+ *
+ */
+double calculate_estimated_signal_power(const rx_fqual_format, const rx_finfo_format);
+
+/**
+ * @brief Calculates the signal power of the received message.
+ *
+ * @param[in] rxt: Structure which contains the fp_ampl1 value.
+ * @param[in] rxfq: Structure which contains the fp_ampl2 and fp_ampl3 values.
+ * @param[in] rxfi: Structure which contains the rxpacc and rxprfr values.
+ *
+ * @note: Power level = 10 * log10( (fp_ampl1² + fp_ampl2² + fp_ampl3²)/ rxpacc) - rxprfr
+ * @note: The resultant power level may be compared with the estimated signal power.
+ *
+ * @return double: Signal power in units of dBm.
+ *
+ */
+double calculate_signal_power(const rx_time_format rxt, const rx_fqual_format rxfq, const rx_finfo_format rxfi);
 
 /**
  * @brief Disables SPI driver and turn off the dwm1000.
@@ -47,16 +88,5 @@ bool dw_eneable(void);
  *
  */
 void dw_reset(void);
-
-/**
- * @brief Calculates the clock offset between two dw1000 devices.
- *
- * @param[in] rx_ttcko_f: Structure which contains the receiver time tracking offset.
- * @param[int] rx_ttcki: Value that contains the receiver time tracking interval.
- *
- * @return double: Clock offset in ppm units.
- *
- */
-double calculate_clock_offset(rx_ttcko_format rx_ttcko_f, rx_ttcki_value rx_ttcki);
 
 #endif /* _DWM1000_H_ */

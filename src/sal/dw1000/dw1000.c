@@ -24,9 +24,45 @@ static const SPIConfig spi_cfg = { .end_cb = NULL, .ssport = IOPORT1, .sspad = S
         .freq = NRF5_SPI_FREQ_2MBPS, .sckpad = SPI_SCK, .mosipad = SPI_MOSI,
         .misopad = SPI_MISO, .lsbfirst = false, .mode = 2};
 
+double calculate_clock_offset(const rx_ttcko_format rx_ttcko_f, const rx_ttcki_value rx_ttcki) {
+    return rx_ttcko_f.rxtofs/rx_ttcki;
+}
+
+double calculate_estimated_signal_power(const rx_fqual_format rxfq, const rx_finfo_format rxfi) {
+
+    double substractor = 0.0;
+
+    if(rxfi.rxprfr == TRPR_MHZ16) {
+        substractor = 113.27;
+    } else {
+        substractor = 121.74;
+    }
+
+    /* TODO */
+    // Without subtraction the SFD symbol count from from rxpacc.
+    return (10.0 * log10(rxfq.cir_pwr * pow(2, 17)/pow(rxfi.rxpacc, 2))) - substractor;
+}
+
+double calculate_signal_power(const rx_time_format rxt, const rx_fqual_format rxfq, const rx_finfo_format rxfi) {
+
+    const double numerator = pow(rxt.fp_ampl1, 2) + pow(rxfq.fp_ampl2, 2) + pow(rxfq.fp_ampl3, 2);
+
+    double substractor = 0.0;
+
+    if(rxfi.rxprfr == TRPR_MHZ16) {
+        substractor = 113.27;
+    } else {
+        substractor = 121.74;
+    }
+
+    /* TODO */
+    // Without subtraction the SFD symbol count from from rxpacc.
+    return (10.0 * log10(numerator/pow(rxfi.rxpacc, 2))) - substractor;
+}
+
 void dw_disable(void) {
     spiStop(&SPID1);
-    DW_POWER_OFF;
+    dw_power_off;
 }
 
 bool dw_eneable(void) {
@@ -49,11 +85,7 @@ bool dw_eneable(void) {
 }
 
 void dw_reset(void) {
-    DW_POWER_OFF;
+    dw_power_off;
     chThdSleepMicroseconds(10);
-    DW_POWER_ON;
-}
-
-double calculate_clock_offset(rx_ttcko_format rx_ttcko_f, rx_ttcki_value rx_ttcki) {
-    return rx_ttcko_f.rxtofs/rx_ttcki;
+    dw_power_on;
 }
