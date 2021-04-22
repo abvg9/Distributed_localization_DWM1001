@@ -74,7 +74,7 @@ typedef struct {
 void eui_formater(spi_frame fr, void *format, const size_t sub_register);
 
 /**
- * @brief Formats an eui_format structure to a spi_frame.
+ * @brief Unformats an eui_format structure to a spi_frame.
  *
  * @param[in] format: Structure which contains the values of the fields of the EUI register.
  * @param[out] fr: spi_frame where this function will store the eui_format structure.
@@ -114,7 +114,7 @@ typedef struct {
 void pan_addr_formater(spi_frame fr, void *format, const size_t sub_register);
 
 /**
- * @brief Formats a pan_adr_format structure to a spi_frame.
+ * @brief Unformats a pan_adr_format structure to a spi_frame.
  *
  * @param[in] format: Structure which contains the values of the fields of the PAN_ADR register.
  * @param[out] fr: spi_frame where this function will store the pan_adr_format structure.
@@ -129,6 +129,12 @@ size_t pan_addr_unformater(void *format, spi_frame fr, const size_t sub_register
 
 /******* SYS_CFG *******/
 
+// Posible values of the phr_mode field.
+typedef enum {
+    standard = 0b00,
+    long_frames = 0b11
+} phr_mode;
+
 // Structure of the system configuration register.
 typedef struct {
     unsigned int aackpend :1;   // Automatic acknowledgment pending bit control.
@@ -137,7 +143,7 @@ typedef struct {
     unsigned int rxwtoe :1;     // Receive wait timeout enable.
     unsigned int rxm110k :1;    // Receiver mode 110 kbps data rate.
     unsigned int dis_stxp :1;   // Disable smart TX power control.
-    unsigned int phr_mode :2;   // This configuration allows selection of PHR type to be one of two options.
+    phr_mode phr_mode :2;       // This configuration allows selection of PHR type to be one of two options.
     unsigned int fcs_init2f :1; // This bit allows selection of the initial seed value for the FCS generation and checking
                                 // function that is set at the start of each frame transmission and reception.
     unsigned int dis_rsde :1;   // Disable receiver abort on RSD error.
@@ -169,7 +175,7 @@ typedef struct {
 void sys_cfg_formater(spi_frame fr, void *format, const size_t sub_register);
 
 /**
- * @brief Formats a sys_cfg_format structure to a spi_frame.
+ * @brief Unformats a sys_cfg_format structure to a spi_frame.
  *
  * @param[in] format: Structure which contains the values of the fields of the SYS_CFG register.
  * @param[out] fr: spi_frame where this function will store the sys_cfg_format structure.
@@ -262,7 +268,7 @@ typedef enum {
 void tx_fctrl_formater(spi_frame fr, void *format, const size_t sub_register);
 
 /**
- * @brief Formats a tx_fctrl_format structure to a spi_frame.
+ * @brief Unformats a tx_fctrl_format structure to a spi_frame.
  *
  * @param[in] format: Structure which contains the values of the fields of the TX_FCTRL register.
  * @param[out] fr: spi_frame where this function will store the sys_cfg_format structure.
@@ -280,7 +286,7 @@ size_t tx_fctrl_unformater(void *format, spi_frame fr, const size_t sub_register
 #define TX_RX_BUFFER_MAX_SIZE 128
 
 /**
- * @brief Formats an uint8_t* to a spi_frame.
+ * @brief Unformats an uint8_t* to a spi_frame.
  *
  * @param[in] format: Array which contains the values of the fields of the TX_BUFFER register.
  * @param[out] fr: spi_frame where this function will store the array(format).
@@ -314,7 +320,7 @@ size_t tx_buffer_unformater(void *format, spi_frame fr, const size_t sub_registe
 void dx_time_formater(spi_frame fr, void *format, const size_t sub_register);
 
 /**
- * @brief Formats a double to a spi_frame.
+ * @brief Unformats a double to a spi_frame.
  *
  * @param[in] format: Double which contains the values of the fields of the DX_TIME register.
  * @param[out] fr: spi_frame where this function will store the double(format).
@@ -346,7 +352,7 @@ size_t dx_time_unformater(void *format, spi_frame fr, const size_t sub_register)
 void rx_fwto_formater(spi_frame fr, void *format, const size_t sub_register);
 
 /**
- * @brief Formats a double to a spi_frame.
+ * @brief Unformats a double to a spi_frame.
  *
  * @param[in] format: Double which contains the values of the fields of the RX_FWTO register.
  * @param[out] fr: spi_frame where this function will store the double(format).
@@ -385,7 +391,7 @@ typedef struct {
 void tx_ctrl_formater(spi_frame fr, void *format, const size_t sub_register);
 
 /**
- * @brief Formats a sys_ctrl_format structure to a spi_frame.
+ * @brief Unformats a sys_ctrl_format structure to a spi_frame.
  *
  * @param[in] format: Structure which contains the values of the fields of the SYS_CTRL register.
  * @param[out] fr: spi_frame where this function will store the sys_ctrl_format structure.
@@ -445,7 +451,7 @@ typedef struct {
 void sys_evt_msk_formater(spi_frame fr, void *format, const size_t sub_register);
 
 /**
- * @brief Formats a sys_evt_msk_format structure to a spi_frame.
+ * @brief Unformats a sys_evt_msk_format structure to a spi_frame.
  *
  * @param[in] format: Structure which contains the values of the fields of the SYS_MASK register.
  * @param[out] fr: spi_frame where this function will store the sys_evt_msk_format structure.
@@ -517,7 +523,7 @@ typedef struct {
 void sys_evt_sts_formater(spi_frame fr, void *format, const size_t sub_register);
 
 /**
- * @brief Formats a sys_evt_sts_format structure to a spi_frame.
+ * @brief Unformats a sys_evt_sts_format structure to a spi_frame.
  *
  * @param[in] format: Structure which contains the values of the fields of the SYS_STATUS register.
  * @param[out] fr: spi_frame where this function will store the sys_evt_sts_format structure.
@@ -582,7 +588,7 @@ typedef struct {
     uint16_t fp_ampl2;  // First path amplitude point 2.
     uint16_t std_noise; // Standard deviation of noise.
     uint16_t cir_pwr;   // Channel impulse response power.
-    uint16_t pp_ampl3;  // First path amplitude point 3.
+    uint16_t fp_ampl3;  // First path amplitude point 3.
 } rx_fqual_format;
 
 /**
@@ -670,7 +676,7 @@ typedef struct {
                        // LDE algorithm has determined to be the first path.
     uint16_t fp_ampl1; // Reporting the magnitude of the leading edge signal seen in
                        // the accumulator data memory during the LDE algorithm’s analysis.
-    uint64_t rx_rawst; // Reports the Raw Time stamp for the frame.
+    double rx_rawst; // Reports the Raw time stamp for the frame.
 } rx_time_format;
 
 /**
@@ -696,8 +702,260 @@ typedef enum {
 
 // Structure of the transmit time stamp register.
 typedef struct {
-    uint64_t tx_stamp; // Reports the the fully adjusted time of reception.
-    uint64_t tx_rawst; // Reports the Raw Time stamp for the frame.
+    double tx_stamp; // Reports the the fully adjusted time of reception.
+    double tx_rawst; // Reports the Raw Time stamp for the frame.
 } tx_time_format;
+
+/**
+ * @brief Formats a spi_frame to a tx_time_format.
+ *
+ * @param[in] fr: spi_frame to initialize the tx_time_format(format).
+ * @param[out] format: Structure which will contains the spi_frame formatted.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @note: This function must receive a tx_time_format to work.
+ *
+ */
+void tx_time_formater(spi_frame fr, void *format, const size_t sub_register);
+
+/******* TX_ANTD *******/
+
+#define TX_ANTD_LEAST_BIT_VALUE (15.65 * pow(10, -12)) // (seconds)
+#define TX_ANTD_WRAP_PERIOD (TX_ANTD_LEAST_BIT_VALUE * pow(2, 16))
+#define calculate_tx_antd(register_value) register_value * TX_ANTD_LEAST_BIT_VALUE
+#define tx_antd_calculate_register_val(seconds) seconds / TX_ANTD_LEAST_BIT_VALUE
+
+/**
+ * @brief Formats a spi_frame to a double.
+ *
+ * @param[in] fr: spi_frame to initialize the double(format).
+ * @param[out] format: double which will contains the spi_frame formatted.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @note: This function must receive a double to work.
+ *
+ */
+void tx_antd_formater(spi_frame fr, void *format, const size_t sub_register);
+
+/**
+ * @brief Unformats a double to a spi_frame.
+ *
+ * @param[in] format: double which contains the values of the fields of the TX_ANTD register.
+ * @param[out] fr: spi_frame where this function will store the double value.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @return size_t: Size of the spi_frame formed with the given double value.
+ *
+ * @note: This function must receive a double value to work.
+ *
+ */
+size_t tx_antd_unformater(void *format, spi_frame fr, const size_t sub_register);
+
+/******* SYS_STATE *******/
+
+// Possible values of the tx_state field.
+typedef enum {
+    TX_IDLE = 0x0,     // Transmitter is idle.
+    TX_PREAMBLE = 0x1, // Transmitting preamble.
+    TX_SFD = 0x2,      // Transmitting SFD.
+    TX_PHR = 0x3,      // Transmitting PHY Header data.
+    TX_SDE = 0x4,      // Transmitting PHR parity SECDED bits.
+    TX_DATA = 0x5      // Transmitting data block (330 symbols).
+} tx_state_value;
+
+// Possible values of the rx_state field.
+typedef enum {
+    RX_IDLE = 0x00,          // Receiver is in idle.
+    RX_START_ANALOG = 0x01,  // Start analog receiver blocks.
+    RX_RX_RDY = 0x04,        // Receiver ready.
+    RX_PREAMBLE_FND = 0x05,  // Receiver is waiting to detect preamble.
+    RX_PRMBL_TIMEOUT = 0x06, // Preamble timeout.
+    RX_SFD_FND = 0x07,       // SFD found.
+    RX_CNFG_PHR_RX = 0x08,   // Configure for PHR reception.
+    RX_PHR_RX_STRT = 0x09,   // PHR reception started.
+    RX_DATA_RATE_RDY = 0x0A, // Ready for data reception.
+    RX_DATA_RX_SEQ = 0x0C,   // Data reception.
+    RX_CNFG_DATA_RX = 0x0D,  // Configure for data.
+    RX_PHR_NOT_OK = 0x0E,    // PHR error.
+    RX_LAST_SYMBOL = 0x0F,   // Received last symbol.
+    RX_WAIT_RSD_DONE = 0x10, // Wait for Reed Solomon decoder to finish.
+    RX_RSD_OK = 0x11,        // Reed Solomon correct.
+    RX_RSD_NOT_OK = 0x12,    // Reed Solomon error.
+    RX_RECONFIG_110 = 0x13,  // Reconfigure for 110 kbps data.
+    RX_WAIT_110_PHR = 0x14,  // Wait for 110 kbps PHR.
+} rx_state_value;
+
+// Possible values of the psmc_state field.
+typedef enum {
+    INIT = 0x0,    // DW1000 is in init.
+    IDLE = 0x1,    // DW1000 is in idle.
+    TX_WAIT = 0x2, // DW1000 is waiting to start transmitting.
+    RX_WAIT = 0x3, // DW1000 is waiting to enter receive mode.
+    TX = 0x4,      // DW1000 is transmitting.
+    RX = 0x5,      // DW1000 is in receive mode.
+} psmc_state_value;
+
+// Structure of the system status register.
+typedef struct {
+    psmc_state_value pmsc_state; // Current transmit state machine value.
+    rx_state_value rx_state;     // Current receive state machine value.
+    tx_state_value tx_state;     // Current PMSC state machine value.
+} sys_status_format;
+
+/**
+ * @brief Formats a spi_frame to a sys_state_format.
+ *
+ * @param[in] fr: spi_frame to initialize the sys_state_format(format).
+ * @param[out] format: Structure which will contains the spi_frame formatted.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @note: This function must receive a sys_state_format to work.
+ *
+ */
+void sys_state_formater(spi_frame fr, void *format, const size_t sub_register);
+
+/******* ACK_RESP_T *******/
+
+#define W4RTIM_LEAST_BIT_VALUE (1 * pow(10, -6)) // (seconds)
+#define W4RTIM_WRAP_PERIOD (W4RTIM_LEAST_BIT_VALUE * pow(2, 20))
+#define calculate_w4r_tim(register_value) register_value * W4RTIM_LEAST_BIT_VALUE
+#define w4r_tim_calculate_register_val(seconds) seconds / W4RTIM_LEAST_BIT_VALUE
+
+// Structure of the acknowledgment time and response time register.
+typedef struct {
+    uint8_t ack_tim; // Auto-acknowledgment turn-around time.
+    double w4r_tim;  // Wait for response turn-around time.
+} ack_resp_t_format;
+
+/**
+ * @brief Formats a spi_frame to an ack_resp_t_format.
+ *
+ * @param[in] fr: spi_frame to initialize the ack_resp_t_format(format).
+ * @param[out] format: Structure which will contains the spi_frame formatted.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @note: This function must receive an ack_resp_t_format to work.
+ *
+ */
+void ack_resp_t_formater(spi_frame fr, void *format, const size_t sub_register);
+
+/**
+ * @brief Unformats an ack_resp_t_format to a spi_frame.
+ *
+ * @param[in] format: Structure which contains the values of the fields of the ACK_RESP_T register.
+ * @param[out] fr: spi_frame where this function will store the ack_resp_t_format structure.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @return size_t: Size of the spi_frame formed with the given ack_resp_t_format structure.
+ *
+ * @note: This function must receive a ack_resp_t_format value to work.
+ *
+ */
+size_t ack_resp_t_unformater(void *format, spi_frame fr, const size_t sub_register);
+
+/******* RX_SNIFF *******/
+
+#define SNIFF_OFFT_LEAST_BIT_VALUE (1 * pow(10, -6)) // (seconds)
+#define SNIFF_OFFT_WRAP_PERIOD (SNIFF_OFFT_LEAST_BIT_VALUE * pow(2, 4))
+#define calculate_sniff_offt(register_value) register_value * SNIFF_OFFT_LEAST_BIT_VALUE
+#define sniff_offt_calculate_register_val(seconds) seconds / SNIFF_OFFT_LEAST_BIT_VALUE
+
+// Structure of the sniff mode configuration register.
+typedef struct {
+    double sniff_offt;         // Sniff mode off time specified in µs.
+    unsigned int sniff_ont :4; // Auto-acknowledgment turn-around time.
+} rx_sniff_format;
+
+/**
+ * @brief Formats a spi_frame to an rx_sniff_format.
+ *
+ * @param[in] fr: spi_frame to initialize the rx_sniff_format(format).
+ * @param[out] format: Structure which will contains the spi_frame formatted.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @note: This function must receive an rx_sniff_format to work.
+ *
+ */
+void rx_sniff_formater(spi_frame fr, void *format, const size_t sub_register);
+
+/**
+ * @brief Unformats an rx_sniff_format to a spi_frame.
+ *
+ * @param[in] format: Structure which contains the values of the fields of the RX_SNIFF register.
+ * @param[out] fr: spi_frame where this function will store the rx_sniff_format structure.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @return size_t: Size of the spi_frame formed with the given rx_sniff_format structure.
+ *
+ * @note: This function must receive a rx_sniff_format value to work.
+ *
+ */
+size_t rx_sniff_unformater(void *format, spi_frame fr, const size_t sub_register);
+
+/******* TX_POWER *******/
+
+// Structure of the tx power control register.
+// Depending on the value of dis_stxp(SYS_CFG)the meaning of the fields
+// of this register changes. That is why they have generic names.
+typedef struct {         // DIS_STXP = 0 |  DIS_STXP = 1
+                         // -------------|---------------
+    uint8_t field_32_24; //  BOOSTNOMR   | Not applicable
+    uint8_t field_23_16; //  BOOSTP500   |    TXPOWSD
+    uint8_t field_15_8;  //  BOOSTP250   |    TXPOWPHR
+    uint8_t field_7_0;   //  BOOSTP125   | Not applicable
+} tx_power_format;
+
+/**
+ * Legend:
+ *
+ *  DIS_STXP = 0
+ *
+ *   BOOSTNOMR: This is the normal power setting used for frames that do not fall within the data rate and
+ *              frame length criteria required for a boost, i.e. the frame duration is more than 0.5 ms.
+ *
+ *   BOOSTP500: This value sets the power applied to the preamble and data portions of the frame during
+ *              transmission at the 6.8 Mbps data rate for frames that are less than 0.5 ms duration.
+ *
+ *   BOOSTP250: This value sets the power applied to the preamble and data portions of the frame during
+ *              transmission at the 6.8 Mbps data rate for frames that are less than 0.25 ms duration-
+ *
+ *   BOOSTP125: This value sets the power applied to the preamble and data portions of the frame during
+ *              transmission at the 6.8 Mbps data rate for frames that are less than 0.125 ms duration
+ *
+ *  DIS_STXP = 1
+ *
+ *   TXPOWSD: This power setting is applied during the transmission of the PHY header (PHR) portion of
+ *            the frame.
+ *
+ *   TXPOWSD:  This power setting is applied during the transmission of the synchronisation header (SHR)
+ *             and data portions of the frame.
+ *
+ */
+
+/**
+ * @brief Formats a spi_frame to an tx_power_format.
+ *
+ * @param[in] fr: spi_frame to initialize the tx_power_format(format).
+ * @param[out] format: Structure which will contains the spi_frame formatted.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @note: This function must receive an tx_power_format to work.
+ *
+ */
+void tx_power_formater(spi_frame fr, void *format, const size_t sub_register);
+
+/**
+ * @brief Unformats an tx_power_format to a spi_frame.
+ *
+ * @param[in] format: Structure which contains the values of the fields of the TX_POWER register.
+ * @param[out] fr: spi_frame where this function will store the tx_power_format structure.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @return size_t: Size of the spi_frame formed with the given tx_power_format structure.
+ *
+ * @note: This function must receive a tx_power_format value to work.
+ *
+ */
+size_t tx_power_unformater(void *format, spi_frame fr, const size_t sub_register);
 
 #endif // _FORMAT_H_

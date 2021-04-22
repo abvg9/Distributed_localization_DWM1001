@@ -221,7 +221,7 @@ size_t tx_buffer_unformater(void *format, spi_frame fr, const size_t sub_registe
 
 void dx_time_formater(spi_frame fr, void *format, const size_t sub_register) {
 
-    uint64_t register_value  = (uint16_t) fr[1] << 8 | (uint32_t) fr[2] << 16
+    const uint64_t register_value  = (uint16_t) fr[1] << 8 | (uint32_t) fr[2] << 16
             | (uint32_t) fr[3] << 24 | (uint64_t) fr[4] << 32;
 
     double* seconds = ((double*) format);
@@ -232,7 +232,7 @@ void dx_time_formater(spi_frame fr, void *format, const size_t sub_register) {
 size_t dx_time_unformater(void *format, spi_frame fr, const size_t sub_register) {
 
     double* seconds = ((double*) format);
-    uint64_t reg_value = dtr_calculate_register_val(*seconds);
+    const uint64_t reg_value = dtr_calculate_register_val(*seconds);
 
     fr[4] = (reg_value & 0xFF00000000) >> 32;
     fr[3] = (reg_value & 0x00FF000000) >> 24;
@@ -531,13 +531,14 @@ void rx_fqual_formater(spi_frame fr, void *format, const size_t sub_register) {
     } else if(sub_register == CIR_PWR_PP_AMPL3) {
 
         rx_fqual_f->cir_pwr = ((uint16_t)fr[3] << 8) | fr[2];
-        rx_fqual_f->pp_ampl3 = ((uint16_t)fr[1] << 8) | fr[0];
+        rx_fqual_f->fp_ampl3 = ((uint16_t)fr[1] << 8) | fr[0];
     }
 }
 
 void rx_ttcki_formater(spi_frame fr, void *format, const size_t sub_register) {
 
     rx_ttcki_value* rx_ttcki = (rx_ttcki_value*) format;
+
     *rx_ttcki = (((uint32_t)fr[3]) << 24) | (((uint32_t)fr[2]) << 16) | (((uint32_t)fr[1]) << 8) | fr[0];
 
 }
@@ -560,8 +561,9 @@ void rx_time_formater(spi_frame fr, void *format, const size_t sub_register) {
 
     if(sub_register == RX_TIME_OCT_0_TO_3) {
 
-        rx_time_f->rx_stamp = calculate_stamp( ((((uint32_t)fr[3]) << 24) | (((uint32_t)fr[2]) << 16) |
-                (((uint16_t)fr[1]) << 8) | fr[0]) );
+        const uint32_t rx_stamp_low_bits = (((uint32_t)fr[3]) << 24) | (((uint32_t)fr[2]) << 16) |
+                (((uint16_t)fr[1]) << 8) | fr[0];
+        rx_time_f->rx_stamp = calculate_stamp(rx_stamp_low_bits);
 
     } else if(sub_register == RX_TIME_OCT_4_TO_7) {
 
@@ -569,18 +571,155 @@ void rx_time_formater(spi_frame fr, void *format, const size_t sub_register) {
 
         rx_time_f->fp_index = (((uint16_t)fr[2]) << 8) | fr[1];
 
-        rx_time_f->rx_stamp += calculate_stamp( ((uint64_t)fr[0] << 32));
+        const uint64_t rx_stamp_high_bits = ((uint64_t)fr[0] << 32);
+        rx_time_f->rx_stamp += calculate_stamp(rx_stamp_high_bits);
 
     } else if(sub_register == RX_TIME_OCT_8_TO_11) {
 
-        rx_time_f->rx_rawst = (((uint32_t)fr[3]) << 16) | (((uint16_t)fr[2]) << 8) | fr[1];
+        const uint32_t rx_rawst_low_bits = (((uint32_t)fr[3]) << 16) | (((uint16_t)fr[2]) << 8) | fr[1];
+        rx_time_f->rx_rawst = str_calculate_seconds(rx_rawst_low_bits);
 
         rx_time_f->fp_ampl1 |= ((uint16_t)fr[0]) << 8;
 
     } else if(sub_register == RX_TIME_OCT_12_TO_13) {
 
-        rx_time_f->rx_rawst |= ((uint64_t)fr[1] << 32) | ((uint32_t)fr[0] << 24);
+        const uint64_t rx_rawst_high_bits = ((uint64_t)fr[1] << 32) | ((uint32_t)fr[0] << 24);
+        rx_time_f->rx_rawst += str_calculate_seconds(rx_rawst_high_bits);
 
     }
 
+}
+
+void tx_time_formater(spi_frame fr, void *format, const size_t sub_register) {
+
+    tx_time_format* tx_time_f = (tx_time_format*) format;
+
+    if(sub_register == TX_TIME_OCT_0_TO_3) {
+
+        const uint32_t tx_stamp_low_bits = (((uint32_t)fr[3]) << 24) | (((uint32_t)fr[2]) << 16) |
+                (((uint16_t)fr[1]) << 8) | fr[0];
+        tx_time_f->tx_stamp = calculate_stamp(tx_stamp_low_bits);
+
+    } else if(sub_register == TX_TIME_OCT_4_TO_7) {
+
+        const uint32_t tx_rawst_low_bits = (((uint32_t)fr[3]) << 16) | (((uint16_t)fr[2]) << 8) | fr[1];
+        tx_time_f->tx_rawst =  str_calculate_seconds(tx_rawst_low_bits);
+
+        const uint64_t tx_stamp_high_bits = ((uint64_t)fr[0]) << 32;
+        tx_time_f->tx_stamp += calculate_stamp(tx_stamp_high_bits);
+
+    } else if(sub_register == TX_TIME_OCT_8_TO_9) {
+
+        const uint64_t tx_rawst_high_bits = (((uint64_t)fr[1]) << 32) | (((uint32_t)fr[0]) << 24);
+        tx_time_f->tx_rawst += str_calculate_seconds(tx_rawst_high_bits);
+
+    }
+
+}
+
+void tx_antd_formater(spi_frame fr, void *format, const size_t sub_register) {
+
+    uint16_t register_value  = ((uint16_t)fr[1]) << 8 | fr[0];
+
+    double* seconds = (double*) format;
+    *seconds = calculate_tx_antd(register_value);
+
+}
+
+size_t tx_antd_unformater(void *format, spi_frame fr, const size_t sub_register) {
+
+    double* seconds = ((double*) format);
+    const uint16_t reg_value = tx_antd_calculate_register_val(*seconds);
+
+    fr[1] = (reg_value & 0xFF00) >> 8;
+    fr[0] = reg_value & 0xFF;
+
+    return 2;
+}
+
+void sys_state_formater(spi_frame fr, void *format, const size_t sub_register) {
+
+    sys_status_format* sys_status_f = (sys_status_format*) format;
+
+    sys_status_f->pmsc_state = fr[2] & 0b00001111;
+    sys_status_f->rx_state = fr[1] & 0b00011111;
+    sys_status_f->tx_state = fr[0] & 0b00001111;
+
+}
+
+void ack_resp_t_formater(spi_frame fr, void *format, const size_t sub_register) {
+
+    ack_resp_t_format* ack_resp_t_f = (ack_resp_t_format*)format;
+
+    ack_resp_t_f->ack_tim = fr[3];
+
+    const uint32_t register_value = ((uint32_t)(fr[2] & 0b00001111) << 16) |
+            ((uint16_t)(fr[1]) << 8) | fr[0];
+    ack_resp_t_f->w4r_tim = calculate_w4r_tim(register_value);
+
+}
+
+size_t ack_resp_t_unformater(void *format, spi_frame fr, const size_t sub_register) {
+
+    ack_resp_t_format* ack_resp_t_f = (ack_resp_t_format*)format;
+
+    fr[3] = ack_resp_t_f->ack_tim;
+
+    const uint32_t reg_value = w4r_tim_calculate_register_val(ack_resp_t_f->w4r_tim);
+
+    fr[2] = (reg_value & 0b11110000000000000000) >> 16;
+
+    fr[1] = (reg_value & 0b00001111111100000000) >> 8;
+
+    fr[0] = reg_value & 0b00000000000011111111;
+
+    return 4;
+}
+
+void rx_sniff_formater(spi_frame fr, void *format, const size_t sub_register) {
+
+    rx_sniff_format* rx_sniff_f = (rx_sniff_format*)format;
+
+    rx_sniff_f->sniff_offt = calculate_sniff_offt(fr[1]);
+
+    rx_sniff_f->sniff_ont = fr[0] & 0b00001111;
+
+}
+
+size_t rx_sniff_unformater(void *format, spi_frame fr, const size_t sub_register) {
+
+    rx_sniff_format* rx_sniff_f = (rx_sniff_format*)format;
+
+    fr[3] = 0;
+
+    fr[2] = 0;
+
+    fr[1] = sniff_offt_calculate_register_val(rx_sniff_f->sniff_offt);
+
+    fr[0] = rx_sniff_f->sniff_ont;
+
+    return 4;
+}
+
+void tx_power_formater(spi_frame fr, void *format, const size_t sub_register) {
+
+    tx_power_format* tx_power_f = (tx_power_format*)format;
+
+    tx_power_f->field_32_24 = fr[3];
+    tx_power_f->field_23_16 = fr[2];
+    tx_power_f->field_15_8 = fr[1];
+    tx_power_f->field_7_0 = fr[0];
+
+}
+
+size_t tx_power_unformater(void *format, spi_frame fr, const size_t sub_register) {
+
+    tx_power_format* tx_power_f = (tx_power_format*)format;
+
+    fr[3] = tx_power_f->field_32_24;
+    fr[2] = tx_power_f->field_23_16;
+    fr[1] = tx_power_f->field_15_8;
+    fr[0] = tx_power_f->field_7_0;
+
+    return 4;
 }
