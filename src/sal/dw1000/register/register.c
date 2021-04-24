@@ -44,7 +44,7 @@ typedef struct {
 #define RESERVED_REGISTER {0U, RE, NULL, NULL}
 
 // Structure which contains all the registers information of the dw1000.
-const command COMMAND_PANEL[] = {
+const command COMMAND_MAP[] = {
         {4U, RO, dev_id_formater, NULL},                        // DEV_ID
         {8U, RW, eui_formater, eui_unformater},                 // EUI
         RESERVED_REGISTER,                                      // RESERVED_1
@@ -74,8 +74,12 @@ const command COMMAND_PANEL[] = {
         {4U, RW, ack_resp_t_formater, ack_resp_t_unformater},   // ACK_RESP_T
         RESERVED_REGISTER,                                      // RESERVED_6
         RESERVED_REGISTER,                                      // RESERVED_7
-        {4U, RW, rx_sniff_formater, rx_sniff_unformater},       // RX_SNIFF
+        {2U, RW, rx_sniff_formater, rx_sniff_unformater},       // RX_SNIFF
         {4U, RW, tx_power_formater, tx_power_unformater},       // TX_POWER
+        {4U, RW, chan_ctrl_formater, chan_ctrl_unformater},     // CHAN_CTRL
+        RESERVED_REGISTER,                                      // RESERVED_8
+        {4U, RW, usr_sfd_formater, usr_sfd_unformater},         // USR_SFD
+        {4U, RW, agc_ctrl_formater, agc_ctrl_unformater},       // AGC_CTRL
 };
 
 /**
@@ -89,7 +93,7 @@ const command COMMAND_PANEL[] = {
  */
 bool is_access_permission_valid(const register_id id, const bool read) {
 
-    switch(COMMAND_PANEL[id].ra) {
+    switch(COMMAND_MAP[id].ra) {
         case RO:
             return read;
         case WO:
@@ -195,7 +199,7 @@ bool dw_read_reg(const register_id reg_id, const size_t offset, void* parsed_reg
 
     if(spi_header_size > 0) {
 
-        command c = COMMAND_PANEL[reg_id];
+        command c = COMMAND_MAP[reg_id];
 
         uint8_t rx[c.rx_buf_size];
 
@@ -233,7 +237,7 @@ bool dw_write_reg(const register_id reg_id, const size_t offset, void* parsed_re
 
     if(spi_header_size > 0) {
 
-        command c = COMMAND_PANEL[reg_id];
+        command c = COMMAND_MAP[reg_id];
 
         uint8_t data[c.rx_buf_size];
         size_t data_size = c.unformater(parsed_reg, data, offset);
@@ -302,6 +306,7 @@ bool set_tx_fctrl(tx_fctrl_format* tx_fctrl_f) {
            dw_write_reg(TX_FCTRL, IFSDELAY, (void*) tx_fctrl_f);
 }
 
+
 bool set_tx_buffer(uwb_frame frame, const uint16_t frame_size) {
 
     const uint16_t offset = TX_RX_BUFFER_MAX_SIZE - frame_size;
@@ -315,53 +320,65 @@ bool set_tx_buffer(uwb_frame frame, const uint16_t frame_size) {
 
 }
 
+
 bool get_dx_time(double* seconds) {
     return dw_read_reg(DX_TIME, 0, (void*) seconds);
 }
+
 
 bool set_dx_time(double* seconds) {
     return (*seconds <= DTR_COUNTER_WRAP_PERIOD) &&
            (*seconds >= 0.0) && dw_write_reg(DX_TIME, 0, (void*) seconds);
 }
 
+
 bool get_rx_fwto(double* seconds) {
     return dw_read_reg(RX_FWTO, 0, (void*) seconds);
 }
+
 
 bool set_rx_fwto(double* seconds) {
     return (*seconds <= RFR_COUNTER_WRAP_PERIOD) &&
            (*seconds >= 0.0) && dw_write_reg(RX_FWTO, 0, (void*) seconds);
 }
 
+
 bool get_sys_ctrl(sys_ctrl_format* sys_ctrl_f) {
     return dw_read_reg(SYS_CTRL, 0, (void*) sys_ctrl_f);
 }
+
 
 bool set_sys_ctrl(sys_ctrl_format* sys_ctrl_f) {
     return dw_write_reg(SYS_CTRL, 0, (void*) sys_ctrl_f);
 }
 
+
 bool get_sys_event_msk(sys_evt_msk_format* sys_evt_msk_f) {
     return dw_read_reg(SYS_MASK, 0, (void*) sys_evt_msk_f);
 }
 
+
 bool set_sys_event_msk(sys_evt_msk_format* sys_evt_msk_f) {
     return dw_write_reg(SYS_MASK, 0, (void*) sys_evt_msk_f);
 }
+
 
 bool get_sys_event_sts(sys_evt_sts_format* sys_evt_sts_f) {
     return dw_read_reg(SYS_STATUS, SES_OCT_0_TO_3, (void*) sys_evt_sts_f) &&
            dw_read_reg(SYS_STATUS, SES_OCT_4, (void*) sys_evt_sts_f);
 }
 
+
 bool set_sys_event_sts(sys_evt_sts_format* sys_evt_sts_f) {
     return dw_write_reg(SYS_STATUS, SES_OCT_0_TO_3, (void*) sys_evt_sts_f) &&
            dw_write_reg(SYS_STATUS, SES_OCT_4, (void*) sys_evt_sts_f);
 }
 
+
 bool get_rx_finfo(rx_finfo_format* rx_finfo_f) {
     return dw_read_reg(RX_FINFO, 0, (void*) rx_finfo_f);
 }
+
 
 bool get_rx_buffer(uwb_frame frame, const uint16_t frame_size) {
 
@@ -375,19 +392,23 @@ bool get_rx_buffer(uwb_frame frame, const uint16_t frame_size) {
     return ret;
 }
 
+
 bool get_rx_fqual(rx_fqual_format* rx_fqual_f) {
     return dw_read_reg(RX_FQUAL, FP_AMPL2_STD_NOISE, (void*) rx_fqual_f) &&
            dw_read_reg(RX_FQUAL, CIR_PWR_PP_AMPL3, (void*) rx_fqual_f);
 }
 
+
 bool get_rx_ttcki(rx_ttcki_value* rx_ttcki) {
     return dw_read_reg(RX_TTCKI, 0, (void*) rx_ttcki);
 }
+
 
 bool get_rx_ttcko(rx_ttcko_format* rx_ttcko_f) {
     return dw_read_reg(RX_TTCKO, RX_TTCKO_OCT_0_TO_3, (void*) rx_ttcko_f) &&
            dw_read_reg(RX_TTCKO, RX_TTCKO_OCT_4, (void*) rx_ttcko_f) ;
 }
+
 
 bool get_rx_time(rx_time_format* rx_time_f) {
     return dw_read_reg(RX_TIME, RX_TIME_OCT_0_TO_3, (void*) rx_time_f) &&
@@ -396,28 +417,34 @@ bool get_rx_time(rx_time_format* rx_time_f) {
            dw_read_reg(RX_TIME, RX_TIME_OCT_12_TO_13, (void*) rx_time_f);
 }
 
+
 bool get_tx_time(tx_time_format* tx_time_f) {
     return dw_read_reg(TX_TIME, TX_TIME_OCT_0_TO_3, (void*) tx_time_f) &&
            dw_read_reg(TX_TIME, TX_TIME_OCT_4_TO_7, (void*) tx_time_f) &&
            dw_read_reg(TX_TIME, TX_TIME_OCT_8_TO_9, (void*) tx_time_f);
 }
 
+
 bool get_tx_antd(double* seconds) {
     return dw_read_reg(TX_ANTD, 0, (void*) seconds);
 }
+
 
 bool set_tx_antd(double* seconds) {
     return (*seconds <= TX_ANTD_WRAP_PERIOD) &&
            (*seconds >= 0.0) && dw_write_reg(TX_ANTD, 0, (void*) seconds);
 }
 
+
 bool get_sys_status(sys_status_format* sys_status_f) {
     return dw_read_reg(SYS_STATUS, 0, (void*) sys_status_f);
 }
 
+
 bool get_ack_resp_t(ack_resp_t_format* ack_resp_t_f) {
     return dw_read_reg(ACK_RESP_T, 0, (void*) ack_resp_t_f);
 }
+
 
 bool set_ack_resp_t(ack_resp_t_format* ack_resp_t_f) {
     return (ack_resp_t_f->w4r_tim <= W4RTIM_WRAP_PERIOD) &&
@@ -425,9 +452,11 @@ bool set_ack_resp_t(ack_resp_t_format* ack_resp_t_f) {
            dw_write_reg(ACK_RESP_T, 0, (void*) ack_resp_t_f);
 }
 
+
 bool get_rx_sniff(rx_sniff_format* rx_sniff_f) {
     return dw_read_reg(RX_SNIFF, 0, (void*) rx_sniff_f);
 }
+
 
 bool set_rx_sniff(rx_sniff_format* rx_sniff_f) {
     return (rx_sniff_f->sniff_offt <= SNIFF_OFFT_WRAP_PERIOD) &&
@@ -435,10 +464,52 @@ bool set_rx_sniff(rx_sniff_format* rx_sniff_f) {
            dw_write_reg(RX_SNIFF, 0, (void*) rx_sniff_f);
 }
 
+
 bool get_tx_power(tx_power_format* tx_power_f) {
     return dw_read_reg(TX_POWER, 0, (void*) tx_power_f);
 }
 
+
 bool set_tx_power(tx_power_format* tx_power_f) {
     return dw_write_reg(TX_POWER, 0, (void*) tx_power_f);
+}
+
+
+bool get_chan_ctrl_power(chan_ctrl_format* chan_ctrl_f) {
+    return dw_read_reg(CHAN_CTRL, 0, (void*) chan_ctrl_f);
+}
+
+
+bool set_chan_ctrl_power(chan_ctrl_format* chan_ctrl_f) {
+    return dw_write_reg(CHAN_CTRL, 0, (void*) chan_ctrl_f);
+}
+
+
+bool get_usr_sfd(usr_sfd_format* usr_sfd_f) {
+    return dw_read_reg(USR_SFD, USR_SFD_OCT_0_TO_3, (void*) usr_sfd_f) &&
+           dw_read_reg(USR_SFD, USR_SFD_OCT_4_TO_7, (void*) usr_sfd_f) &&
+           dw_read_reg(USR_SFD, USR_SFD_OCT_8_TO_11, (void*) usr_sfd_f) &&
+           dw_read_reg(USR_SFD, USR_SFD_OCT_12_TO_15, (void*) usr_sfd_f) &&
+           dw_read_reg(USR_SFD, USR_SFD_OCT_16_TO_19, (void*) usr_sfd_f) &&
+           dw_read_reg(USR_SFD, USR_SFD_OCT_20_TO_23, (void*) usr_sfd_f) &&
+           dw_read_reg(USR_SFD, USR_SFD_OCT_24_TO_27, (void*) usr_sfd_f) &&
+           dw_read_reg(USR_SFD, USR_SFD_OCT_28_TO_31, (void*) usr_sfd_f) &&
+           dw_read_reg(USR_SFD, USR_SFD_OCT_32_TO_35, (void*) usr_sfd_f) &&
+           dw_read_reg(USR_SFD, USR_SFD_OCT_36_TO_39, (void*) usr_sfd_f) &&
+           dw_read_reg(USR_SFD, USR_SFD_OCT_40_TO_41, (void*) usr_sfd_f);
+}
+
+
+bool set_usr_sfd(usr_sfd_format* usr_sfd_f) {
+    return dw_write_reg(USR_SFD, USR_SFD_OCT_0_TO_3, (void*) usr_sfd_f) &&
+           dw_write_reg(USR_SFD, USR_SFD_OCT_4_TO_7, (void*) usr_sfd_f) &&
+           dw_write_reg(USR_SFD, USR_SFD_OCT_8_TO_11, (void*) usr_sfd_f) &&
+           dw_write_reg(USR_SFD, USR_SFD_OCT_12_TO_15, (void*) usr_sfd_f) &&
+           dw_write_reg(USR_SFD, USR_SFD_OCT_16_TO_19, (void*) usr_sfd_f) &&
+           dw_write_reg(USR_SFD, USR_SFD_OCT_20_TO_23, (void*) usr_sfd_f) &&
+           dw_write_reg(USR_SFD, USR_SFD_OCT_24_TO_27, (void*) usr_sfd_f) &&
+           dw_write_reg(USR_SFD, USR_SFD_OCT_28_TO_31, (void*) usr_sfd_f) &&
+           dw_write_reg(USR_SFD, USR_SFD_OCT_32_TO_35, (void*) usr_sfd_f) &&
+           dw_write_reg(USR_SFD, USR_SFD_OCT_36_TO_39, (void*) usr_sfd_f) &&
+           dw_write_reg(USR_SFD, USR_SFD_OCT_40_TO_41, (void*) usr_sfd_f);
 }

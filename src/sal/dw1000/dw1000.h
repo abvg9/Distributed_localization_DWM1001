@@ -40,32 +40,54 @@ double calculate_clock_offset(const rx_ttcko_format rx_ttcko_f, const rx_ttcki_v
 /**
  * @brief Calculates the estimated signal power of a received message.
  *
- * @param[in] rx_fqual_format: Structure which contains the fp_ampl2 and fp_ampl3 values.
- * @param[in] rx_finfo_format: Structure which contains the rxpacc and rxprfr values.
+ * @param[in] rx_fqual_f: Structure which contains the fp_ampl2 and fp_ampl3 values.
+ * @param[in] rx_finfo_f: Structure which contains the rxpacc and rxprfr values.
+ * @param[in] usr_sfd_f: Structure which contains the the sfd_length value(SFD symbol count).
  *
- * @note: Estimated power level = 10 * log10( cir_pwr * 2¹⁷/ rxpacc) - rxprfr
+ * @note: Estimated power level = 10 * log10( cir_pwr * 2¹⁷/ rxpacc-sfd_length) - rxprfr
  * @note: This function may be used to check the deviation of the calculate_signal_power()
  *        function.
  *
  * @return double: Estimated signal power in units of dBm.
  *
  */
-double calculate_estimated_signal_power(const rx_fqual_format, const rx_finfo_format);
+double calculate_estimated_signal_power(const rx_fqual_format rx_fqual_f,
+        const rx_finfo_format rx_finfo_f, const usr_sfd_format usr_sfd_f);
+
+/**
+ * @brief Calculates the noise energy level.
+ *
+ * @param[in] agc_ctrl_f: Structure which contains the edv2 and edg1 values.
+ * @param[in] chan_ctrl_f: Structure which contains the ch value.
+ *
+ * @note: Noise energy level = (EVD2 - 40) * 10^EDG1 * S
+ * @note: if ch = 1 to 4 => S = 1.3335
+ *           ch = 5 or 7 => S = 1.0000
+ *
+ * @note: This function does not give an absolute level but instead gives a relative level that allows
+ *        comparison between channels in order to select the channel with least noise.
+ *
+ * @return double: Estimated noise energy level.
+ *
+ */
+double calculate_noise_energy_level(const agc_ctrl_format agc_ctrl_f, const chan_ctrl_format chan_ctrl_f);
 
 /**
  * @brief Calculates the signal power of the received message.
  *
- * @param[in] rxt: Structure which contains the fp_ampl1 value.
- * @param[in] rxfq: Structure which contains the fp_ampl2 and fp_ampl3 values.
- * @param[in] rxfi: Structure which contains the rxpacc and rxprfr values.
+ * @param[in] rx_time_f: Structure which contains the fp_ampl1 value.
+ * @param[in] rx_fqual_f: Structure which contains the fp_ampl2 and fp_ampl3 values.
+ * @param[in] rx_finfo_f: Structure which contains the rxpacc and rxprfr values.
+ * @param[in] usr_sfd_f: Structure which contains the sfd_length value(SFD symbol count).
  *
- * @note: Power level = 10 * log10( (fp_ampl1² + fp_ampl2² + fp_ampl3²)/ rxpacc) - rxprfr
+ * @note: Power level = 10 * log10( (fp_ampl1² + fp_ampl2² + fp_ampl3²)/ rxpacc-sfd_length) - rxprfr
  * @note: The resultant power level may be compared with the estimated signal power.
  *
  * @return double: Signal power in units of dBm.
  *
  */
-double calculate_signal_power(const rx_time_format rxt, const rx_fqual_format rxfq, const rx_finfo_format rxfi);
+double calculate_signal_power(const rx_time_format rx_time_f, const rx_fqual_format rx_fqual_f,
+        const rx_finfo_format rx_finfo_f, const usr_sfd_format usr_sfd_f);
 
 /**
  * @brief Disables SPI driver and turn off the dwm1000.

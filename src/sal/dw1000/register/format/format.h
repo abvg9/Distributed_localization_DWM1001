@@ -894,15 +894,69 @@ size_t rx_sniff_unformater(void *format, spi_frame fr, const size_t sub_register
 
 /******* TX_POWER *******/
 
+// Possible values of the coarse_da field.
+typedef enum {
+    COARSE_DA_DB_GAIN_15,
+    COARSE_DA_DB_GAIN_12_5,
+    COARSE_DA_DB_GAIN_10,
+    COARSE_DA_DB_GAIN_7_5,
+    COARSE_DA_DB_GAIN_5,
+    COARSE_DA_DB_GAIN_2_5,
+    COARSE_DA_DB_GAIN_0,
+    COARSE_DA_DB_GAIN_OFF,
+} coarse_da_value;
+
+// Possible values of the finer_mixer field.
+typedef enum {
+    FINER_MIXER_DB_GAIN_0,
+    FINER_MIXER_DB_GAIN_0_5,
+    FINER_MIXER_DB_GAIN_1,
+    FINER_MIXER_DB_GAIN_1_5,
+    FINER_MIXER_DB_GAIN_2,
+    FINER_MIXER_DB_GAIN_2_5,
+    FINER_MIXER_DB_GAIN_3,
+    FINER_MIXER_DB_GAIN_3_5,
+    FINER_MIXER_DB_GAIN_4,
+    FINER_MIXER_DB_GAIN_4_5,
+    FINER_MIXER_DB_GAIN_5,
+    FINER_MIXER_DB_GAIN_5_5,
+    FINER_MIXER_DB_GAIN_6,
+    FINER_MIXER_DB_GAIN_6_5,
+    FINER_MIXER_DB_GAIN_7,
+    FINER_MIXER_DB_GAIN_7_5,
+    FINER_MIXER_DB_GAIN_8,
+    FINER_MIXER_DB_GAIN_8_5,
+    FINER_MIXER_DB_GAIN_9,
+    FINER_MIXER_DB_GAIN_9_5,
+    FINER_MIXER_DB_GAIN_10,
+    FINER_MIXER_DB_GAIN_10_5,
+    FINER_MIXER_DB_GAIN_11,
+    FINER_MIXER_DB_GAIN_11_5,
+    FINER_MIXER_DB_GAIN_12,
+    FINER_MIXER_DB_GAIN_12_5,
+    FINER_MIXER_DB_GAIN_13,
+    FINER_MIXER_DB_GAIN_13_5,
+    FINER_MIXER_DB_GAIN_14,
+    FINER_MIXER_DB_GAIN_14_5,
+    FINER_MIXER_DB_GAIN_15,
+    FINER_MIXER_DB_GAIN_15_5,
+} finer_mixer_value;
+
+// Fields of the tx_power register.
+typedef struct {
+    coarse_da_value coarse_da_setting;
+    finer_mixer_value fine_mixer_setting;
+} tx_power_field;
+
 // Structure of the tx power control register.
 // Depending on the value of dis_stxp(SYS_CFG)the meaning of the fields
 // of this register changes. That is why they have generic names.
-typedef struct {         // DIS_STXP = 0 |  DIS_STXP = 1
-                         // -------------|---------------
-    uint8_t field_32_24; //  BOOSTNOMR   | Not applicable
-    uint8_t field_23_16; //  BOOSTP500   |    TXPOWSD
-    uint8_t field_15_8;  //  BOOSTP250   |    TXPOWPHR
-    uint8_t field_7_0;   //  BOOSTP125   | Not applicable
+typedef struct {                // DIS_STXP = 0 |  DIS_STXP = 1
+                                // -------------|---------------
+    tx_power_field field_32_24; //  BOOSTNOMR   | Not applicable
+    tx_power_field field_23_16; //  BOOSTP500   |    TXPOWSD
+    tx_power_field field_15_8;  //  BOOSTP250   |    TXPOWPHR
+    tx_power_field field_7_0;   //  BOOSTP125   | Not applicable
 } tx_power_format;
 
 /**
@@ -927,7 +981,7 @@ typedef struct {         // DIS_STXP = 0 |  DIS_STXP = 1
  *   TXPOWSD: This power setting is applied during the transmission of the PHY header (PHR) portion of
  *            the frame.
  *
- *   TXPOWSD:  This power setting is applied during the transmission of the synchronisation header (SHR)
+ *   TXPOWSD: This power setting is applied during the transmission of the synchronisation header (SHR)
  *             and data portions of the frame.
  *
  */
@@ -957,5 +1011,233 @@ void tx_power_formater(spi_frame fr, void *format, const size_t sub_register);
  *
  */
 size_t tx_power_unformater(void *format, spi_frame fr, const size_t sub_register);
+
+/******* CHAN_CTRL *******/
+
+// Possibles values of the rx_chan and tx_chan fields.
+typedef enum {
+    CH1 = 1,
+    CH2 = 2,
+    CH3 = 3,
+    CH4 = 4,
+    CH5 = 5,
+    CH7 = 7
+} channel;
+
+// Structure of the channel control register.
+typedef struct {
+    unsigned int rx_pcode :5;                      // This field selects the preamble code used in the receiver.
+    unsigned int tx_pcode :5;                      // This field selects the preamble code used in the transmitter.
+    unsigned int rnssfd :1;                        // This bit enables the use of a user specified (non-standard) SFD in the receiver.
+    unsigned int tnssfd :1;                        // This bit enables the use of a user specified (non-standard) SFD in the transmitter.
+    transmit_receive_pulse_repetition_freq rxprf;  // This two bit field selects the PRF used in the receiver.
+    unsigned int dwsfd :1;                         // This bit enables a non-standard decawave proprietary SFD sequence.
+    channel rx_chan :4;                            // This selects the receive channel.
+    channel tx_chan :4;                            // This selects the transmit channel.
+} chan_ctrl_format;
+
+/**
+ * @brief Formats a spi_frame to an chan_ctrl_format.
+ *
+ * @param[in] fr: spi_frame to initialize the chan_ctrl_format(format).
+ * @param[out] format: Structure which will contains the spi_frame formatted.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @note: This function must receive an chan_ctrl_format to work.
+ *
+ */
+void chan_ctrl_formater(spi_frame fr, void *format, const size_t sub_register);
+
+/**
+ * @brief Unformats an chan_ctrl_format to a spi_frame.
+ *
+ * @param[in] format: Structure which contains the values of the fields of the CHAN_CTRL register.
+ * @param[out] fr: spi_frame where this function will store the chan_ctrl_format structure.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @return size_t: Size of the spi_frame formed with the given chan_ctrl_format structure.
+ *
+ * @note: This function must receive a chan_ctrl_format value to work.
+ *
+ */
+size_t chan_ctrl_unformater(void *format, spi_frame fr, const size_t sub_register);
+
+/******* USR_SFD *******/
+
+// Sub-registers of the user-specified short/long TX/RX SFD sequences register.
+typedef enum {
+    USR_SFD_OCT_0_TO_3 = 0,
+    USR_SFD_OCT_4_TO_7 = 0X04,
+    USR_SFD_OCT_8_TO_11 = 0X08,
+    USR_SFD_OCT_12_TO_15 = 0X0C,
+    USR_SFD_OCT_16_TO_19 = 0X10,
+    USR_SFD_OCT_20_TO_23 = 0X14,
+    USR_SFD_OCT_24_TO_27 = 0X18,
+    USR_SFD_OCT_28_TO_31 = 0X1C,
+    USR_SFD_OCT_32_TO_35 = 0X20,
+    USR_SFD_OCT_36_TO_39 = 0X24,
+    USR_SFD_OCT_40_TO_41 = 0X28,
+} usr_sfd_subregister;
+
+// Structure of the user-specified short/long TX/RX SFD sequences register.
+typedef struct {
+    uint8_t rx_lsfd_sgn7; // This field sets the long (64-symbol) SFD polarity data for the receive SFD
+                          // sequence, for symbol intervals 63 to 56.
+    uint8_t rx_lsfd_sgn6; // This field sets the long (64-symbol) SFD polarity data for the transmitted SFD
+                          // sequence, for symbol intervals 55 to 48.
+    uint8_t rx_lsfd_sgn5; // This field sets the long (64-symbol) SFD polarity data for the receive SFD
+                          // sequence, for symbol intervals 47 to 40.
+    uint8_t rx_lsfd_sgn4; // This field sets the long (64-symbol) SFD polarity data for the receive SFD
+                          // sequence, for symbol intervals 39 to 32.
+    uint8_t rx_lsfd_sgn3; // This field sets the long (64-symbol) SFD polarity data for the receive SFD
+                          // sequence, for symbol intervals 31 to 24.
+    uint8_t rx_lsfd_sgn2; // This field sets the long (64-symbol) SFD polarity data for the receive SFD
+                          // sequence, for symbol intervals 23 to 16.
+    uint8_t rx_lsfd_sgn1; // This field sets the long (64-symbol) SFD polarity data for the receive SFD
+                          // sequence, for symbol intervals 15 to 8.
+    uint8_t rx_lsfd_sgn0; // This field sets the long (64-symbol) SFD polarity data for the receive SFD
+                          // sequence.
+    uint8_t rx_lsfd_mag7; // This field sets the long (64-symbol) SFD magnitude data for the receive SFD
+                          // sequence, for symbol intervals 63 to 56.
+    uint8_t rx_lsfd_mag6; // This field sets the long (64-symbol) SFD magnitude data for the receive SFD
+                          // sequence, for symbol intervals 55 to 48.
+    uint8_t rx_lsfd_mag5; // This field sets the long (64-symbol) SFD magnitude data for the receive SFD
+                          // sequence, for symbol intervals 47 to 40.
+    uint8_t rx_lsfd_mag4; // This field sets the long (64-symbol) SFD magnitude data for the receive SFD
+                          // sequence, for symbol intervals 39 to 32.
+    uint8_t rx_lsfd_mag3; // This field sets the long (64-symbol) SFD magnitude data for the receive SFD
+                          // sequence, for symbol intervals 31 to 24.
+    uint8_t rx_lsfd_mag2; // This field sets the long (64-symbol) SFD magnitude data for the receive SFD
+                          // sequence, for symbol intervals 23 to 16.
+    uint8_t rx_lsfd_mag1; // This field sets the long (64-symbol) SFD magnitude data for the receive SFD
+                          // sequence, for symbol intervals 15 to 8.
+    uint8_t rx_lsfd_mag0; // This field sets the long (64-symbol) SFD magnitude data for the receive SFD
+                          // sequence.
+    uint8_t tx_lsfd_sgn7; // This field sets the long (64-symbol) SFD polarity data for the transmitted SFD
+                          // sequence, for symbol intervals 63 to 56.
+    uint8_t tx_lsfd_sgn6; // This field sets the long (64-symbol) SFD polarity data for the transmitted SFD
+                          // sequence, for symbol intervals 55 to 48.
+    uint8_t tx_lsfd_sgn5; // This field sets the long (64-symbol) SFD polarity data for the transmitted SFD
+                          // sequence, for symbol intervals 47 to 40.
+    uint8_t tx_lsfd_sgn4; // This field sets the long (64-symbol) SFD polarity data for the transmitted SFD
+                          // sequence, for symbol intervals 39 to 32.
+    uint8_t tx_lsfd_sgn3; // This field sets the long (64-symbol) SFD polarity data for the transmitted SFD
+                          // sequence, for symbol intervals 31 to 24.
+    uint8_t tx_lsfd_sgn2; // This field sets the long (64-symbol) SFD polarity data for the transmitted SFD
+                          // sequence, for symbol intervals 23 to 16.
+    uint8_t tx_lsfd_sgn1; // This field sets the long (64-symbol) SFD polarity data for the transmitted SFD
+                          // sequence, for symbol intervals 15 to 8.
+    uint8_t tx_lsfd_sgn0; // This field sets the long (64-symbol) SFD polarity data for the transmitted SFD
+                          // sequence.
+    uint8_t tx_lsfd_mag7; // This field sets the long (64-symbol) SFD magnitude data for the transmitted
+                          // SFD sequence, for symbol intervals 63 to 56.
+    uint8_t tx_lsfd_mag6; // This field sets the long (64-symbol) SFD magnitude data for the transmitted
+                          // SFD sequence, for symbol intervals 55 to 48.
+    uint8_t tx_lsfd_mag5; // This field sets the long (64-symbol) SFD magnitude data for the transmitted
+                          // SFD sequence, for symbol intervals 47 to 40.
+    uint8_t tx_lsfd_mag4; // This field sets the long (64-symbol) SFD magnitude data for the transmitted
+                          // SFD sequence, for symbol intervals 39 to 32.
+    uint8_t tx_lsfd_mag3; // This field sets the long (64-symbol) SFD magnitude data for the transmitted
+                          // SFD sequence, for symbol intervals 31 to 24.
+    uint8_t tx_lsfd_mag2; // This field sets the long (64-symbol) SFD magnitude data for the transmitted
+                          // SFD sequence, for symbol intervals 23 to 16.
+    uint8_t tx_lsfd_mag1; // This field sets the long (64-symbol) SFD magnitude data for the transmitted
+                          // SFD sequence, for symbol intervals 15 to 8.
+    uint8_t tx_lsfd_mag0; // This field sets the long (64-symbol) SFD magnitude data for the transmitted
+                          // SFD sequence.
+    uint8_t rx_ssfd_sgnh; // This field sets the short SFD polarity data for the receive SFD sequence, for
+                          // the second 8 symbol intervals.
+    uint8_t rx_ssfd_sgnl; // This field sets the short SFD polarity data for the receive SFD sequence, for
+                          // the first 8 symbol intervals.
+    uint8_t rx_ssfd_magh; // This field sets the short SFD magnitude data for the receive SFD sequence, for
+                          // the second 8 symbol intervals.
+    uint8_t rx_ssfd_magl; // This field sets the short SFD magnitude data for the receive SFD sequence, for
+                          // the first 8 symbol intervals.
+    uint8_t tx_ssfd_sgnh; // This field sets the short SFD polarity data for the transmitted SFD sequence,
+                          // for the second 8 symbol intervals.
+    uint8_t tx_ssfd_sgnl; // This field sets the short SFD polarity data for the transmitted SFD sequence,
+                          // for the first 8 symbol intervals.
+    uint8_t tx_ssfd_magh; // This field sets the short SFD magnitude data for the transmitted SFD
+                          // sequence, for the second 8 symbol intervals.
+    uint8_t tx_ssfd_magl; // This field sets the short SFD magnitude data for the transmitted SFD
+                          // sequence, for the first 8 symbol intervals.
+    uint8_t sfd_length;   // This is the length of the SFD sequence used when the data rate is 850 kbps
+                          // and higher.
+} usr_sfd_format;
+
+/**
+ * @brief Formats a spi_frame to an usr_sfd_format.
+ *
+ * @param[in] fr: spi_frame to initialize the usr_sfd_format(format).
+ * @param[out] format: Structure which will contains the spi_frame formatted.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @note: This function must receive an usr_sfd_format to work.
+ *
+ */
+void usr_sfd_formater(spi_frame fr, void *format, const size_t sub_register);
+
+/**
+ * @brief Unformats an usr_sfd_format to a spi_frame.
+ *
+ * @param[in] format: Structure which contains the values of the fields of the USR_SFD register.
+ * @param[out] fr: spi_frame where this function will store the usr_sfd_format structure.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @return size_t: Size of the spi_frame formed with the given usr_sfd_format structure.
+ *
+ * @note: This function must receive a usr_sfd_format value to work.
+ *
+ */
+size_t usr_sfd_unformater(void *format, spi_frame fr, const size_t sub_register);
+
+/******* AGC_CTRL *******/
+
+// Sub-registers of the automatic gain control configuration and control register.
+typedef enum {
+    AGC_CTRL1 = 0,
+    AGC_TUNE1 = 0X04,
+    AGC_TUNE2 = 0X0C,
+    AGC_TUNE3 = 0X12,
+    AGC_STAT1 = 0X1E,
+} agc_ctrl_subregister;
+
+// Structure of the automatic gain control configuration and control register.
+typedef struct {
+    unsigned int dis_am :1; // Disable AGC Measurement. (RW)
+    uint16_t agc_tune1;     // Tuning register for the AGC. (RW)
+    uint32_t agc_tune2;     // Tuning register for the AGC. (RW)
+    uint16_t agc_tune3;     // Tuning register for the AGC. (RW)
+    unsigned int edv2 :9;   // Relates to the input noise power measurement. (RO)
+    unsigned int edg1 :5;   // Relates to input noise power measurement. EDG1 can be used in
+                            // conjunction with the EDV2 value to give a measure of the background in-band noise energy
+                            // level. (RO)
+} agc_ctrl_format;
+
+/**
+ * @brief Formats a spi_frame to an agc_ctrl_format.
+ *
+ * @param[in] fr: spi_frame to initialize the agc_ctrl_format(format).
+ * @param[out] format: Structure which will contains the spi_frame formatted.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @note: This function must receive an agc_ctrl_format to work.
+ *
+ */
+void agc_ctrl_formater(spi_frame fr, void *format, const size_t sub_register);
+
+/**
+ * @brief Unformats an agc_ctrl_format to a spi_frame.
+ *
+ * @param[in] format: Structure which contains the values of the fields of the AGC_CTRL register.
+ * @param[out] fr: spi_frame where this function will store the agc_ctrl_format structure.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @return size_t: Size of the spi_frame formed with the given agc_ctrl_format structure.
+ *
+ * @note: This function must receive a agc_ctrl_format value to work.
+ *
+ */
+size_t agc_ctrl_unformater(void *format, spi_frame fr, const size_t sub_register);
 
 #endif // _FORMAT_H_

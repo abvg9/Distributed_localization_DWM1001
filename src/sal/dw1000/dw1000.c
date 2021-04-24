@@ -28,36 +28,50 @@ double calculate_clock_offset(const rx_ttcko_format rx_ttcko_f, const rx_ttcki_v
     return rx_ttcko_f.rxtofs/rx_ttcki;
 }
 
-double calculate_estimated_signal_power(const rx_fqual_format rxfq, const rx_finfo_format rxfi) {
+double calculate_estimated_signal_power(const rx_fqual_format rx_fqual_f,
+        const rx_finfo_format rx_finfo_f, const usr_sfd_format usr_sfd_f) {
 
     double substractor = 0.0;
 
-    if(rxfi.rxprfr == TRPR_MHZ16) {
+    if(rx_finfo_f.rxprfr == TRPR_MHZ16) {
         substractor = 113.27;
     } else {
         substractor = 121.74;
     }
 
-    /* TODO */
-    // Without subtraction the SFD symbol count from from rxpacc.
-    return (10.0 * log10(rxfq.cir_pwr * pow(2, 17)/pow(rxfi.rxpacc, 2))) - substractor;
+    return (10.0 * log10(rx_fqual_f.cir_pwr * pow(2, 17)/pow(rx_finfo_f.rxpacc - usr_sfd_f.sfd_length, 2))) - substractor;
 }
 
-double calculate_signal_power(const rx_time_format rxt, const rx_fqual_format rxfq, const rx_finfo_format rxfi) {
+double calculate_noise_energy_level(const agc_ctrl_format agc_ctrl_f, const chan_ctrl_format chan_ctrl_f) {
 
-    const double numerator = pow(rxt.fp_ampl1, 2) + pow(rxfq.fp_ampl2, 2) + pow(rxfq.fp_ampl3, 2);
+    double s;
+
+    // It does not matter if we use .rx_chan or .tx_chan,
+    // this two fields must be equal to a correct functionality
+    // of the radios.
+    if(chan_ctrl_f.rx_chan == CH5 || chan_ctrl_f.rx_chan == CH7) {
+        s = 1.0;
+    } else {
+        s = 1.3335;
+    }
+
+    return (agc_ctrl_f.edv2 - 40.0) * pow(10, agc_ctrl_f.edg1) * s;
+}
+
+double calculate_signal_power(const rx_time_format rx_time_f, const rx_fqual_format rx_fqual_f,
+        const rx_finfo_format rx_finfo_f, const usr_sfd_format usr_sfd_f) {
+
+    const double numerator = pow(rx_time_f.fp_ampl1, 2) + pow(rx_fqual_f.fp_ampl2, 2) + pow(rx_fqual_f.fp_ampl3, 2);
 
     double substractor = 0.0;
 
-    if(rxfi.rxprfr == TRPR_MHZ16) {
+    if(rx_finfo_f.rxprfr == TRPR_MHZ16) {
         substractor = 113.27;
     } else {
         substractor = 121.74;
     }
 
-    /* TODO */
-    // Without subtraction the SFD symbol count from from rxpacc.
-    return (10.0 * log10(numerator/pow(rxfi.rxpacc, 2))) - substractor;
+    return (10.0 * log10(numerator/pow(rx_finfo_f.rxpacc - usr_sfd_f.sfd_length, 2))) - substractor;
 }
 
 void dw_disable(void) {

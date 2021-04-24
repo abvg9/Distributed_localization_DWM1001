@@ -62,37 +62,38 @@ typedef enum {
     RX_SNIFF    = 0X1D,
     TX_POWER    = 0X1E,
     CHAN_CTRL   = 0X1F,
+    RESERVED_8  = 0X20,
     USR_SFD     = 0X21,
-    RESERVED_8  = 0X22,
+    RESERVED_9  = 0X22,
     AGC_CTRL    = 0X23,
     EXT_SYNC    = 0X24,
     ACC_MEM     = 0X25,
     GPIO_CTRL   = 0X26,
     DRX_CONF    = 0X27,
     RF_CONF     = 0x28,
-    RESERVED_9 = 0X29,
+    RESERVED_10 = 0X29,
     TX_CAL      = 0X2A,
     FS_CTRL     = 0X2B,
     AON         = 0X2C,
     OTP_IF      = 0X2D,
     LDE_CTRL    = 0X2E,
     DIG_DIAG    = 0X2F,
-    RESERVED_10 = 0X30,
-    RESERVED_11 = 0X31,
-    RESERVED_12 = 0X32,
-    RESERVED_13 = 0X33,
-    RESERVED_14 = 0X34,
-    RESERVED_15 = 0X35,
+    RESERVED_11 = 0X30,
+    RESERVED_12 = 0X31,
+    RESERVED_13 = 0X32,
+    RESERVED_14 = 0X33,
+    RESERVED_15 = 0X34,
+    RESERVED_16 = 0X35,
     PMSC        = 0X36,
-    RESERVED_16 = 0X37,
-    RESERVED_17 = 0X38,
-    RESERVED_18 = 0X39,
-    RESERVED_19 = 0X3A,
-    RESERVED_20 = 0X3B,
-    RESERVED_21 = 0X3C,
-    RESERVED_22 = 0X3D,
-    RESERVED_23 = 0X3E,
-    RESERVED_24 = 0X3F
+    RESERVED_17 = 0X37,
+    RESERVED_18 = 0X38,
+    RESERVED_19 = 0X39,
+    RESERVED_20 = 0X3A,
+    RESERVED_21 = 0X3B,
+    RESERVED_22 = 0X3C,
+    RESERVED_23 = 0X3D,
+    RESERVED_24 = 0X3E,
+    RESERVED_25 = 0X3F
 } register_id;
 
 // Factory value of the dev_id register.
@@ -212,7 +213,7 @@ bool set_tx_fctrl(tx_fctrl_format* tx_fctrl_f);
  *
  * @note: Depend on the phr_mode selected in the system configuration register
  *        this buffer can be from 127 bytes of size(phr_mode = standard) or
- *        1024 bytes(long_size).
+ *        1024 bytes(phr_mode = long_size).
  *
  * @return bool: True if the register can be set, otherwise false.
  *
@@ -338,7 +339,7 @@ bool get_rx_finfo(rx_finfo_format* rx_finfo_f);
  *
  * @note: Depend on the phr_mode selected in the system configuration register
  *        this buffer can be from 127 bytes of size(phr_mode = standard) or
- *        1024 bytes(long_size).
+ *        1024 bytes(phr_mode = long_size).
  *
  * @return bool: True if the register can be set, otherwise false.
  *
@@ -484,5 +485,45 @@ bool get_tx_power(tx_power_format* tx_power_f);
  *
  */
 bool set_tx_power(tx_power_format* tx_power_f);
+
+/**
+ * @brief Gets the channel control register value.
+ *
+ * @param[in] chan_ctrl_f: Structure in will be stored the value of the register.
+ *
+ * @return bool: Returns true if the register can be gotten, otherwise false.
+ *
+ */
+bool get_chan_ctrl_power(chan_ctrl_format* chan_ctrl_f);
+
+/**
+ * @brief Sets the channel control register value.
+ *
+ * @param[in] chan_ctrl_f: Structure that contains the value that will be written in the register.
+ *
+ * @return bool: Returns true if the register can be set, otherwise false.
+ *
+ */
+bool set_chan_ctrl_power(chan_ctrl_format* chan_ctrl_f);
+
+/**
+ * @brief Gets the user-specified short/long TX/RX SFD sequences register value.
+ *
+ * @param[in] usr_sfd_f: Structure in will be stored the value of the register.
+ *
+ * @return bool: Returns true if the register can be gotten, otherwise false.
+ *
+ */
+bool get_usr_sfd(usr_sfd_format* usr_sfd_f);
+
+/**
+ * @brief Sets the user-specified short/long TX/RX SFD sequences register value.
+ *
+ * @param[in] usr_sfd_f: Structure that contains the value that will be written in the register.
+ *
+ * @return bool: Returns true if the register can be set, otherwise false.
+ *
+ */
+bool set_usr_sfd(usr_sfd_format* usr_sfd_f);
 
 #endif // _REGISTER_H_
