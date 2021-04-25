@@ -526,4 +526,255 @@ bool get_usr_sfd(usr_sfd_format* usr_sfd_f);
  */
 bool set_usr_sfd(usr_sfd_format* usr_sfd_f);
 
+/**
+ * @brief Gets the user-specified short/long TX/RX SFD sequences register value.
+ *
+ * @param[in] usr_sfd_f: Structure in will be stored the value of the register.
+ *
+ * @return bool: Returns true if the register can be gotten, otherwise false.
+ *
+ */
+bool get_agc_ctrl(agc_ctrl_format* agc_ctrl_f);
+
+/**
+ * @brief Sets the user-specified short/long TX/RX SFD sequences register value.
+ *
+ * @param[in] agc_ctrl_f: Structure that contains the value that will be written in the register.
+ *
+ * @return bool: Returns true if the register can be set, otherwise false.
+ *
+ */
+bool set_agc_ctrl(agc_ctrl_format* agc_ctrl_f);
+
+/**
+ * @brief Gets the external clock synchronization counter configuration register value.
+ *
+ * @param[in] ext_sync_f: Structure in will be stored the value of the register.
+ *
+ * @return bool: Returns true if the register can be gotten, otherwise false.
+ *
+ */
+bool get_ext_sync(ext_sync_format* ext_sync_f);
+
+/**
+ * @brief Sets the external clock synchronization counter configuration register value.
+ *
+ * @param[in] ext_sync_f: Structure that contains the value that will be written in the register.
+ *
+ * @return bool: Returns true if the register can be set, otherwise false.
+ *
+ */
+bool set_ext_sync(ext_sync_format* ext_sync_f);
+
+/**
+ * @brief Gets one of the accumulator samples of the read access to accumulator data memory register value.
+ *
+ * @param[in] acc_mem_f: Structure in will be stored the value of the register.
+ * @param[in] offset: Indicates which accumulator sample will be got.
+ *
+ * @return bool: Returns true if the register can be gotten, otherwise false.
+ *
+ */
+bool get_acc_mem(acc_mem_field* acc_mem_f, const size_t offset);
+
+/**
+ * @brief Gets the GPIO mode sub-register value.
+ *
+ * @param[in] gpio_mode_ctrl_f: Structure in will be stored the value of the register.
+ *
+ * @return bool: Returns true if the register can be gotten, otherwise false.
+ *
+ */
+bool get_gpio_mode_ctrl(gpio_mode_ctrl_format* gpio_mode_ctrl_f);
+
+/**
+ * @brief Sets the GPIO mode sub-register value.
+ *
+ * @param[in] gpio_mode_ctrl_f: Structure that contains the value that will be written in the register.
+ *
+ * @return bool: Returns true if the register can be set, otherwise false.
+ *
+ */
+bool set_gpio_mode_ctrl(gpio_mode_ctrl_format* gpio_mode_ctrl_f);
+
+/**
+ * @brief Gets the GPIO mode sub-register value.
+ *
+ * @param[in] gpio_direction_ctrl_f: Structure in will be stored the value of the register.
+ *
+ * @return bool: Returns true if the register can be gotten, otherwise false.
+ *
+ */
+bool get_gpio_direction_ctrl(gpio_direction_ctrl_format* gpio_direction_ctrl_f);
+
+/**
+ * @brief Sets the GPIO mode sub-register value.
+ *
+ * @param[in] gpio_direction_ctrl_f: Structure that contains the value that will be written in the register.
+ *
+ * @return bool: Returns true if the register can be set, otherwise false.
+ *
+ */
+bool set_gpio_direction_ctrl(gpio_direction_ctrl_format* gpio_direction_ctrl_f);
+
+/**
+ * @brief Gets the GPIO data output control sub-register value.
+ *
+ * @param[in] gpio_data_output_ctrl_f: Structure in will be stored the value of the register.
+ *
+ * @return bool: Returns true if the register can be gotten, otherwise false.
+ *
+ */
+bool get_gpio_data_output_ctrl(gpio_data_output_ctrl_format* gpio_data_output_ctrl_f);
+
+/**
+ * @brief Sets the GPIO data output control sub-register value.
+ *
+ * @param[in] gpio_data_output_ctrl_f: Structure that contains the value that will be written in the register.
+ *
+ * @return bool: Returns true if the register can be set, otherwise false.
+ *
+ */
+bool set_gpio_data_output_ctrl(gpio_data_output_ctrl_format* gpio_data_output_ctrl_f);
+
+/**
+ * @brief Gets the GPIO interrupt enable sub-register value.
+ *
+ * @param[in] gpio_irq_ctrl_f: Structure in will be stored the value of the register.
+ *
+ * @return bool: Returns true if the register can be gotten, otherwise false.
+ *
+ */
+bool get_gpio_irq_ctrl(gpio_irq_ctrl_format* gpio_irq_ctrl_f);
+
+/**
+ * @brief Sets the GPIO interrupt enable sub-register value.
+ *
+ * @param[in] gpio_irq_ctrl_f: Structure that contains the value that will be written in the register.
+ *
+ * @return bool: Returns true if the register can be set, otherwise false.
+ *
+ */
+bool set_gpio_irq_ctrl(gpio_irq_ctrl_format* gpio_irq_ctrl_f);
+
+/**
+ * @brief Gets the GPIO Interrupt sense selection sub-register value.
+ *
+ * @param[in] gpio_irq_sense_ctrl_f: Structure in will be stored the value of the register.
+ *
+ * @return bool: Returns true if the register can be gotten, otherwise false.
+ *
+ */
+bool get_gpio_irq_sense_ctrl(gpio_irq_sense_ctrl_format* gpio_irq_sense_ctrl_f);
+
+/**
+ * @brief Sets the GPIO Interrupt sense selection sub-register value.
+ *
+ * @param[in] gpio_irq_sense_ctrl_f: Structure that contains the value that will be written in the register.
+ *
+ * @return bool: Returns true if the register can be set, otherwise false.
+ *
+ */
+bool set_gpio_irq_sense_ctrl(gpio_irq_sense_ctrl_format* gpio_irq_sense_ctrl_f);
+
+/**
+ * @brief Gets the GPIO Interrupt Mode (Level/Edge) sub-register value.
+ *
+ * @param[in] gpio_irq_mode_ctrl_f: Structure in will be stored the value of the register.
+ *
+ * @return bool: Returns true if the register can be gotten, otherwise false.
+ *
+ */
+bool get_gpio_irq_mode_ctrl(gpio_irq_mode_ctrl_format* gpio_irq_mode_ctrl_f);
+
+/**
+ * @brief Sets the GPIO Interrupt Mode (Level/Edge) sub-register value.
+ *
+ * @param[in] gpio_irq_mode_ctrl_f: Structure that contains the value that will be written in the register.
+ *
+ * @return bool: Returns true if the register can be set, otherwise false.
+ *
+ */
+bool set_gpio_irq_mode_ctrl(gpio_irq_mode_ctrl_format* gpio_irq_mode_ctrl_f);
+
+/**
+ * @brief Gets the GPIO Interrupt both edge select sub-register value.
+ *
+ * @param[in] gpio_irq_both_edges_mode_f: Structure in will be stored the value of the register.
+ *
+ * @return bool: Returns true if the register can be gotten, otherwise false.
+ *
+ */
+bool get_gpio_irq_both_edges_mode_ctrl(gpio_irq_both_edges_mode_format* gpio_irq_both_edges_mode_f);
+
+/**
+ * @brief Sets the GPIO Interrupt both edge select sub-register value.
+ *
+ * @param[in] gpio_irq_both_edges_mode_f: Structure that contains the value that will be written in the register.
+ *
+ * @return bool: Returns true if the register can be set, otherwise false.
+ *
+ */
+bool set_gpio_irq_both_edges_mode_ctrl(gpio_irq_both_edges_mode_format* gpio_irq_both_edges_mode_f);
+
+/**
+ * @brief Gets the GPIO interrupt latch clear sub-register value.
+ *
+ * @param[in] gpio_irq_latch_clear_mode_f: Structure in will be stored the value of the register.
+ *
+ * @return bool: Returns true if the register can be gotten, otherwise false.
+ *
+ */
+bool get_gpio_irq_latch_clear_mode_ctrl(gpio_irq_latch_clear_mode_format* gpio_irq_latch_clear_mode_f);
+
+/**
+ * @brief Sets the GPIO interrupt latch clear sub-register value.
+ *
+ * @param[in] gpio_irq_latch_clear_mode_f: Structure that contains the value that will be written in the register.
+ *
+ * @return bool: Returns true if the register can be set, otherwise false.
+ *
+ */
+bool set_gpio_irq_latch_clear_mode_ctrl(gpio_irq_latch_clear_mode_format* gpio_irq_latch_clear_mode_f);
+
+/**
+ * @brief Gets the GPIO interrupt de-bounce sub-register value.
+ *
+ * @param[in] gpio_irq_de_bounce_mode_f: Structure in will be stored the value of the register.
+ *
+ * @return bool: Returns true if the register can be gotten, otherwise false.
+ *
+ */
+bool get_gpio_irq_de_bounce_mode_ctrl(gpio_irq_de_bounce_mode_format* gpio_irq_de_bounce_mode_f);
+
+/**
+ * @brief Sets the GPIO interrupt de-bounce sub-register value.
+ *
+ * @param[in] gpio_irq_de_bounce_mode_f: Structure that contains the value that will be written in the register.
+ *
+ * @return bool: Returns true if the register can be set, otherwise false.
+ *
+ */
+bool set_gpio_irq_de_bounce_mode_ctrl(gpio_irq_de_bounce_mode_format* gpio_irq_de_bounce_mode_f);
+
+/**
+ * @brief Gets the GPIO raw state sub-register value.
+ *
+ * @param[in] gpio_raw_state_f: Structure in will be stored the value of the register.
+ *
+ * @return bool: Returns true if the register can be gotten, otherwise false.
+ *
+ */
+bool get_gpio_raw_state_ctrl(gpio_raw_state_format* gpio_raw_state_f);
+
+/**
+ * @brief Sets the GPIO raw state sub-register value.
+ *
+ * @param[in] gpio_raw_state_f: Structure that contains the value that will be written in the register.
+ *
+ * @return bool: Returns true if the register can be set, otherwise false.
+ *
+ */
+bool set_ggpio_raw_state_ctrl(gpio_raw_state_format* gpio_raw_state_f);
+
 #endif // _REGISTER_H_

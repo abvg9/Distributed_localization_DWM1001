@@ -79,7 +79,11 @@ const command COMMAND_MAP[] = {
         {4U, RW, chan_ctrl_formater, chan_ctrl_unformater},     // CHAN_CTRL
         RESERVED_REGISTER,                                      // RESERVED_8
         {4U, RW, usr_sfd_formater, usr_sfd_unformater},         // USR_SFD
+        RESERVED_REGISTER,                                      // RESERVED_9
         {4U, RW, agc_ctrl_formater, agc_ctrl_unformater},       // AGC_CTRL
+        {4U, RW, ext_sync_formater, ext_sync_unformater},       // EXT_SYNC
+        {4U, RW, acc_mem_formater, NULL},                       // ACC_MEM
+        {4U, RW, gpio_ctrl_formater, gpio_ctrl_unformater},     // GPIO_CTRL
 };
 
 /**
@@ -306,7 +310,6 @@ bool set_tx_fctrl(tx_fctrl_format* tx_fctrl_f) {
            dw_write_reg(TX_FCTRL, IFSDELAY, (void*) tx_fctrl_f);
 }
 
-
 bool set_tx_buffer(uwb_frame frame, const uint16_t frame_size) {
 
     const uint16_t offset = TX_RX_BUFFER_MAX_SIZE - frame_size;
@@ -320,65 +323,53 @@ bool set_tx_buffer(uwb_frame frame, const uint16_t frame_size) {
 
 }
 
-
 bool get_dx_time(double* seconds) {
     return dw_read_reg(DX_TIME, 0, (void*) seconds);
 }
-
 
 bool set_dx_time(double* seconds) {
     return (*seconds <= DTR_COUNTER_WRAP_PERIOD) &&
            (*seconds >= 0.0) && dw_write_reg(DX_TIME, 0, (void*) seconds);
 }
 
-
 bool get_rx_fwto(double* seconds) {
     return dw_read_reg(RX_FWTO, 0, (void*) seconds);
 }
-
 
 bool set_rx_fwto(double* seconds) {
     return (*seconds <= RFR_COUNTER_WRAP_PERIOD) &&
            (*seconds >= 0.0) && dw_write_reg(RX_FWTO, 0, (void*) seconds);
 }
 
-
 bool get_sys_ctrl(sys_ctrl_format* sys_ctrl_f) {
     return dw_read_reg(SYS_CTRL, 0, (void*) sys_ctrl_f);
 }
-
 
 bool set_sys_ctrl(sys_ctrl_format* sys_ctrl_f) {
     return dw_write_reg(SYS_CTRL, 0, (void*) sys_ctrl_f);
 }
 
-
 bool get_sys_event_msk(sys_evt_msk_format* sys_evt_msk_f) {
     return dw_read_reg(SYS_MASK, 0, (void*) sys_evt_msk_f);
 }
 
-
 bool set_sys_event_msk(sys_evt_msk_format* sys_evt_msk_f) {
     return dw_write_reg(SYS_MASK, 0, (void*) sys_evt_msk_f);
 }
-
 
 bool get_sys_event_sts(sys_evt_sts_format* sys_evt_sts_f) {
     return dw_read_reg(SYS_STATUS, SES_OCT_0_TO_3, (void*) sys_evt_sts_f) &&
            dw_read_reg(SYS_STATUS, SES_OCT_4, (void*) sys_evt_sts_f);
 }
 
-
 bool set_sys_event_sts(sys_evt_sts_format* sys_evt_sts_f) {
     return dw_write_reg(SYS_STATUS, SES_OCT_0_TO_3, (void*) sys_evt_sts_f) &&
            dw_write_reg(SYS_STATUS, SES_OCT_4, (void*) sys_evt_sts_f);
 }
 
-
 bool get_rx_finfo(rx_finfo_format* rx_finfo_f) {
     return dw_read_reg(RX_FINFO, 0, (void*) rx_finfo_f);
 }
-
 
 bool get_rx_buffer(uwb_frame frame, const uint16_t frame_size) {
 
@@ -392,23 +383,19 @@ bool get_rx_buffer(uwb_frame frame, const uint16_t frame_size) {
     return ret;
 }
 
-
 bool get_rx_fqual(rx_fqual_format* rx_fqual_f) {
     return dw_read_reg(RX_FQUAL, FP_AMPL2_STD_NOISE, (void*) rx_fqual_f) &&
            dw_read_reg(RX_FQUAL, CIR_PWR_PP_AMPL3, (void*) rx_fqual_f);
 }
 
-
 bool get_rx_ttcki(rx_ttcki_value* rx_ttcki) {
     return dw_read_reg(RX_TTCKI, 0, (void*) rx_ttcki);
 }
-
 
 bool get_rx_ttcko(rx_ttcko_format* rx_ttcko_f) {
     return dw_read_reg(RX_TTCKO, RX_TTCKO_OCT_0_TO_3, (void*) rx_ttcko_f) &&
            dw_read_reg(RX_TTCKO, RX_TTCKO_OCT_4, (void*) rx_ttcko_f) ;
 }
-
 
 bool get_rx_time(rx_time_format* rx_time_f) {
     return dw_read_reg(RX_TIME, RX_TIME_OCT_0_TO_3, (void*) rx_time_f) &&
@@ -417,34 +404,28 @@ bool get_rx_time(rx_time_format* rx_time_f) {
            dw_read_reg(RX_TIME, RX_TIME_OCT_12_TO_13, (void*) rx_time_f);
 }
 
-
 bool get_tx_time(tx_time_format* tx_time_f) {
     return dw_read_reg(TX_TIME, TX_TIME_OCT_0_TO_3, (void*) tx_time_f) &&
            dw_read_reg(TX_TIME, TX_TIME_OCT_4_TO_7, (void*) tx_time_f) &&
            dw_read_reg(TX_TIME, TX_TIME_OCT_8_TO_9, (void*) tx_time_f);
 }
 
-
 bool get_tx_antd(double* seconds) {
     return dw_read_reg(TX_ANTD, 0, (void*) seconds);
 }
-
 
 bool set_tx_antd(double* seconds) {
     return (*seconds <= TX_ANTD_WRAP_PERIOD) &&
            (*seconds >= 0.0) && dw_write_reg(TX_ANTD, 0, (void*) seconds);
 }
 
-
 bool get_sys_status(sys_status_format* sys_status_f) {
     return dw_read_reg(SYS_STATUS, 0, (void*) sys_status_f);
 }
 
-
 bool get_ack_resp_t(ack_resp_t_format* ack_resp_t_f) {
     return dw_read_reg(ACK_RESP_T, 0, (void*) ack_resp_t_f);
 }
-
 
 bool set_ack_resp_t(ack_resp_t_format* ack_resp_t_f) {
     return (ack_resp_t_f->w4r_tim <= W4RTIM_WRAP_PERIOD) &&
@@ -452,11 +433,9 @@ bool set_ack_resp_t(ack_resp_t_format* ack_resp_t_f) {
            dw_write_reg(ACK_RESP_T, 0, (void*) ack_resp_t_f);
 }
 
-
 bool get_rx_sniff(rx_sniff_format* rx_sniff_f) {
     return dw_read_reg(RX_SNIFF, 0, (void*) rx_sniff_f);
 }
-
 
 bool set_rx_sniff(rx_sniff_format* rx_sniff_f) {
     return (rx_sniff_f->sniff_offt <= SNIFF_OFFT_WRAP_PERIOD) &&
@@ -464,26 +443,21 @@ bool set_rx_sniff(rx_sniff_format* rx_sniff_f) {
            dw_write_reg(RX_SNIFF, 0, (void*) rx_sniff_f);
 }
 
-
 bool get_tx_power(tx_power_format* tx_power_f) {
     return dw_read_reg(TX_POWER, 0, (void*) tx_power_f);
 }
-
 
 bool set_tx_power(tx_power_format* tx_power_f) {
     return dw_write_reg(TX_POWER, 0, (void*) tx_power_f);
 }
 
-
 bool get_chan_ctrl_power(chan_ctrl_format* chan_ctrl_f) {
     return dw_read_reg(CHAN_CTRL, 0, (void*) chan_ctrl_f);
 }
 
-
 bool set_chan_ctrl_power(chan_ctrl_format* chan_ctrl_f) {
     return dw_write_reg(CHAN_CTRL, 0, (void*) chan_ctrl_f);
 }
-
 
 bool get_usr_sfd(usr_sfd_format* usr_sfd_f) {
     return dw_read_reg(USR_SFD, USR_SFD_OCT_0_TO_3, (void*) usr_sfd_f) &&
@@ -499,7 +473,6 @@ bool get_usr_sfd(usr_sfd_format* usr_sfd_f) {
            dw_read_reg(USR_SFD, USR_SFD_OCT_40_TO_41, (void*) usr_sfd_f);
 }
 
-
 bool set_usr_sfd(usr_sfd_format* usr_sfd_f) {
     return dw_write_reg(USR_SFD, USR_SFD_OCT_0_TO_3, (void*) usr_sfd_f) &&
            dw_write_reg(USR_SFD, USR_SFD_OCT_4_TO_7, (void*) usr_sfd_f) &&
@@ -512,4 +485,113 @@ bool set_usr_sfd(usr_sfd_format* usr_sfd_f) {
            dw_write_reg(USR_SFD, USR_SFD_OCT_32_TO_35, (void*) usr_sfd_f) &&
            dw_write_reg(USR_SFD, USR_SFD_OCT_36_TO_39, (void*) usr_sfd_f) &&
            dw_write_reg(USR_SFD, USR_SFD_OCT_40_TO_41, (void*) usr_sfd_f);
+}
+
+bool get_agc_ctrl(agc_ctrl_format* agc_ctrl_f) {
+    return dw_read_reg(AGC_CTRL, AGC_CTRL1, (void*) agc_ctrl_f) &&
+           dw_read_reg(AGC_CTRL, AGC_TUNE1, (void*) agc_ctrl_f) &&
+           dw_read_reg(AGC_CTRL, AGC_TUNE2, (void*) agc_ctrl_f) &&
+           dw_read_reg(AGC_CTRL, AGC_TUNE3, (void*) agc_ctrl_f) &&
+           dw_read_reg(AGC_CTRL, AGC_STAT1, (void*) agc_ctrl_f);
+}
+
+bool set_agc_ctrl(agc_ctrl_format* agc_ctrl_f) {
+    return dw_write_reg(AGC_CTRL, AGC_CTRL1, (void*) agc_ctrl_f) &&
+           dw_write_reg(AGC_CTRL, AGC_TUNE1, (void*) agc_ctrl_f) &&
+           dw_write_reg(AGC_CTRL, AGC_TUNE2, (void*) agc_ctrl_f) &&
+           dw_write_reg(AGC_CTRL, AGC_TUNE3, (void*) agc_ctrl_f);
+}
+
+bool get_ext_sync(ext_sync_format* ext_sync_f) {
+    return dw_read_reg(EXT_SYNC, EC_CTRL, (void*) ext_sync_f) &&
+           dw_read_reg(EXT_SYNC, EC_RXTC, (void*) ext_sync_f) &&
+           dw_read_reg(EXT_SYNC, EC_GOLP, (void*) ext_sync_f);
+}
+
+bool set_ext_sync(ext_sync_format* ext_sync_f) {
+    return dw_write_reg(EXT_SYNC, EC_CTRL, (void*) ext_sync_f);
+}
+
+bool get_acc_mem(acc_mem_field* acc_mem_f, const size_t offset) {
+    return dw_read_reg(ACC_MEM, offset, (void*) acc_mem_f);
+}
+
+bool get_gpio_mode_ctrl(gpio_mode_ctrl_format* gpio_mode_ctrl_f) {
+    return dw_read_reg(GPIO_CTRL, GPIO_MODE, (void*) gpio_mode_ctrl_f);
+}
+
+bool set_gpio_mode_ctrl(gpio_mode_ctrl_format* gpio_mode_ctrl_f) {
+    return dw_write_reg(GPIO_CTRL, GPIO_MODE, (void*) gpio_mode_ctrl_f);
+}
+
+bool get_gpio_direction_ctrl(gpio_direction_ctrl_format* gpio_direction_ctrl_f) {
+    return dw_read_reg(GPIO_CTRL, GPIO_DIR, (void*) gpio_direction_ctrl_f);
+}
+
+bool set_gpio_direction_ctrl(gpio_direction_ctrl_format* gpio_direction_ctrl_f) {
+    return dw_write_reg(GPIO_CTRL, GPIO_DIR, (void*) gpio_direction_ctrl_f);
+}
+
+bool get_gpio_data_output_ctrl(gpio_data_output_ctrl_format* gpio_data_output_ctrl_f) {
+    return dw_read_reg(GPIO_CTRL, GPIO_DOUT, (void*) gpio_data_output_ctrl_f);
+}
+
+bool set_gpio_data_output_ctrl(gpio_data_output_ctrl_format* gpio_data_output_ctrl_f) {
+    return dw_write_reg(GPIO_CTRL, GPIO_DOUT, (void*) gpio_data_output_ctrl_f);
+}
+
+bool get_gpio_irq_ctrl(gpio_irq_ctrl_format* gpio_irq_ctrl_f) {
+    return dw_read_reg(GPIO_CTRL, GPIO_IRQE, (void*) gpio_irq_ctrl_f);
+}
+
+bool set_gpio_irq_ctrl(gpio_irq_ctrl_format* gpio_irq_ctrl_f) {
+    return dw_write_reg(GPIO_CTRL, GPIO_IRQE, (void*) gpio_irq_ctrl_f);
+}
+
+bool get_gpio_irq_sense_ctrl(gpio_irq_sense_ctrl_format* gpio_irq_sense_ctrl_f) {
+    return dw_read_reg(GPIO_CTRL, GPIO_ISEN, (void*) gpio_irq_sense_ctrl_f);
+}
+
+bool set_gpio_irq_sense_ctrl(gpio_irq_sense_ctrl_format* gpio_irq_sense_ctrl_f) {
+    return dw_write_reg(GPIO_CTRL, GPIO_ISEN, (void*) gpio_irq_sense_ctrl_f);
+}
+
+bool get_gpio_irq_mode_ctrl(gpio_irq_mode_ctrl_format* gpio_irq_mode_ctrl_f) {
+    return dw_read_reg(GPIO_CTRL, GPIO_IMODE, (void*) gpio_irq_mode_ctrl_f);
+}
+
+bool set_gpio_irq_mode_ctrl(gpio_irq_mode_ctrl_format* gpio_irq_mode_ctrl_f) {
+    return dw_write_reg(GPIO_CTRL, GPIO_IMODE, (void*) gpio_irq_mode_ctrl_f);
+}
+
+bool get_gpio_irq_both_edges_mode_ctrl(gpio_irq_both_edges_mode_format* gpio_irq_both_edges_mode_f) {
+    return dw_read_reg(GPIO_CTRL, GPIO_IBES, (void*) gpio_irq_both_edges_mode_f);
+}
+
+bool set_gpio_irq_both_edges_mode_ctrl(gpio_irq_both_edges_mode_format* gpio_irq_both_edges_mode_f) {
+    return dw_write_reg(GPIO_CTRL, GPIO_IBES, (void*) gpio_irq_both_edges_mode_f);
+}
+
+bool get_gpio_irq_latch_clear_mode_ctrl(gpio_irq_latch_clear_mode_format* gpio_irq_latch_clear_mode_f) {
+    return dw_read_reg(GPIO_CTRL, GPIO_ICLR, (void*) gpio_irq_latch_clear_mode_f);
+}
+
+bool set_gpio_irq_latch_clear_mode_ctrl(gpio_irq_latch_clear_mode_format* gpio_irq_latch_clear_mode_f) {
+    return dw_write_reg(GPIO_CTRL, GPIO_ICLR, (void*) gpio_irq_latch_clear_mode_f);
+}
+
+bool get_gpio_irq_de_bounce_mode_ctrl(gpio_irq_de_bounce_mode_format* gpio_irq_de_bounce_mode_f) {
+    return dw_read_reg(GPIO_CTRL, GPIO_IDBE, (void*) gpio_irq_de_bounce_mode_f);
+}
+
+bool set_gpio_irq_de_bounce_mode_ctrl(gpio_irq_de_bounce_mode_format* gpio_irq_de_bounce_mode_f) {
+    return dw_write_reg(GPIO_CTRL, GPIO_IDBE, (void*) gpio_irq_de_bounce_mode_f);
+}
+
+bool get_gpio_raw_state_ctrl(gpio_raw_state_format* gpio_raw_state_f) {
+    return dw_read_reg(GPIO_CTRL, GPIO_RAW, (void*) gpio_raw_state_f);
+}
+
+bool set_ggpio_raw_state_ctrl(gpio_raw_state_format* gpio_raw_state_f) {
+    return dw_write_reg(GPIO_CTRL, GPIO_RAW, (void*) gpio_raw_state_f);
 }

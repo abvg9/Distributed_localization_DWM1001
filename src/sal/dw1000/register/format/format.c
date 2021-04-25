@@ -947,17 +947,12 @@ size_t agc_ctrl_unformater(void *format, spi_frame fr, const size_t sub_register
 
     } else if(sub_register == AGC_TUNE1) {
 
-        agc_ctrl_f->agc_tune1 = (((uint16_t)fr[1]) << 8) | fr[0];
-
         fr[0] = agc_ctrl_f->agc_tune1 & 0x00FF;
         fr[1] = (agc_ctrl_f->agc_tune1 & 0xFF00) >> 8;
 
         return 2;
 
     } else if(sub_register == AGC_TUNE2) {
-
-        agc_ctrl_f->agc_tune2 = (((uint32_t)fr[3]) << 24) | (((uint32_t)fr[2]) << 16) |
-                (((uint16_t)fr[1]) << 8) | fr[0];
 
         fr[0] = agc_ctrl_f->agc_tune2 & 0x000000FF;
         fr[1] = (agc_ctrl_f->agc_tune2 & 0x0000FF00) >> 8;
@@ -973,21 +968,426 @@ size_t agc_ctrl_unformater(void *format, spi_frame fr, const size_t sub_register
 
         return 2;
 
-    } else if(sub_register == AGC_STAT1) {
+    }
 
-        agc_ctrl_f->edv2 = (fr[1] & 0b11111000) >> 3;
-        agc_ctrl_f->edv2 |= ((uint16_t)(fr[2] & 0b00001111)) << 5;
+    return 0;
+}
 
-        agc_ctrl_f->edg1 = (fr[0] & 0b11000000) >> 6;
-        agc_ctrl_f->edg1 |= (fr[1] & 0b00000111) << 2;
+void ext_sync_formater(spi_frame fr, void *format, const size_t sub_register) {
 
-        fr[0] = (agc_ctrl_f->edg1 & 0b00011) << 6;
+    ext_sync_format* ext_sync_f = (ext_sync_format*) format;
 
-        fr[1] = (agc_ctrl_f->edv2 & 0b000011111) | ((agc_ctrl_f->edg1 & 0b11100) >> 2);
+    if(sub_register == EC_CTRL) {
 
-        fr[2] = (agc_ctrl_f->edv2 & 0b111100000) >> 5;
+        ext_sync_f->ostrm  = (fr[1] & 0b00001000) >> 3;
+
+        ext_sync_f->wait = ((fr[1] & 0b00000111) << 5) | (fr[0] & 0b11111000) >> 3;
+
+        ext_sync_f->pllldt = (fr[0] & 0b00000100) >> 2;
+        ext_sync_f->osrsm = (fr[0] & 0b00000010) >> 1;
+        ext_sync_f->ostsm = fr[0] & 0b00000001;
+
+    } else if(sub_register == EC_RXTC) {
+
+        ext_sync_f->rx_ts_est = (((uint32_t)fr[3]) << 24) | (((uint32_t)fr[2]) << 16) | (((uint16_t)fr[1]) << 8) | fr[0];
+
+    } else if(sub_register == EC_GOLP) {
+
+        ext_sync_f->offset_ext = fr[0];
+    }
+
+}
+
+size_t ext_sync_unformater(void *format, spi_frame fr, const size_t sub_register) {
+
+    ext_sync_format* ext_sync_f = (ext_sync_format*) format;
+
+    if(sub_register == EC_CTRL) {
+
+        fr[1] = (ext_sync_f->ostrm << 3) | ((ext_sync_f->wait & 0b11100000) >> 5);
+
+        fr[0] = ext_sync_f->ostsm | (((uint8_t)ext_sync_f->osrsm) << 1) | (((uint8_t)ext_sync_f->pllldt) << 2)
+                | ((ext_sync_f->wait & 0b00011111) << 3);
+
+        return 2;
+
+    }
+
+    return 0;
+}
+
+void acc_mem_formater(spi_frame fr, void *format, const size_t sub_register) {
+
+    acc_mem_field* acc_mem_f = (acc_mem_field*) format;
+
+    acc_mem_f->imaginary = (((uint16_t)fr[3]) << 8) | fr[2];
+    acc_mem_f->real = (((uint16_t)fr[1]) << 8) | fr[0];
+
+}
+
+void gpio_ctrl_formater(spi_frame fr, void *format, const size_t sub_register) {
+
+    if(sub_register == GPIO_MODE) {
+
+        gpio_mode_ctrl_format* gpio_mode_ctrl_f = (gpio_mode_ctrl_format*)format;
+
+        gpio_mode_ctrl_f->msgp0 = fr[0] >> 6;
+
+        gpio_mode_ctrl_f->msgp1 = fr[1] & 0b00000011;
+        gpio_mode_ctrl_f->msgp2 = (fr[1] & 0b00001100) >> 2;
+        gpio_mode_ctrl_f->msgp3 = (fr[1] & 0b00110000) >> 4;
+        gpio_mode_ctrl_f->msgp4 = (fr[1] & 0b11000000) >> 6;
+
+        gpio_mode_ctrl_f->msgp5 = fr[2] & 0b00000011;
+        gpio_mode_ctrl_f->msgp6 = (fr[2] & 0b00001100) >> 2;
+        gpio_mode_ctrl_f->msgp7 = (fr[2] & 0b00110000) >> 4;
+        gpio_mode_ctrl_f->msgp8 = (fr[2] & 0b11000000) >> 6;
+
+    } else if(sub_register == GPIO_DIR) {
+
+        gpio_direction_ctrl_format* gpio_direction_ctrl_f = (gpio_direction_ctrl_format*)format;
+
+        gpio_direction_ctrl_f->gdp0 = fr[0] & 0b00000001;
+        gpio_direction_ctrl_f->gdp1 = (fr[0] & 0b00000010) >> 1;
+        gpio_direction_ctrl_f->gdp2 = (fr[0] & 0b00000100) >> 2;
+        gpio_direction_ctrl_f->gdp3 = (fr[0] & 0b00001000) >> 3;
+        gpio_direction_ctrl_f->gdm0 = (fr[0] & 0b00010000) >> 4;
+        gpio_direction_ctrl_f->gdm1 = (fr[0] & 0b00100000) >> 5;
+        gpio_direction_ctrl_f->gdm2 = (fr[0] & 0b01000000) >> 6;
+        gpio_direction_ctrl_f->gdm3 = (fr[0] & 0b10000000) >> 7;
+
+        gpio_direction_ctrl_f->gdp4 = fr[1] & 0b00000001;
+        gpio_direction_ctrl_f->gdp5 = (fr[1] & 0b00000010) >> 1;
+        gpio_direction_ctrl_f->gdp6 = (fr[1] & 0b00000100) >> 2;
+        gpio_direction_ctrl_f->gdp7 = (fr[1] & 0b00001000) >> 3;
+        gpio_direction_ctrl_f->gdm4 = (fr[1] & 0b00010000) >> 4;
+        gpio_direction_ctrl_f->gdm5 = (fr[1] & 0b00100000) >> 5;
+        gpio_direction_ctrl_f->gdm6 = (fr[1] & 0b01000000) >> 6;
+        gpio_direction_ctrl_f->gdm7 = (fr[1] & 0b10000000) >> 7;
+
+        gpio_direction_ctrl_f->gdp8 = fr[2] & 0b00000001;
+        gpio_direction_ctrl_f->gdm8 = (fr[2] & 0b00010000) >> 4;
+
+    } else if(sub_register == GPIO_DOUT) {
+
+        gpio_data_output_ctrl_format* gpio_data_output_ctrl_f = (gpio_data_output_ctrl_format*)format;
+
+        gpio_data_output_ctrl_f->gop0 = fr[0] & 0b00000001;
+        gpio_data_output_ctrl_f->gop1 = (fr[0] & 0b00000010) >> 1;
+        gpio_data_output_ctrl_f->gop2 = (fr[0] & 0b00000100) >> 2;
+        gpio_data_output_ctrl_f->gop3 = (fr[0] & 0b00001000) >> 3;
+        gpio_data_output_ctrl_f->gom0 = (fr[0] & 0b00010000) >> 4;
+        gpio_data_output_ctrl_f->gom1 = (fr[0] & 0b00100000) >> 5;
+        gpio_data_output_ctrl_f->gom2 = (fr[0] & 0b01000000) >> 6;
+        gpio_data_output_ctrl_f->gom3 = (fr[0] & 0b10000000) >> 7;
+
+        gpio_data_output_ctrl_f->gop4 = fr[1] & 0b00000001;
+        gpio_data_output_ctrl_f->gop5 = (fr[1] & 0b00000010) >> 1;
+        gpio_data_output_ctrl_f->gop6 = (fr[1] & 0b00000100) >> 2;
+        gpio_data_output_ctrl_f->gop7 = (fr[1] & 0b00001000) >> 3;
+        gpio_data_output_ctrl_f->gom4 = (fr[1] & 0b00010000) >> 4;
+        gpio_data_output_ctrl_f->gom5 = (fr[1] & 0b00100000) >> 5;
+        gpio_data_output_ctrl_f->gom6 = (fr[1] & 0b01000000) >> 6;
+        gpio_data_output_ctrl_f->gom7 = (fr[1] & 0b10000000) >> 7;
+
+        gpio_data_output_ctrl_f->gop8 = fr[2] & 0b00000001;
+        gpio_data_output_ctrl_f->gom8 = (fr[2] & 0b00010000) >> 4;
+
+    } else if(sub_register == GPIO_IRQE) {
+
+        gpio_irq_ctrl_format* gpio_irq_ctrl_f = (gpio_irq_ctrl_format*)format;
+
+        gpio_irq_ctrl_f->girqe0 = fr[0] & 0b00000001;
+        gpio_irq_ctrl_f->girqe1 = (fr[0] & 0b00000010) >> 1;
+        gpio_irq_ctrl_f->girqe2 = (fr[0] & 0b00000100) >> 2;
+        gpio_irq_ctrl_f->girqe3 = (fr[0] & 0b00001000) >> 3;
+        gpio_irq_ctrl_f->girqe4 = (fr[0] & 0b00010000) >> 4;
+        gpio_irq_ctrl_f->girqe5 = (fr[0] & 0b00100000) >> 5;
+        gpio_irq_ctrl_f->girqe6 = (fr[0] & 0b01000000) >> 6;
+        gpio_irq_ctrl_f->girqe7 = (fr[0] & 0b10000000) >> 7;
+
+        gpio_irq_ctrl_f->girqe8 = fr[1] & 0b00000001;
+
+    } else if(sub_register == GPIO_ISEN) {
+
+        gpio_irq_sense_ctrl_format* gpio_irq_sense_ctrl_f = (gpio_irq_sense_ctrl_format*)format;
+
+        gpio_irq_sense_ctrl_f->gisen0 = fr[0] & 0b00000001;
+        gpio_irq_sense_ctrl_f->gisen1 = (fr[0] & 0b00000010) >> 1;
+        gpio_irq_sense_ctrl_f->gisen2 = (fr[0] & 0b00000100) >> 2;
+        gpio_irq_sense_ctrl_f->gisen3 = (fr[0] & 0b00001000) >> 3;
+        gpio_irq_sense_ctrl_f->gisen4 = (fr[0] & 0b00010000) >> 4;
+        gpio_irq_sense_ctrl_f->gisen5 = (fr[0] & 0b00100000) >> 5;
+        gpio_irq_sense_ctrl_f->gisen6 = (fr[0] & 0b01000000) >> 6;
+        gpio_irq_sense_ctrl_f->gisen7 = (fr[0] & 0b10000000) >> 7;
+
+        gpio_irq_sense_ctrl_f->gisen8 = fr[1] & 0b00000001;
+
+    } else if(sub_register == GPIO_IMODE) {
+
+        gpio_irq_mode_ctrl_format* gpio_irq_mode_ctrl_f = (gpio_irq_mode_ctrl_format*)format;
+
+        gpio_irq_mode_ctrl_f->gimod0 = fr[0] & 0b00000001;
+        gpio_irq_mode_ctrl_f->gimod1 = (fr[0] & 0b00000010) >> 1;
+        gpio_irq_mode_ctrl_f->gimod2 = (fr[0] & 0b00000100) >> 2;
+        gpio_irq_mode_ctrl_f->gimod3 = (fr[0] & 0b00001000) >> 3;
+        gpio_irq_mode_ctrl_f->gimod4 = (fr[0] & 0b00010000) >> 4;
+        gpio_irq_mode_ctrl_f->gimod5 = (fr[0] & 0b00100000) >> 5;
+        gpio_irq_mode_ctrl_f->gimod6 = (fr[0] & 0b01000000) >> 6;
+        gpio_irq_mode_ctrl_f->gimod7 = (fr[0] & 0b10000000) >> 7;
+
+        gpio_irq_mode_ctrl_f->gimod8 = fr[1] & 0b00000001;
+
+    } else if(sub_register == GPIO_IBES) {
+
+        gpio_irq_both_edges_mode_format* gpio_irq_both_edges_mode_f = (gpio_irq_both_edges_mode_format*)format;
+
+        gpio_irq_both_edges_mode_f->gibes0 = fr[0] & 0b00000001;
+        gpio_irq_both_edges_mode_f->gibes1 = (fr[0] & 0b00000010) >> 1;
+        gpio_irq_both_edges_mode_f->gibes2 = (fr[0] & 0b00000100) >> 2;
+        gpio_irq_both_edges_mode_f->gibes3 = (fr[0] & 0b00001000) >> 3;
+        gpio_irq_both_edges_mode_f->gibes4 = (fr[0] & 0b00010000) >> 4;
+        gpio_irq_both_edges_mode_f->gibes5 = (fr[0] & 0b00100000) >> 5;
+        gpio_irq_both_edges_mode_f->gibes6 = (fr[0] & 0b01000000) >> 6;
+        gpio_irq_both_edges_mode_f->gibes7 = (fr[0] & 0b10000000) >> 7;
+
+        gpio_irq_both_edges_mode_f->gibes8 = fr[1] & 0b00000001;
+
+    } else if(sub_register == GPIO_ICLR) {
+
+        gpio_irq_latch_clear_mode_format* gpio_irq_latch_clear_mode_f = (gpio_irq_latch_clear_mode_format*)format;
+
+        gpio_irq_latch_clear_mode_f->giclr0 = fr[0] & 0b00000001;
+        gpio_irq_latch_clear_mode_f->giclr1 = (fr[0] & 0b00000010) >> 1;
+        gpio_irq_latch_clear_mode_f->giclr2 = (fr[0] & 0b00000100) >> 2;
+        gpio_irq_latch_clear_mode_f->giclr3 = (fr[0] & 0b00001000) >> 3;
+        gpio_irq_latch_clear_mode_f->giclr4 = (fr[0] & 0b00010000) >> 4;
+        gpio_irq_latch_clear_mode_f->giclr5 = (fr[0] & 0b00100000) >> 5;
+        gpio_irq_latch_clear_mode_f->giclr6 = (fr[0] & 0b01000000) >> 6;
+        gpio_irq_latch_clear_mode_f->giclr7 = (fr[0] & 0b10000000) >> 7;
+
+        gpio_irq_latch_clear_mode_f->giclr8 = fr[1] & 0b00000001;
+
+    } else if(sub_register == GPIO_IDBE) {
+
+        gpio_irq_de_bounce_mode_format* gpio_irq_de_bounce_mode_f = (gpio_irq_de_bounce_mode_format*)format;
+
+        gpio_irq_de_bounce_mode_f->gidbe0 = fr[0] & 0b00000001;
+        gpio_irq_de_bounce_mode_f->gidbe1 = (fr[0] & 0b00000010) >> 1;
+        gpio_irq_de_bounce_mode_f->gidbe2 = (fr[0] & 0b00000100) >> 2;
+        gpio_irq_de_bounce_mode_f->gidbe3 = (fr[0] & 0b00001000) >> 3;
+        gpio_irq_de_bounce_mode_f->gidbe4 = (fr[0] & 0b00010000) >> 4;
+        gpio_irq_de_bounce_mode_f->gidbe5 = (fr[0] & 0b00100000) >> 5;
+        gpio_irq_de_bounce_mode_f->gidbe6 = (fr[0] & 0b01000000) >> 6;
+        gpio_irq_de_bounce_mode_f->gidbe7 = (fr[0] & 0b10000000) >> 7;
+
+        gpio_irq_de_bounce_mode_f->gidbe8 = fr[1] & 0b00000001;
+
+    } else if(sub_register == GPIO_RAW) {
+
+        gpio_raw_state_format* gpio_raw_state_f = (gpio_raw_state_format*)format;
+
+        gpio_raw_state_f->grawp0 = fr[0] & 0b00000001;
+        gpio_raw_state_f->grawp1 = (fr[0] & 0b00000010) >> 1;
+        gpio_raw_state_f->grawp2 = (fr[0] & 0b00000100) >> 2;
+        gpio_raw_state_f->grawp3 = (fr[0] & 0b00001000) >> 3;
+        gpio_raw_state_f->grawp4 = (fr[0] & 0b00010000) >> 4;
+        gpio_raw_state_f->grawp5 = (fr[0] & 0b00100000) >> 5;
+        gpio_raw_state_f->grawp6 = (fr[0] & 0b01000000) >> 6;
+        gpio_raw_state_f->grawp7 = (fr[0] & 0b10000000) >> 7;
+
+        gpio_raw_state_f->grawp8 = fr[1] & 0b00000001;
+    }
+
+}
+
+size_t gpio_ctrl_unformater(void *format, spi_frame fr, const size_t sub_register) {
+
+    if(sub_register == GPIO_MODE) {
+
+        gpio_mode_ctrl_format* gpio_mode_ctrl_f = (gpio_mode_ctrl_format*)format;
+
+        fr[0] = gpio_mode_ctrl_f->msgp0;
+
+        fr[1] = (((uint8_t)gpio_mode_ctrl_f->msgp4) << 6) | (((uint8_t)gpio_mode_ctrl_f->msgp3) << 4) |
+                (((uint8_t)gpio_mode_ctrl_f->msgp2) << 2) | gpio_mode_ctrl_f->msgp1;
+
+        fr[2] = (((uint8_t)gpio_mode_ctrl_f->msgp8) << 6) | (((uint8_t)gpio_mode_ctrl_f->msgp7) << 4) |
+                (((uint8_t)gpio_mode_ctrl_f->msgp6) << 2) | gpio_mode_ctrl_f->msgp5;
 
         return 3;
+
+    } else if(sub_register == GPIO_DIR) {
+
+        gpio_direction_ctrl_format* gpio_direction_ctrl_f = (gpio_direction_ctrl_format*)format;
+
+        fr[0] = (((uint8_t)gpio_direction_ctrl_f->gdm3) >> 7) |
+                (((uint8_t)gpio_direction_ctrl_f->gdm2) >> 6) |
+                (((uint8_t)gpio_direction_ctrl_f->gdm1) >> 5) |
+                (((uint8_t)gpio_direction_ctrl_f->gdm0) >> 4) |
+                (((uint8_t)gpio_direction_ctrl_f->gdp3) >> 3) |
+                (((uint8_t)gpio_direction_ctrl_f->gdp2) >> 2) |
+                (((uint8_t)gpio_direction_ctrl_f->gdp1) >> 1) |
+                gpio_direction_ctrl_f->gdp0;
+
+        fr[1] = (((uint8_t)gpio_direction_ctrl_f->gdm7) >> 7) |
+                (((uint8_t)gpio_direction_ctrl_f->gdm6) >> 6) |
+                (((uint8_t)gpio_direction_ctrl_f->gdm5) >> 5) |
+                (((uint8_t)gpio_direction_ctrl_f->gdm4) >> 4) |
+                (((uint8_t)gpio_direction_ctrl_f->gdp7) >> 3) |
+                (((uint8_t)gpio_direction_ctrl_f->gdp6) >> 2) |
+                (((uint8_t)gpio_direction_ctrl_f->gdp5) >> 1) |
+                gpio_direction_ctrl_f->gdp4;
+
+        fr[2] = (((uint8_t)gpio_direction_ctrl_f->gdm8) >> 4) | gpio_direction_ctrl_f->gdp8;
+
+        return 3;
+
+    } else if(sub_register == GPIO_DOUT) {
+
+        gpio_data_output_ctrl_format* gpio_data_output_ctrl_f = (gpio_data_output_ctrl_format*)format;
+
+        fr[0] = (((uint8_t)gpio_data_output_ctrl_f->gom3) >> 7) |
+                (((uint8_t)gpio_data_output_ctrl_f->gom2) >> 6) |
+                (((uint8_t)gpio_data_output_ctrl_f->gom1) >> 5) |
+                (((uint8_t)gpio_data_output_ctrl_f->gom0) >> 4) |
+                (((uint8_t)gpio_data_output_ctrl_f->gop3) >> 3) |
+                (((uint8_t)gpio_data_output_ctrl_f->gop2) >> 2) |
+                (((uint8_t)gpio_data_output_ctrl_f->gop1) >> 1) |
+                gpio_data_output_ctrl_f->gop0;
+
+        fr[1] = (((uint8_t)gpio_data_output_ctrl_f->gom7) >> 7) |
+                (((uint8_t)gpio_data_output_ctrl_f->gom6) >> 6) |
+                (((uint8_t)gpio_data_output_ctrl_f->gom5) >> 5) |
+                (((uint8_t)gpio_data_output_ctrl_f->gom4) >> 4) |
+                (((uint8_t)gpio_data_output_ctrl_f->gop7) >> 3) |
+                (((uint8_t)gpio_data_output_ctrl_f->gop6) >> 2) |
+                (((uint8_t)gpio_data_output_ctrl_f->gop5) >> 1) |
+                gpio_data_output_ctrl_f->gop4;
+
+        fr[2] = (((uint8_t)gpio_data_output_ctrl_f->gom8) >> 4) | gpio_data_output_ctrl_f->gop8;
+
+        return 3;
+
+    } else if(sub_register == GPIO_IRQE) {
+
+        gpio_irq_ctrl_format* gpio_irq_ctrl_f = (gpio_irq_ctrl_format*)format;
+
+        fr[0] = (((uint8_t)gpio_irq_ctrl_f->girqe7) >> 7) |
+                (((uint8_t)gpio_irq_ctrl_f->girqe6) >> 6) |
+                (((uint8_t)gpio_irq_ctrl_f->girqe5) >> 5) |
+                (((uint8_t)gpio_irq_ctrl_f->girqe4) >> 4) |
+                (((uint8_t)gpio_irq_ctrl_f->girqe3) >> 3) |
+                (((uint8_t)gpio_irq_ctrl_f->girqe2) >> 2) |
+                (((uint8_t)gpio_irq_ctrl_f->girqe1) >> 1) |
+                gpio_irq_ctrl_f->girqe0;
+
+        fr[1] = gpio_irq_ctrl_f->girqe8;
+
+        return 2;
+
+    } else if(sub_register == GPIO_ISEN) {
+
+        gpio_irq_sense_ctrl_format* gpio_irq_sense_ctrl_f = (gpio_irq_sense_ctrl_format*)format;
+
+        fr[0] = (((uint8_t)gpio_irq_sense_ctrl_f->gisen7) >> 7) |
+                (((uint8_t)gpio_irq_sense_ctrl_f->gisen6) >> 6) |
+                (((uint8_t)gpio_irq_sense_ctrl_f->gisen5) >> 5) |
+                (((uint8_t)gpio_irq_sense_ctrl_f->gisen4) >> 4) |
+                (((uint8_t)gpio_irq_sense_ctrl_f->gisen3) >> 3) |
+                (((uint8_t)gpio_irq_sense_ctrl_f->gisen2) >> 2) |
+                (((uint8_t)gpio_irq_sense_ctrl_f->gisen1) >> 1) |
+                gpio_irq_sense_ctrl_f->gisen0;
+
+        fr[1] = gpio_irq_sense_ctrl_f->gisen8;
+
+        return 2;
+
+    } else if(sub_register == GPIO_IMODE) {
+
+        gpio_irq_mode_ctrl_format* gpio_irq_mode_ctrl_f = (gpio_irq_mode_ctrl_format*)format;
+
+        fr[0] = (((uint8_t)gpio_irq_mode_ctrl_f->gimod7) >> 7) |
+                (((uint8_t)gpio_irq_mode_ctrl_f->gimod6) >> 6) |
+                (((uint8_t)gpio_irq_mode_ctrl_f->gimod5) >> 5) |
+                (((uint8_t)gpio_irq_mode_ctrl_f->gimod4) >> 4) |
+                (((uint8_t)gpio_irq_mode_ctrl_f->gimod3) >> 3) |
+                (((uint8_t)gpio_irq_mode_ctrl_f->gimod2) >> 2) |
+                (((uint8_t)gpio_irq_mode_ctrl_f->gimod1) >> 1) |
+                gpio_irq_mode_ctrl_f->gimod0;
+
+        fr[1] = gpio_irq_mode_ctrl_f->gimod8;
+
+        return 2;
+
+    } else if(sub_register == GPIO_IBES) {
+
+        gpio_irq_both_edges_mode_format* gpio_irq_both_edges_mode_f = (gpio_irq_both_edges_mode_format*)format;
+
+        fr[0] = (((uint8_t)gpio_irq_both_edges_mode_f->gibes7) >> 7) |
+                (((uint8_t)gpio_irq_both_edges_mode_f->gibes6) >> 6) |
+                (((uint8_t)gpio_irq_both_edges_mode_f->gibes5) >> 5) |
+                (((uint8_t)gpio_irq_both_edges_mode_f->gibes4) >> 4) |
+                (((uint8_t)gpio_irq_both_edges_mode_f->gibes3) >> 3) |
+                (((uint8_t)gpio_irq_both_edges_mode_f->gibes2) >> 2) |
+                (((uint8_t)gpio_irq_both_edges_mode_f->gibes1) >> 1) |
+                gpio_irq_both_edges_mode_f->gibes0;
+
+        fr[1] = gpio_irq_both_edges_mode_f->gibes8;
+
+        return 2;
+
+    } else if(sub_register == GPIO_ICLR) {
+
+        gpio_irq_latch_clear_mode_format* gpio_irq_latch_clear_mode_f = (gpio_irq_latch_clear_mode_format*)format;
+
+        fr[0] = (((uint8_t)gpio_irq_latch_clear_mode_f->giclr7) >> 7) |
+                (((uint8_t)gpio_irq_latch_clear_mode_f->giclr6) >> 6) |
+                (((uint8_t)gpio_irq_latch_clear_mode_f->giclr5) >> 5) |
+                (((uint8_t)gpio_irq_latch_clear_mode_f->giclr4) >> 4) |
+                (((uint8_t)gpio_irq_latch_clear_mode_f->giclr3) >> 3) |
+                (((uint8_t)gpio_irq_latch_clear_mode_f->giclr2) >> 2) |
+                (((uint8_t)gpio_irq_latch_clear_mode_f->giclr1) >> 1) |
+                gpio_irq_latch_clear_mode_f->giclr0;
+
+        fr[1] = gpio_irq_latch_clear_mode_f->giclr8;
+
+        return 2;
+
+    } else if(sub_register == GPIO_IDBE) {
+
+        gpio_irq_de_bounce_mode_format* gpio_irq_de_bounce_mode_f = (gpio_irq_de_bounce_mode_format*)format;
+
+        fr[0] = (((uint8_t)gpio_irq_de_bounce_mode_f->gidbe7) >> 7) |
+                (((uint8_t)gpio_irq_de_bounce_mode_f->gidbe6) >> 6) |
+                (((uint8_t)gpio_irq_de_bounce_mode_f->gidbe5) >> 5) |
+                (((uint8_t)gpio_irq_de_bounce_mode_f->gidbe4) >> 4) |
+                (((uint8_t)gpio_irq_de_bounce_mode_f->gidbe3) >> 3) |
+                (((uint8_t)gpio_irq_de_bounce_mode_f->gidbe2) >> 2) |
+                (((uint8_t)gpio_irq_de_bounce_mode_f->gidbe1) >> 1) |
+                gpio_irq_de_bounce_mode_f->gidbe0;
+
+        fr[1] = gpio_irq_de_bounce_mode_f->gidbe8;
+
+        return 2;
+
+    } else if(sub_register == GPIO_RAW) {
+
+        gpio_raw_state_format* gpio_raw_state_f = (gpio_raw_state_format*)format;
+
+        fr[0] = (((uint8_t)gpio_raw_state_f->grawp7) >> 7) |
+                (((uint8_t)gpio_raw_state_f->grawp6) >> 6) |
+                (((uint8_t)gpio_raw_state_f->grawp5) >> 5) |
+                (((uint8_t)gpio_raw_state_f->grawp4) >> 4) |
+                (((uint8_t)gpio_raw_state_f->grawp3) >> 3) |
+                (((uint8_t)gpio_raw_state_f->grawp2) >> 2) |
+                (((uint8_t)gpio_raw_state_f->grawp1) >> 1) |
+                gpio_raw_state_f->grawp0;
+
+        fr[1] = gpio_raw_state_f->grawp8;
+
+        return 2;
+
     }
 
     return 0;

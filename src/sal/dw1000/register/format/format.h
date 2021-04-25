@@ -867,7 +867,7 @@ typedef struct {
 } rx_sniff_format;
 
 /**
- * @brief Formats a spi_frame to an rx_sniff_format.
+ * @brief Formats a spi_frame to a rx_sniff_format.
  *
  * @param[in] fr: spi_frame to initialize the rx_sniff_format(format).
  * @param[out] format: Structure which will contains the spi_frame formatted.
@@ -879,7 +879,7 @@ typedef struct {
 void rx_sniff_formater(spi_frame fr, void *format, const size_t sub_register);
 
 /**
- * @brief Unformats an rx_sniff_format to a spi_frame.
+ * @brief Unformats a rx_sniff_format to a spi_frame.
  *
  * @param[in] format: Structure which contains the values of the fields of the RX_SNIFF register.
  * @param[out] fr: spi_frame where this function will store the rx_sniff_format structure.
@@ -987,7 +987,7 @@ typedef struct {                // DIS_STXP = 0 |  DIS_STXP = 1
  */
 
 /**
- * @brief Formats a spi_frame to an tx_power_format.
+ * @brief Formats a spi_frame to a tx_power_format.
  *
  * @param[in] fr: spi_frame to initialize the tx_power_format(format).
  * @param[out] format: Structure which will contains the spi_frame formatted.
@@ -999,7 +999,7 @@ typedef struct {                // DIS_STXP = 0 |  DIS_STXP = 1
 void tx_power_formater(spi_frame fr, void *format, const size_t sub_register);
 
 /**
- * @brief Unformats an tx_power_format to a spi_frame.
+ * @brief Unformats a tx_power_format to a spi_frame.
  *
  * @param[in] format: Structure which contains the values of the fields of the TX_POWER register.
  * @param[out] fr: spi_frame where this function will store the tx_power_format structure.
@@ -1037,7 +1037,11 @@ typedef struct {
 } chan_ctrl_format;
 
 /**
+<<<<<<< HEAD
+ * @brief Formats a spi_frame to a chan_ctrl_format.
+=======
  * @brief Formats a spi_frame to an chan_ctrl_format.
+>>>>>>> 86e5a0b426e19588ef3552c2e2b7c528f5f527a8
  *
  * @param[in] fr: spi_frame to initialize the chan_ctrl_format(format).
  * @param[out] format: Structure which will contains the spi_frame formatted.
@@ -1049,7 +1053,11 @@ typedef struct {
 void chan_ctrl_formater(spi_frame fr, void *format, const size_t sub_register);
 
 /**
+<<<<<<< HEAD
+ * @brief Unformats a chan_ctrl_format to a spi_frame.
+=======
  * @brief Unformats an chan_ctrl_format to a spi_frame.
+>>>>>>> 86e5a0b426e19588ef3552c2e2b7c528f5f527a8
  *
  * @param[in] format: Structure which contains the values of the fields of the CHAN_CTRL register.
  * @param[out] fr: spi_frame where this function will store the chan_ctrl_format structure.
@@ -1239,5 +1247,392 @@ void agc_ctrl_formater(spi_frame fr, void *format, const size_t sub_register);
  *
  */
 size_t agc_ctrl_unformater(void *format, spi_frame fr, const size_t sub_register);
+
+/******* EXT_SYNC *******/
+
+// Sub-registers of the external clock synchronization counter configuration.
+typedef enum {
+    EC_CTRL = 0,
+    EC_RXTC = 0X04,
+    EC_GOLP = 0X0C,
+} ext_sync_subregister;
+
+// Structure of the external clock synchronization counter configuration register.
+typedef struct {
+    unsigned int ostrm :1;      // External time base reset mode enable. (RW)
+    uint8_t wait;               // Wait counter used for external transmit synchronization and external time base reset. (RW)
+    unsigned int pllldt :1;     // Clock PLL lock detect tune. This bit should be set to 1 to ensure reliable operation of the clock
+                                // PLL lock detect flags. (RW)
+    unsigned int osrsm :1;      // External receive synchronization mode enable. (RW)
+    unsigned int ostsm :1;      // External transmit synchronization mode enable. (RW)
+    uint32_t rx_ts_est;         // External clock synchronization counter captured on RMARKER. (RO)
+    unsigned int offset_ext :6; // External clock offset to first path 1 GHz counter. (RO)
+} ext_sync_format;
+
+/**
+ * @brief Formats a spi_frame to an ext_sync_format.
+ *
+ * @param[in] fr: spi_frame to initialize the ext_sync_format(format).
+ * @param[out] format: Structure which will contains the spi_frame formatted.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @note: This function must receive an ext_sync_format to work.
+ *
+ */
+void ext_sync_formater(spi_frame fr, void *format, const size_t sub_register);
+
+/**
+ * @brief Unformats an ext_sync_format to a spi_frame.
+ *
+ * @param[in] format: Structure which contains the values of the fields of the EXT_SYNC register.
+ * @param[out] fr: spi_frame where this function will store the ext_sync_format structure.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @return size_t: Size of the spi_frame formed with the given ext_sync_format structure.
+ *
+ * @note: This function must receive a ext_sync_format value to work.
+ *
+ */
+size_t ext_sync_unformater(void *format, spi_frame fr, const size_t sub_register);
+
+/******* ACC_MEM *******/
+
+// Fields of the read access to accumulator data memory register.
+typedef struct {
+    signed int real: 16;      // Real part.
+    signed int imaginary: 16; // Imaginary part.
+} acc_mem_field;
+
+/**
+ * @brief Formats a spi_frame to an acc_mem_format.
+ *
+ * @param[in] fr: spi_frame to initialize the acc_mem_format(format).
+ * @param[out] format: Array which will contains the spi_frame formatted.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @note: This function must receive an acc_mem_format to work.
+ *
+ */
+void acc_mem_formater(spi_frame fr, void *format, const size_t sub_register);
+
+/******* GPIO_CTRL *******/
+
+// Sub-registers of the external clock synchronization counter configuration.
+typedef enum {
+    GPIO_MODE = 0,
+    GPIO_DIR = 0x08,
+    GPIO_DOUT = 0x0C,
+    GPIO_IRQE = 0x10,
+    GPIO_ISEN = 0x14,
+    GPIO_IMODE = 0x18,
+    GPIO_IBES = 0x1C,
+    GPIO_ICLR = 0x20,
+    GPIO_IDBE = 0x24,
+    GPIO_RAW = 0x28,
+} gpio_ctrl_subregister;
+
+// Possible values of the msgp0 field.
+typedef enum {
+    MSGP0_DEFAULT_MODE = 0b00,
+    MSGP0_RXOKLED = 0b01,          // The output is asserted briefly when the receiver
+                                   // completes the reception of a frame with a good FCS/CRC.
+    MSGP0_GET_SYSTEM_CLOCK = 0b10,
+    MSGP0_RESERVED_VALUE = 0b00,   // This value should be 0b11, but this is to prevent used it.
+} msgp0_value;
+
+// Possible values of the msgp1 field.
+typedef enum {
+    MSGP1_DEFAULT_MODE = 0b00,
+    MSGP1_SFDLED = 0b01,          // The output is asserted briefly when the receiver detects the SFD
+                                  // sequence in the RX frame.
+    MSGP1_RESERVED_VALUE1 = 0b00, // This value should be 0b01, but this is to prevent used it.
+    MSGP1_RESERVED_VALUE2 = 0b00, // This value should be 0b11, but this is to prevent used it.
+} msgp1_value;
+
+// Possible values of the msgp2 field.
+typedef enum {
+    MSGP2_DEFAULT_MODE = 0b00,
+    MSGP2_RXLED = 0b01,           // The output is asserted when the receiver is on, and stays
+                                  // on for a brief period after the receiver is turned off.
+    MSGP2_RESERVED_VALUE1 = 0b00, // This value should be 0b01, but this is to prevent used it.
+    MSGP2_RESERVED_VALUE2 = 0b00, // This value should be 0b11, but this is to prevent used it.
+} msgp2_value;
+
+// Possible values of the msgp3 field.
+typedef enum {
+    MSGP3_DEFAULT_MODE = 0b00,
+    MSGP3_TXLED = 0b01,           // The output is asserted briefly when the transmitter
+                                  // completes sending a frame.
+    MSGP3_RESERVED_VALUE1 = 0b00, // This value should be 0b01, but this is to prevent used it.
+    MSGP3_RESERVED_VALUE2 = 0b00, // This value should be 0b11, but this is to prevent used it.
+} msgp3_value;
+
+// Possible values of the msgp4 field.
+typedef enum {
+    MSGP4_DEFAULT_MODE = 0b00,
+    MSGP4_EXTPA = 0b01,           // The output of the external power amplification.
+    MSGP4_RESERVED_VALUE1 = 0b00, // This value should be 0b01, but this is to prevent used it.
+    MSGP4_RESERVED_VALUE2 = 0b00, // This value should be 0b11, but this is to prevent used it.
+} msgp4_value;
+
+// Possible values of the msgp5 field.
+typedef enum {
+    MSGP5_DEFAULT_MODE = 0b00,
+    MSGP5_EXTTXE = 0b01,          // The output of the external power amplification.
+    MSGP5_RESERVED_VALUE1 = 0b00, // This value should be 0b01, but this is to prevent used it.
+    MSGP5_RESERVED_VALUE2 = 0b00, // This value should be 0b11, but this is to prevent used it.
+} msgp5_value;
+
+// Possible values of the msgp6 field.
+typedef enum {
+    MSGP6_DEFAULT_MODE = 0b00,
+    MSGP6_EXTRXE = 0b01,          // The output of the external power amplification.
+    MSGP6_RESERVED_VALUE1 = 0b00, // This value should be 0b01, but this is to prevent used it.
+    MSGP6_RESERVED_VALUE2 = 0b00, // This value should be 0b11, but this is to prevent used it.
+} msgp6_value;
+
+// Possible values of the msgp7 field.
+typedef enum {
+    MSGP7_DEFAULT_MODE_SYNC = 0b00, // The pin operates as the SYNC input.
+    MSGP7_GPIO7 = 0b01,             // The pin operates as GPIO7.
+    MSGP7_RESERVED_VALUE1 = 0b00,   // This value should be 0b01, but this is to prevent used it.
+    MSGP7_RESERVED_VALUE2 = 0b00,   // This value should be 0b11, but this is to prevent used it.
+} msgp7_value;
+
+// Possible values of the msgp8 field.
+typedef enum {
+    MSGP8_DEFAULT_MODE_IRQ = 0b00, // The pin operates as the IRQ output.
+    MSGP8_GPIO8 = 0b01,            // The pin operates as GPIO8.
+    MSGP8_RESERVED_VALUE1 = 0b00,  // This value should be 0b01, but this is to prevent used it.
+    MSGP8_RESERVED_VALUE2 = 0b00,  // This value should be 0b11, but this is to prevent used it.
+} msgp8_value;
+
+// Structure of the GPIO mode control sub-register.
+typedef struct {
+    msgp8_value msgp8; // Mode Selection for IRQ/GPIO8.
+    msgp7_value msgp7; // Mode Selection for SYNC/GPIO7.
+    msgp6_value msgp6; // Mode Selection for GPIO6/EXTRXE.
+    msgp5_value msgp5; // Mode Selection for GPIO5/EXTTXE.
+    msgp4_value msgp4; // Mode Selection for GPIO4/EXTPA.
+    msgp3_value msgp3; // Mode Selection for GPIO3/TXLED.
+    msgp2_value msgp2; // Mode Selection for GPIO2/RXLED.
+    msgp1_value msgp1; // Mode Selection for GPIO1/SFDLED.
+    msgp0_value msgp0; // Mode Selection for GPIO0/RXOKLED.
+} gpio_mode_ctrl_format;
+
+// Possibles modes of the GPIOS.
+typedef enum {
+    INPUT = 0b1,
+    OUTPUT = 0b0,
+} input_output_mode;
+
+// Structure of the GPIO direction control sub-register.
+typedef struct {
+    input_output_mode gdm8; // Mask for setting the direction of GPIO8.
+    input_output_mode gdp8; // Reading this bit shows the direction setting for GPIO8.
+    input_output_mode gdm7; // Mask for setting the direction of GPIO7.
+    input_output_mode gdm6; // Mask for setting the direction of GPIO6.
+    input_output_mode gdm5; // Mask for setting the direction of GPIO5.
+    input_output_mode gdm4; // Mask for setting the direction of GPIO4.
+    input_output_mode gdp7; // Reading this bit shows the direction setting for GPIO7.
+    input_output_mode gdp6; // Reading this bit shows the direction setting for GPIO6.
+    input_output_mode gdp5; // Reading this bit shows the direction setting for GPIO5.
+    input_output_mode gdp4; // Reading this bit shows the direction setting for GPIO4.
+    input_output_mode gdm3; // Mask for setting the direction of GPIO3.
+    input_output_mode gdm2; // Mask for setting the direction of GPIO2.
+    input_output_mode gdm1; // Mask for setting the direction of GPIO1.
+    input_output_mode gdm0; // Mask for setting the direction of GPIO0.
+    input_output_mode gdp3; // Reading this bit shows the direction setting for GPIO3.
+    input_output_mode gdp2; // Reading this bit shows the direction setting for GPIO2.
+    input_output_mode gdp1; // Reading this bit shows the direction setting for GPIO1.
+    input_output_mode gdp0; // Reading this bit shows the direction setting for GPIO0.
+} gpio_direction_ctrl_format;
+
+// Possibles outputs of the GPIOS that are configured as output.
+typedef enum {
+    HIGH = 0b1,
+    LOW = 0b0
+} output_state;
+
+// Structure of the GPIO data output control sub-register.
+typedef struct {
+    output_state gom8; // Mask for setting GPIO8 output state.
+    output_state gop8; // Reading this bit shows the current setting for GPIO8.
+    output_state gom7; // Mask for setting GPIO7 output state.
+    output_state gom6; // Mask for setting GPIO6 output state.
+    output_state gom5; // Mask for setting GPIO5 output state.
+    output_state gom4; // Mask for setting GPIO4 output state.
+    output_state gop7; // Reading this bit shows the current setting for GPIO7.
+    output_state gop6; // Reading this bit shows the current setting for GPIO6.
+    output_state gop5; // Reading this bit shows the current setting for GPIO5.
+    output_state gop4; // Reading this bit shows the current setting for GPIO4.
+    output_state gom3; // Mask for setting GPIO3 output state.
+    output_state gom2; // Mask for setting GPIO2 output state.
+    output_state gom1; // Mask for setting GPIO1 output state.
+    output_state gom0; // Mask for setting GPIO0 output state.
+    output_state gop3; // Reading this bit shows the current setting for GPIO3.
+    output_state gop2; // Reading this bit shows the current setting for GPIO2.
+    output_state gop1; // Reading this bit shows the current setting for GPIO1.
+    output_state gop0; // Reading this bit shows the current setting for GPIO0.
+} gpio_data_output_ctrl_format;
+
+// Possibles modes of the IRQ GPIOS.
+typedef enum {
+    IRQ_ENEABLE = 0b1,
+    IRQ_DISABLE = 0b0,
+} gpio_irq_value;
+
+// Structure of the GPIO interrupt enable sub-register.
+typedef struct {
+    gpio_irq_value girqe8; // GPIO IRQ Enable for GPIO8 input.
+    gpio_irq_value girqe7; // GPIO IRQ Enable for GPIO7 input.
+    gpio_irq_value girqe6; // GPIO IRQ Enable for GPIO6 input.
+    gpio_irq_value girqe5; // GPIO IRQ Enable for GPIO5 input.
+    gpio_irq_value girqe4; // GPIO IRQ Enable for GPIO4 input.
+    gpio_irq_value girqe3; // GPIO IRQ Enable for GPIO3 input.
+    gpio_irq_value girqe2; // GPIO IRQ Enable for GPIO2 input.
+    gpio_irq_value girqe1; // GPIO IRQ Enable for GPIO1 input.
+    gpio_irq_value girqe0; // GPIO IRQ Enable for GPIO0 input.
+} gpio_irq_ctrl_format;
+
+// Possibles senses of the IRQ GPIOS.
+typedef enum {
+    IRQ_RISING_EDGE = 0b0,  // Active in rising-edge.
+    IRQ_FALLING_EDGE = 0b1, // Active in falling-edge.
+} gpio_irq_sense_value;
+
+// Structure of the GPIO Interrupt sense selection sub-register.
+typedef struct {
+    gpio_irq_sense_value gisen8; // GPIO IRQ sense selection GPIO8 input.
+    gpio_irq_sense_value gisen7; // GPIO IRQ sense selection GPIO7 input.
+    gpio_irq_sense_value gisen6; // GPIO IRQ sense selection GPIO6 input.
+    gpio_irq_sense_value gisen5; // GPIO IRQ sense selection GPIO5 input.
+    gpio_irq_sense_value gisen4; // GPIO IRQ sense selection GPIO4 input.
+    gpio_irq_sense_value gisen3; // GPIO IRQ sense selection GPIO3 input.
+    gpio_irq_sense_value gisen2; // GPIO IRQ sense selection GPIO2 input.
+    gpio_irq_sense_value gisen1; // GPIO IRQ sense selection GPIO1 input.
+    gpio_irq_sense_value gisen0; // GPIO IRQ sense selection GPIO0 input.
+} gpio_irq_sense_ctrl_format;
+
+// Possibles interrupt modes of the IRQ GPIOS.
+typedef enum {
+    IRQ_LEVEL = 0b0,
+    IRQ_EDGE = 0b1,
+} gpio_irq_interrupt_mode_value;
+
+// Structure of the GPIO Interrupt Mode (Level/Edge) sub-register.
+typedef struct {
+    gpio_irq_interrupt_mode_value gimod8; // GPIO IRQ mode selection for GPIO8 input.
+    gpio_irq_interrupt_mode_value gimod7; // GPIO IRQ mode selection for GPIO7 input.
+    gpio_irq_interrupt_mode_value gimod6; // GPIO IRQ mode selection for GPIO6 input.
+    gpio_irq_interrupt_mode_value gimod5; // GPIO IRQ mode selection for GPIO5 input.
+    gpio_irq_interrupt_mode_value gimod4; // GPIO IRQ mode selection for GPIO4 input.
+    gpio_irq_interrupt_mode_value gimod3; // GPIO IRQ mode selection for GPIO3 input.
+    gpio_irq_interrupt_mode_value gimod2; // GPIO IRQ mode selection for GPIO2 input.
+    gpio_irq_interrupt_mode_value gimod1; // GPIO IRQ mode selection for GPIO1 input.
+    gpio_irq_interrupt_mode_value gimod0; // GPIO IRQ mode selection for GPIO0 input.
+} gpio_irq_mode_ctrl_format;
+
+// Possibles interrupt both edge modes of the IRQ GPIOS.
+typedef enum {
+    IRQ_NO_BOTH_EDGES = 0b0, // GPIO_IMODE sub-register selects the edge.
+    IRQ_BOTH_EDGES = 0b1,    // Both edges trigger the interrupt.
+} gpio_irq_both_edges_mode_value;
+
+// Structure of the GPIO Interrupt both edge select sub-register.
+typedef struct {
+    gpio_irq_both_edges_mode_value gibes8; // GPIO IRQ both edge selection for GPIO8 input.
+    gpio_irq_both_edges_mode_value gibes7; // GPIO IRQ both edge selection for GPIO7 input.
+    gpio_irq_both_edges_mode_value gibes6; // GPIO IRQ both edge selection for GPIO6 input.
+    gpio_irq_both_edges_mode_value gibes5; // GPIO IRQ both edge selection for GPIO5 input.
+    gpio_irq_both_edges_mode_value gibes4; // GPIO IRQ both edge selection for GPIO4 input.
+    gpio_irq_both_edges_mode_value gibes3; // GPIO IRQ both edge selection for GPIO3 input.
+    gpio_irq_both_edges_mode_value gibes2; // GPIO IRQ both edge selection for GPIO2 input.
+    gpio_irq_both_edges_mode_value gibes1; // GPIO IRQ both edge selection for GPIO1 input.
+    gpio_irq_both_edges_mode_value gibes0; // GPIO IRQ both edge selection for GPIO0 input.
+} gpio_irq_both_edges_mode_format;
+
+// Possibles GPIO Interrupt latch clear modes.
+typedef enum {
+    IRQ_LATCH_CLEAR = 0b1,
+    IRQ_NO_LATCH_CLEAR = 0b0,
+} gpio_irq_latch_clear_mode_value;
+
+// Structure of the GPIO interrupt latch clear sub-register.
+typedef struct {
+    gpio_irq_latch_clear_mode_value giclr8; // GPIO IRQ latch clear for GPIO8 input.
+    gpio_irq_latch_clear_mode_value giclr7; // GPIO IRQ latch clear for GPIO7 input.
+    gpio_irq_latch_clear_mode_value giclr6; // GPIO IRQ latch clear for GPIO6 input.
+    gpio_irq_latch_clear_mode_value giclr5; // GPIO IRQ latch clear for GPIO5 input.
+    gpio_irq_latch_clear_mode_value giclr4; // GPIO IRQ latch clear for GPIO4 input.
+    gpio_irq_latch_clear_mode_value giclr3; // GPIO IRQ latch clear for GPIO3 input.
+    gpio_irq_latch_clear_mode_value giclr2; // GPIO IRQ latch clear for GPIO2 input.
+    gpio_irq_latch_clear_mode_value giclr1; // GPIO IRQ latch clear for GPIO1 input.
+    gpio_irq_latch_clear_mode_value giclr0; // GPIO IRQ latch clear for GPIO0 input.
+} gpio_irq_latch_clear_mode_format;
+
+// Possibles GPIO interrupt de-bounce enable modes.
+typedef enum {
+    IRQ_DE_BOUNCE_ENABLE = 0b1,
+    IRQ_DE_BOUNCE_DISABLE = 0b0,
+} gpio_irq_de_bounce_mode_value;
+
+// Structure of the GPIO interrupt de-bounce sub-register.
+typedef struct {
+    gpio_irq_de_bounce_mode_value gidbe8; // GPIO8 IRQ de-bounce configuration.
+    gpio_irq_de_bounce_mode_value gidbe7; // GPIO7 IRQ de-bounce configuration.
+    gpio_irq_de_bounce_mode_value gidbe6; // GPIO6 IRQ de-bounce configuration.
+    gpio_irq_de_bounce_mode_value gidbe5; // GPIO5 IRQ de-bounce configuration.
+    gpio_irq_de_bounce_mode_value gidbe4; // GPIO4 IRQ de-bounce configuration.
+    gpio_irq_de_bounce_mode_value gidbe3; // GPIO3 IRQ de-bounce configuration.
+    gpio_irq_de_bounce_mode_value gidbe2; // GPIO2 IRQ de-bounce configuration.
+    gpio_irq_de_bounce_mode_value gidbe1; // GPIO1 IRQ de-bounce configuration.
+    gpio_irq_de_bounce_mode_value gidbe0; // GPIO0 IRQ de-bounce configuration.
+} gpio_irq_de_bounce_mode_format;
+
+// Possibles GPIO raw states.
+typedef enum {
+    GPIO_HAS_RAW = 0b1,
+    GPIO_HAS_NO_RAW = 0b0,
+} gpio_raw_state_value;
+
+// Structure of the GPIO raw state sub-register.
+typedef struct {
+    gpio_raw_state_value grawp8; // This bit reflects the raw state of GPIO8.
+    gpio_raw_state_value grawp7; // This bit reflects the raw state of GPIO7.
+    gpio_raw_state_value grawp6; // This bit reflects the raw state of GPIO6.
+    gpio_raw_state_value grawp5; // This bit reflects the raw state of GPIO5.
+    gpio_raw_state_value grawp4; // This bit reflects the raw state of GPIO4.
+    gpio_raw_state_value grawp3; // This bit reflects the raw state of GPIO3.
+    gpio_raw_state_value grawp2; // This bit reflects the raw state of GPIO2.
+    gpio_raw_state_value grawp1; // This bit reflects the raw state of GPIO1.
+    gpio_raw_state_value grawp0; // This bit reflects the raw state of GPIO0.
+} gpio_raw_state_format;
+
+/**
+ * @brief Formats a spi_frame to a gpio_ctrl_format.
+ *
+ * @param[in] fr: spi_frame to initialize the gpio_ctrl_format(format).
+ * @param[out] format: Structure which will contains the spi_frame formatted.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @note: This function must receive an gpio_ctrl_format to work.
+ *
+ */
+void gpio_ctrl_formater(spi_frame fr, void *format, const size_t sub_register);
+
+/**
+ * @brief Unformats an gpio_ctrl_format to a spi_frame.
+ *
+ * @param[in] format: Structure which contains the values of the fields of the GPIO_CTRL register.
+ * @param[out] fr: spi_frame where this function will store the gpio_ctrl_format structure.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @return size_t: Size of the spi_frame formed with the given gpio_ctrl_format structure.
+ *
+ * @note: This function must receive a gpio_ctrl_format value to work.
+ *
+ */
+size_t gpio_ctrl_unformater(void *format, spi_frame fr, const size_t sub_register);
 
 #endif // _FORMAT_H_
