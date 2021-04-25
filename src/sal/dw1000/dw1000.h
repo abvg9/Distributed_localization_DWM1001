@@ -1,4 +1,4 @@
-/*
+/**
  * This file is part of the UCM-237 distribution (https://github.com/UCM-237/Distributed_localization_DWM1001).
  * Copyright (c) 2021 Complutense university of Madrid, Madrid, Spain.
  *
@@ -35,7 +35,7 @@
  * @return double: Clock offset in ppm units.
  *
  */
-double calculate_clock_offset(const rx_ttcko_format rx_ttcko_f, const rx_ttcki_value rx_ttcki);
+double calc_clock_offset(const rx_ttcko_format rx_ttcko_f, const rx_ttcki_value rx_ttcki);
 
 /**
  * @brief Calculates the estimated signal power of a received message.
@@ -51,8 +51,22 @@ double calculate_clock_offset(const rx_ttcko_format rx_ttcko_f, const rx_ttcki_v
  * @return double: Estimated signal power in units of dBm.
  *
  */
-double calculate_estimated_signal_power(const rx_fqual_format rx_fqual_f,
+double calc_estimated_signal_power(const rx_fqual_format rx_fqual_f,
         const rx_finfo_format rx_finfo_f, const usr_sfd_format usr_sfd_f);
+
+/**
+ * @brief Calculates the frequency error of a packet received.
+ *
+ * @param[in] drx_conf_f: Structure which contains the drx_car_int value.
+ * @param[in] rx_finfo_f: Structure which contains the transmit_receive_bit_rate value,
+ *            with this value we can calculate the n_samples constant.
+ *
+ * @note: Frequency error = (drx_car_int * 2⁻¹⁷)/2(n_samples/Fs)
+ *
+ * @return double: Frequency error in Hz.
+ *
+ */
+double calc_freq_error(const drx_conf_format drx_conf_f, const rx_finfo_format rx_finfo_f);
 
 /**
  * @brief Calculates the noise energy level.
@@ -70,7 +84,7 @@ double calculate_estimated_signal_power(const rx_fqual_format rx_fqual_f,
  * @return double: Estimated noise energy level.
  *
  */
-double calculate_noise_energy_level(const agc_ctrl_format agc_ctrl_f, const chan_ctrl_format chan_ctrl_f);
+double calc_noise_energy_level(const agc_ctrl_format agc_ctrl_f, const chan_ctrl_format chan_ctrl_f);
 
 /**
  * @brief Calculates the signal power of the received message.
@@ -86,7 +100,7 @@ double calculate_noise_energy_level(const agc_ctrl_format agc_ctrl_f, const chan
  * @return double: Signal power in units of dBm.
  *
  */
-double calculate_signal_power(const rx_time_format rx_time_f, const rx_fqual_format rx_fqual_f,
+double calc_signal_power(const rx_time_format rx_time_f, const rx_fqual_format rx_fqual_f,
         const rx_finfo_format rx_finfo_f, const usr_sfd_format usr_sfd_f);
 
 /**

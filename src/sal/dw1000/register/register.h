@@ -1,4 +1,4 @@
-/*
+/**
  * This file is part of the UCM-237 distribution (https://github.com/UCM-237/Distributed_localization_DWM1001).
  * Copyright (c) 2021 Complutense university of Madrid, Madrid, Spain.
  *
@@ -768,13 +768,83 @@ bool set_gpio_irq_de_bounce_mode_ctrl(gpio_irq_de_bounce_mode_format* gpio_irq_d
 bool get_gpio_raw_state_ctrl(gpio_raw_state_format* gpio_raw_state_f);
 
 /**
- * @brief Sets the GPIO raw state sub-register value.
+ * @brief Gets the digital receiver configuration register value.
  *
- * @param[in] gpio_raw_state_f: Structure that contains the value that will be written in the register.
+ * @param[in] drx_conf_f: Structure in will be stored the value of the register.
+ *
+ * @return bool: Returns true if the register can be gotten, otherwise false.
+ *
+ */
+bool get_drx_conf(drx_conf_format* drx_conf_f);
+
+/**
+ * @brief Sets the digital receiver configuration register value.
+ *
+ * @param[in] drx_conf_f: Structure that contains the value that will be written in the register.
  *
  * @return bool: Returns true if the register can be set, otherwise false.
  *
  */
-bool set_ggpio_raw_state_ctrl(gpio_raw_state_format* gpio_raw_state_f);
+bool set_drx_conf(drx_conf_format* drx_conf_f);
+
+/**
+ * @brief Gets the analog RF configuration register value.
+ *
+ * @param[in] rf_conf_f: Structure in will be stored the value of the register.
+ *
+ * @return bool: Returns true if the register can be gotten, otherwise false.
+ *
+ */
+bool get_rf_conf(rf_conf_format* rf_conf_f);
+
+/**
+ * @brief Sets the analog RF configuration register value.
+ *
+ * @param[in] rf_conf_f: Structure that contains the value that will be written in the register.
+ *
+ * @return bool: Returns true if the register can be set, otherwise false.
+ *
+ */
+bool set_rf_conf(rf_conf_format* rf_conf_f);
+
+/**
+ * @brief Gets the transmitter calibration block register value.
+ *
+ * @param[in] tx_cal_f: Structure in will be stored the value of the register.
+ *
+ * @return bool: Returns true if the register can be gotten, otherwise false.
+ *
+ */
+bool get_tx_cal(tx_cal_format* tx_cal_f);
+
+/**
+ * @brief Sets the transmitter calibration block register value.
+ *
+ * @param[in] tx_cal_f: Structure that contains the value that will be written in the register.
+ *
+ * @return bool: Returns true if the register can be set, otherwise false.
+ *
+ */
+bool set_tx_cal(tx_cal_format* tx_cal_f);
+
+/**
+ * @brief Gets the frequency synthesizer control block register value.
+ *
+ * @param[in] fs_ctrl_f: Structure in will be stored the value of the register.
+ *
+ * @return bool: Returns true if the register can be gotten, otherwise false.
+ *
+ */
+bool get_fs_ctrl(fs_ctrl_format* fs_ctrl_f);
+
+/**
+ * @brief Sets the frequency synthesizer control block register value.
+ *
+ * @param[in] fs_ctrl_f: Structure that contains the value that will be written in the register.
+ *
+ * @return bool: Returns true if the register can be set, otherwise false.
+ *
+ */
+bool set_fs_ctrl(fs_ctrl_format* fs_ctrl_f);
 
 #endif // _REGISTER_H_

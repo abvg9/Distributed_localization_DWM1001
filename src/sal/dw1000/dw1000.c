@@ -1,5 +1,4 @@
-
-/*
+/**
  * This file is part of the UCM-237 distribution (https://github.com/UCM-237/Distributed_localization_DWM1001).
  * Copyright (c) 2021 Complutense university of Madrid, Madrid, Spain.
  *
@@ -25,11 +24,11 @@ static const SPIConfig spi_cfg = { .end_cb = NULL, .ssport = IOPORT1, .sspad = S
         .freq = NRF5_SPI_FREQ_2MBPS, .sckpad = SPI_SCK, .mosipad = SPI_MOSI,
         .misopad = SPI_MISO, .lsbfirst = false, .mode = 2};
 
-double calculate_clock_offset(const rx_ttcko_format rx_ttcko_f, const rx_ttcki_value rx_ttcki) {
+double calc_clock_offset(const rx_ttcko_format rx_ttcko_f, const rx_ttcki_value rx_ttcki) {
     return rx_ttcko_f.rxtofs/rx_ttcki;
 }
 
-double calculate_estimated_signal_power(const rx_fqual_format rx_fqual_f,
+double calc_estimated_signal_power(const rx_fqual_format rx_fqual_f,
         const rx_finfo_format rx_finfo_f, const usr_sfd_format usr_sfd_f) {
 
     double substractor = 0.0;
@@ -43,7 +42,20 @@ double calculate_estimated_signal_power(const rx_fqual_format rx_fqual_f,
     return (10.0 * log10(rx_fqual_f.cir_pwr * pow(2, 17)/pow(rx_finfo_f.rxpacc - usr_sfd_f.sfd_length, 2))) - substractor;
 }
 
-double calculate_noise_energy_level(const agc_ctrl_format agc_ctrl_f, const chan_ctrl_format chan_ctrl_f) {
+double calc_freq_error(const drx_conf_format drx_conf_f, const rx_finfo_format rx_finfo_f) {
+
+    int n_samples;
+
+    if(rx_finfo_f.rxbr == KBPS110) {
+        n_samples = 8192;
+    } else {
+        n_samples = 1024;
+    }
+
+    return (drx_conf_f.drx_car_int * pow(2, -17)) / 2*(n_samples/998.4*pow(10, 6));
+}
+
+double calc_noise_energy_level(const agc_ctrl_format agc_ctrl_f, const chan_ctrl_format chan_ctrl_f) {
 
     double s;
 
@@ -59,7 +71,7 @@ double calculate_noise_energy_level(const agc_ctrl_format agc_ctrl_f, const chan
     return (agc_ctrl_f.edv2 - 40.0) * pow(10, agc_ctrl_f.edg1) * s;
 }
 
-double calculate_signal_power(const rx_time_format rx_time_f, const rx_fqual_format rx_fqual_f,
+double calc_signal_power(const rx_time_format rx_time_f, const rx_fqual_format rx_fqual_f,
         const rx_finfo_format rx_finfo_f, const usr_sfd_format usr_sfd_f) {
 
     const double numerator = pow(rx_time_f.fp_ampl1, 2) + pow(rx_fqual_f.fp_ampl2, 2) + pow(rx_fqual_f.fp_ampl3, 2);

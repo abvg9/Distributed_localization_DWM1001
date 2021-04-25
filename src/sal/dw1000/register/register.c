@@ -1,4 +1,4 @@
-/*
+/**
  * This file is part of the UCM-237 distribution (https://github.com/UCM-237/Distributed_localization_DWM1001).
  * Copyright (c) 2021 Complutense university of Madrid, Madrid, Spain.
  *
@@ -84,6 +84,11 @@ const command COMMAND_MAP[] = {
         {4U, RW, ext_sync_formater, ext_sync_unformater},       // EXT_SYNC
         {4U, RW, acc_mem_formater, NULL},                       // ACC_MEM
         {4U, RW, gpio_ctrl_formater, gpio_ctrl_unformater},     // GPIO_CTRL
+        {4U, RW, drx_conf_formater, drx_conf_unformater},       // DRX_CONF
+        {5U, RW, rf_conf_formater, rf_conf_unformater},         // RF_CONF
+        RESERVED_REGISTER,                                      // RESERVED_10
+        {3U, RW, tx_cal_formater, tx_cal_unformater},           // TX_CAL
+        {4U, RW, fs_ctrl_formater, fs_ctrl_unformater},         // FS_CTRL
 };
 
 /**
@@ -592,6 +597,68 @@ bool get_gpio_raw_state_ctrl(gpio_raw_state_format* gpio_raw_state_f) {
     return dw_read_reg(GPIO_CTRL, GPIO_RAW, (void*) gpio_raw_state_f);
 }
 
-bool set_ggpio_raw_state_ctrl(gpio_raw_state_format* gpio_raw_state_f) {
-    return dw_write_reg(GPIO_CTRL, GPIO_RAW, (void*) gpio_raw_state_f);
+bool get_drx_conf(drx_conf_format* drx_conf_f) {
+    return dw_read_reg(DRX_CONF, DRX_TUNE0B, (void*) drx_conf_f) &&
+           dw_read_reg(DRX_CONF, DRX_TUNE1A, (void*) drx_conf_f) &&
+           dw_read_reg(DRX_CONF, DRX_TUNE1B, (void*) drx_conf_f) &&
+           dw_read_reg(DRX_CONF, DRX_TUNE2, (void*) drx_conf_f) &&
+           dw_read_reg(DRX_CONF, DRX_SFDTOC, (void*) drx_conf_f) &&
+           dw_read_reg(DRX_CONF, DRX_PRETOC, (void*) drx_conf_f) &&
+           dw_read_reg(DRX_CONF, DRX_TUNE4H, (void*) drx_conf_f) &&
+           dw_read_reg(DRX_CONF, DRX_CAR_INT, (void*) drx_conf_f) &&
+           dw_read_reg(DRX_CONF, RXPACC_NOSAT, (void*) drx_conf_f);
+}
+
+bool set_drx_conf(drx_conf_format* drx_conf_f) {
+    return dw_write_reg(DRX_CONF, DRX_TUNE0B, (void*) drx_conf_f) &&
+           dw_write_reg(DRX_CONF, DRX_TUNE1A, (void*) drx_conf_f) &&
+           dw_write_reg(DRX_CONF, DRX_TUNE1B, (void*) drx_conf_f) &&
+           dw_write_reg(DRX_CONF, DRX_TUNE2, (void*) drx_conf_f) &&
+           dw_write_reg(DRX_CONF, DRX_SFDTOC, (void*) drx_conf_f) &&
+           dw_write_reg(DRX_CONF, DRX_PRETOC, (void*) drx_conf_f) &&
+           dw_write_reg(DRX_CONF, DRX_TUNE4H, (void*) drx_conf_f);
+}
+
+bool get_rf_conf(rf_conf_format* rf_conf_f) {
+    return dw_read_reg(RF_CONF, SRF_CONF, (void*) rf_conf_f) &&
+           dw_read_reg(RF_CONF, RF_RXCTRLH, (void*) rf_conf_f) &&
+           dw_read_reg(RF_CONF, RF_TXCTRL, (void*) rf_conf_f) &&
+           dw_read_reg(RF_CONF, RF_STATUS, (void*) rf_conf_f) &&
+           dw_read_reg(RF_CONF, LDOTUNE, (void*) rf_conf_f);
+}
+
+bool set_rf_conf(rf_conf_format* rf_conf_f) {
+    return dw_write_reg(RF_CONF, SRF_CONF, (void*) rf_conf_f) &&
+           dw_write_reg(RF_CONF, RF_RXCTRLH, (void*) rf_conf_f) &&
+           dw_write_reg(RF_CONF, RF_TXCTRL, (void*) rf_conf_f) &&
+           dw_write_reg(RF_CONF, LDOTUNE, (void*) rf_conf_f);
+}
+
+bool get_tx_cal(tx_cal_format* tx_cal_f) {
+    return dw_read_reg(TX_CAL, TC_SARC, (void*) tx_cal_f) &&
+           dw_read_reg(TX_CAL, TC_SARL, (void*) tx_cal_f) &&
+           dw_read_reg(TX_CAL, TC_SARW, (void*) tx_cal_f) &&
+           dw_read_reg(TX_CAL, TC_PG_CTRL, (void*) tx_cal_f) &&
+           dw_read_reg(TX_CAL, TC_PG_STATUS, (void*) tx_cal_f) &&
+           dw_read_reg(TX_CAL, TC_PG_DELAY, (void*) tx_cal_f) &&
+           dw_read_reg(TX_CAL, TC_PG_TEST, (void*) tx_cal_f);
+}
+
+bool set_tx_cal(tx_cal_format* tx_cal_f) {
+    return dw_write_reg(TX_CAL, TC_SARC, (void*) tx_cal_f) &&
+           dw_write_reg(TX_CAL, TC_PG_CTRL, (void*) tx_cal_f) &&
+           dw_write_reg(TX_CAL, TC_PG_DELAY, (void*) tx_cal_f) &&
+           dw_write_reg(TX_CAL, TC_PG_TEST, (void*) tx_cal_f);
+}
+
+bool get_fs_ctrl(fs_ctrl_format* fs_ctrl_f) {
+    return dw_read_reg(FS_CTRL, FS_PLLCFG, (void*) fs_ctrl_f) &&
+           dw_read_reg(FS_CTRL, FS_PLLTUNE, (void*) fs_ctrl_f) &&
+           dw_read_reg(FS_CTRL, FS_XTALT, (void*) fs_ctrl_f);
+}
+
+bool set_fs_ctrl(fs_ctrl_format* fs_ctrl_f) {
+    return dw_write_reg(FS_CTRL, FS_PLLCFG, (void*) fs_ctrl_f) &&
+           dw_write_reg(FS_CTRL, FS_PLLTUNE, (void*) fs_ctrl_f) &&
+           dw_write_reg(FS_CTRL, FS_XTALT, (void*) fs_ctrl_f);
 }

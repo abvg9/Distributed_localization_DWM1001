@@ -1,4 +1,4 @@
-/*
+/**
  * This file is part of the UCM-237 distribution (https://github.com/UCM-237/Distributed_localization_DWM1001).
  * Copyright (c) 2021 Complutense university of Madrid, Madrid, Spain.
  *
@@ -844,63 +844,104 @@ size_t usr_sfd_unformater(void *format, spi_frame fr, const size_t sub_register)
     usr_sfd_format* usr_sfd_f = (usr_sfd_format*) format;
 
     if(sub_register == USR_SFD_OCT_0_TO_3) {
+
         fr[0] = usr_sfd_f->sfd_length;
         fr[1] = usr_sfd_f->tx_ssfd_magl;
         fr[2] = usr_sfd_f->tx_ssfd_magh;
         fr[3] = usr_sfd_f->tx_ssfd_sgnl;
+
+        return 4;
+
     } else if(sub_register == USR_SFD_OCT_4_TO_7) {
+
         fr[0] = usr_sfd_f->tx_ssfd_sgnh;
         fr[1] = usr_sfd_f->rx_ssfd_magl;
         fr[2] = usr_sfd_f->rx_ssfd_magh;
         fr[3] = usr_sfd_f->rx_ssfd_sgnl;
+
+        return 4;
+
     } else if(sub_register == USR_SFD_OCT_8_TO_11) {
+
         fr[0] = usr_sfd_f->rx_ssfd_sgnh;
         fr[1] = usr_sfd_f->tx_lsfd_mag0;
         fr[2] = usr_sfd_f->tx_lsfd_mag1;
         fr[3] = usr_sfd_f->tx_lsfd_mag2;
+
+        return 4;
+
     } else if(sub_register == USR_SFD_OCT_12_TO_15) {
+
         fr[0] = usr_sfd_f->tx_lsfd_mag3;
         fr[1] = usr_sfd_f->tx_lsfd_mag4;
         fr[2] = usr_sfd_f->tx_lsfd_mag5;
         fr[3] = usr_sfd_f->tx_lsfd_mag6;
+
+        return 4;
+
     } else if(sub_register == USR_SFD_OCT_16_TO_19) {
+
         fr[0] = usr_sfd_f->tx_lsfd_mag7;
         fr[1] = usr_sfd_f->tx_lsfd_sgn0;
         fr[2] = usr_sfd_f->tx_lsfd_sgn1;
         fr[3] = usr_sfd_f->tx_lsfd_sgn2 ;
+
+        return 4;
+
     } else if(sub_register == USR_SFD_OCT_20_TO_23) {
+
         fr[0] = usr_sfd_f->tx_lsfd_sgn3;
         fr[1] = usr_sfd_f->tx_lsfd_sgn4;
         fr[2] = usr_sfd_f->tx_lsfd_sgn5;
         fr[3] = usr_sfd_f->tx_lsfd_sgn6;
+
+        return 4;
+
     } else if(sub_register == USR_SFD_OCT_24_TO_27) {
+
         fr[0] = usr_sfd_f->tx_lsfd_sgn7;
         fr[1] = usr_sfd_f->rx_lsfd_mag0;
         fr[2] = usr_sfd_f->rx_lsfd_mag1;
         fr[3] = usr_sfd_f->rx_lsfd_mag2;
+
+        return 4;
+
     } else if(sub_register == USR_SFD_OCT_28_TO_31) {
+
         fr[0] = usr_sfd_f->rx_lsfd_mag3;
         fr[1] = usr_sfd_f->rx_lsfd_mag4;
         fr[2] = usr_sfd_f->rx_lsfd_mag5;
         fr[3] = usr_sfd_f->rx_lsfd_mag6;
+
+        return 4;
+
     } else if(sub_register == USR_SFD_OCT_32_TO_35) {
+
         fr[0] = usr_sfd_f->rx_lsfd_mag7;
         fr[1] = usr_sfd_f->rx_lsfd_sgn0;
         fr[2] = usr_sfd_f->rx_lsfd_sgn1;
         fr[3] = usr_sfd_f->rx_lsfd_sgn2;
+
+        return 4;
+
     } else if(sub_register == USR_SFD_OCT_36_TO_39) {
+
         fr[0] = usr_sfd_f->rx_lsfd_sgn2;
         fr[1] = usr_sfd_f->rx_lsfd_sgn3;
         fr[2] = usr_sfd_f->rx_lsfd_sgn4;
         fr[3] = usr_sfd_f->rx_lsfd_sgn5;
+
+        return 4;
+
     } else if(sub_register == USR_SFD_OCT_40_TO_41) {
+
         fr[0] = usr_sfd_f->rx_lsfd_sgn6;
         fr[1] = usr_sfd_f->rx_lsfd_sgn7;
 
         return 2;
     }
 
-    return 4;
+    return 0;
 }
 
 void agc_ctrl_formater(spi_frame fr, void *format, const size_t sub_register) {
@@ -1371,22 +1412,326 @@ size_t gpio_ctrl_unformater(void *format, spi_frame fr, const size_t sub_registe
 
         return 2;
 
-    } else if(sub_register == GPIO_RAW) {
+    }
 
-        gpio_raw_state_format* gpio_raw_state_f = (gpio_raw_state_format*)format;
+    return 0;
+}
 
-        fr[0] = (((uint8_t)gpio_raw_state_f->grawp7) >> 7) |
-                (((uint8_t)gpio_raw_state_f->grawp6) >> 6) |
-                (((uint8_t)gpio_raw_state_f->grawp5) >> 5) |
-                (((uint8_t)gpio_raw_state_f->grawp4) >> 4) |
-                (((uint8_t)gpio_raw_state_f->grawp3) >> 3) |
-                (((uint8_t)gpio_raw_state_f->grawp2) >> 2) |
-                (((uint8_t)gpio_raw_state_f->grawp1) >> 1) |
-                gpio_raw_state_f->grawp0;
+void drx_conf_formater(spi_frame fr, void *format, const size_t sub_register) {
 
-        fr[1] = gpio_raw_state_f->grawp8;
+    drx_conf_format* drx_conf_f = (drx_conf_format*)format;
+
+    if(sub_register == DRX_TUNE0B) {
+
+        drx_conf_f->drx_tune0b = (((uint16_t)fr[1]) << 8) | fr[0];
+
+    } else if(sub_register == DRX_TUNE1A) {
+
+        drx_conf_f->drx_tune1a = (((uint16_t)fr[1]) << 8) | fr[0];
+
+    } else if(sub_register == DRX_TUNE1B) {
+
+        drx_conf_f->drx_tune1b = (((uint16_t)fr[1]) << 8) | fr[0];
+
+    } else if(sub_register == DRX_TUNE2) {
+
+        drx_conf_f->drx_tune2 = (((uint32_t)(fr[3] & 0b00011111)) << 24) | (((uint32_t)fr[2]) << 16) |
+                (((uint16_t)fr[1]) << 8) | fr[0];
+
+    } else if(sub_register == DRX_SFDTOC) {
+
+        drx_conf_f->drx_sfdtoc = (((uint16_t)fr[1]) << 8) | fr[0];
+
+    } else if(sub_register == DRX_PRETOC) {
+
+        drx_conf_f->drx_pretoc = (((uint16_t)fr[1]) << 8) | fr[0];
+
+    } else if(sub_register == DRX_TUNE4H) {
+
+        drx_conf_f->drx_tune4h = (((uint16_t)fr[1]) << 8) | fr[0];
+
+    } else if(sub_register == DRX_CAR_INT) {
+
+        drx_conf_f->drx_car_int = (((uint32_t)fr[2]) << 16) | (((uint16_t)fr[1]) << 8) | fr[0];
+
+    } else if(sub_register == RXPACC_NOSAT) {
+
+        drx_conf_f->rxpacc_nosat = (((uint16_t)fr[1]) << 8) | fr[0];
+    }
+
+}
+
+size_t drx_conf_unformater(void *format, spi_frame fr, const size_t sub_register) {
+
+    drx_conf_format* drx_conf_f = (drx_conf_format*)format;
+
+    if(sub_register == DRX_TUNE0B) {
+
+        fr[0] = drx_conf_f->drx_tune0b & 0x00FF;
+        fr[1] = (drx_conf_f->drx_tune0b & 0xFF00) >> 8;
 
         return 2;
+
+    } else if(sub_register == DRX_TUNE1A) {
+
+        fr[0] = drx_conf_f->drx_tune1a & 0x00FF;
+        fr[1] = (drx_conf_f->drx_tune1a & 0xFF00) >> 8;
+
+        return 2;
+
+    } else if(sub_register == DRX_TUNE1B) {
+
+        fr[0] = drx_conf_f->drx_tune1b & 0x00FF;
+        fr[1] = (drx_conf_f->drx_tune1b & 0xFF00) >> 8;
+
+        return 2;
+
+    } else if(sub_register == DRX_TUNE2) {
+
+        fr[0] = drx_conf_f->drx_tune2 & 0x000000FF;
+        fr[1] = (drx_conf_f->drx_tune2 & 0x0000FF00) >> 8;
+        fr[2] = (drx_conf_f->drx_tune2 & 0x00FF0000) >> 16;
+        fr[3] = (drx_conf_f->drx_tune2 & 0xFF000000) >> 24;
+
+        return 4;
+
+    } else if(sub_register == DRX_SFDTOC) {
+
+        fr[0] = drx_conf_f->drx_sfdtoc & 0x00FF;
+        fr[1] = (drx_conf_f->drx_sfdtoc & 0xFF00) >> 8;
+
+        return 2;
+
+    } else if(sub_register == DRX_PRETOC) {
+
+        fr[0] = drx_conf_f->drx_pretoc & 0x00FF;
+        fr[1] = (drx_conf_f->drx_pretoc & 0xFF00) >> 8;
+
+        return 2;
+
+    } else if(sub_register == DRX_TUNE4H) {
+
+        fr[0] = drx_conf_f->drx_tune4h & 0x00FF;
+        fr[1] = (drx_conf_f->drx_tune4h & 0xFF00) >> 8;
+
+        return 2;
+
+    } else if(sub_register == DRX_CAR_INT) {
+
+        fr[0] = drx_conf_f->drx_car_int & 0x0000FF;
+        fr[1] = (drx_conf_f->drx_car_int & 0x00FF00) >> 8;
+        fr[2] = (drx_conf_f->drx_car_int & 0x1F0000) >> 16;
+
+        return 2;
+
+    } else if(sub_register == RXPACC_NOSAT) {
+
+        fr[0] = drx_conf_f->rxpacc_nosat & 0x00FF;
+        fr[1] = (drx_conf_f->rxpacc_nosat & 0xFF00) >> 8;
+
+        return 2;
+
+    }
+
+    return 0;
+}
+
+void rf_conf_formater(spi_frame fr, void *format, const size_t sub_register) {
+
+    rf_conf_format* rf_conf_f = (rf_conf_format*) format;
+
+    if(sub_register == SRF_CONF) {
+
+        rf_conf_f->txrxsw = (fr[2] & 0b01100000) >> 5;
+        rf_conf_f->ldofen = fr[2] & 0b00011111;
+
+        rf_conf_f->pllfen = (fr[1] & 0b11100000) >> 5;
+        rf_conf_f->txfen = fr[1] & 0b00011111;
+
+    } else if(sub_register == RF_RXCTRLH) {
+
+        rf_conf_f->rfrxctrlh = fr[0];
+
+    } else if(sub_register == RF_TXCTRL) {
+
+        rf_conf_f->txmq = (fr[1] & 0b00001110) >> 1;
+        rf_conf_f->txmtune = ((fr[1] & 0b00000001) << 3) | ((fr[0] & 0b11100000) >> 5);
+
+    } else if(sub_register == RF_STATUS) {
+
+        rf_conf_f->rfplllock = (fr[0] & 0b00001000) >> 3;
+        rf_conf_f->cpllhigh = (fr[0] & 0b00000100) >> 2;
+        rf_conf_f->cplllow = (fr[0] & 0b00000010) >> 1;
+        rf_conf_f->cplllock = fr[0] & 0b00000001;
+
+    } else if(sub_register == LDOTUNE) {
+
+        rf_conf_f->ldotune = (((uint64_t)fr[4]) << 32) |
+                             (((uint32_t)fr[3]) << 24) |
+                             (((uint32_t)fr[2]) << 16) |
+                             (((uint16_t)fr[1]) << 8) |
+                             fr[0];
+    }
+
+
+}
+
+size_t rf_conf_unformater(void *format, spi_frame fr, const size_t sub_register) {
+
+    rf_conf_format* rf_conf_f = (rf_conf_format*) format;
+
+    if(sub_register == SRF_CONF) {
+
+        fr[0] = 0;
+        fr[1] = (((uint8_t)rf_conf_f->pllfen) << 5) | rf_conf_f->txfen;
+        fr[2] = (((uint8_t)rf_conf_f->txrxsw) << 5) | rf_conf_f->ldofen;
+
+        return 3;
+
+    } else if(sub_register == RF_RXCTRLH) {
+
+        fr[0] = rf_conf_f->rfrxctrlh;
+
+        return 1;
+
+    } else if(sub_register == RF_TXCTRL) {
+
+        fr[0] = ((uint8_t)rf_conf_f->txmtune) << 5;
+        fr[1] = 0b00110000 | (((uint8_t)rf_conf_f->txmq) << 1) | ((rf_conf_f->txmtune & 0b1000) >> 3);
+        fr[2] = 0b00011110;
+        fr[3] = 0;
+
+        return 4;
+
+    } else if(sub_register == LDOTUNE) {
+
+        fr[4] = (rf_conf_f->ldotune & 0x000000FF00000000) >> 32;
+        fr[3] = (rf_conf_f->ldotune & 0x00000000FF000000) >> 24;
+        fr[2] = (rf_conf_f->ldotune & 0x0000000000FF0000) >> 16;
+        fr[1] = (rf_conf_f->ldotune & 0x000000000000FF00) >> 8;
+        fr[0] = rf_conf_f->ldotune & 0x00000000000000FF;
+
+        return 5;
+    }
+
+    return 0;
+}
+
+void tx_cal_formater(spi_frame fr, void *format, const size_t sub_register) {
+
+    tx_cal_format* tx_cal_f = (tx_cal_format*)format;
+
+    if(sub_register == TC_SARC) {
+
+        tx_cal_f->sar_ctrl = fr[0] & 0b00000001;
+
+    } else if(sub_register == TC_SARL) {
+
+        tx_cal_f->sar_lvbat = calculate_temperature(fr[0]);
+        tx_cal_f->sar_ltemp = calculate_voltage(fr[1]);
+
+    } else if(sub_register == TC_SARW) {
+
+        tx_cal_f->sar_wbat = calculate_temperature(fr[0]);
+        tx_cal_f->sar_wtemp = calculate_voltage(fr[1]);
+
+    } else if(sub_register == TC_PG_CTRL) {
+
+        tx_cal_f->pg_start = fr[0] & 0b00000001;
+        tx_cal_f->pg_tmeas = (fr[0] & 0b00111100) >> 2;
+
+    }  else if(sub_register == TC_PG_STATUS) {
+
+        tx_cal_f->delay_cnt = (((uint16_t)(fr[1] & 0b00001111)) << 8) | fr[0];
+
+    } else if(sub_register == TC_PG_DELAY) {
+
+        tx_cal_f->tc_pgdelay = fr[0];
+
+    } else if(sub_register == TC_PG_TEST) {
+
+        tx_cal_f->tc_pgtest = fr[0];
+    }
+
+}
+
+size_t tx_cal_unformater(void *format, spi_frame fr, const size_t sub_register) {
+
+    tx_cal_format* tx_cal_f = (tx_cal_format*)format;
+
+    if(sub_register == TC_SARC) {
+
+        fr[0] = tx_cal_f->sar_ctrl;
+        fr[1] = 0;
+
+        return 2;
+
+    } else if(sub_register == TC_PG_CTRL) {
+
+        fr[0] = (((uint8_t)tx_cal_f->pg_tmeas) << 2) | tx_cal_f->pg_start;
+
+        return 1;
+
+    }  else if(sub_register == TC_PG_DELAY) {
+
+        fr[0] = tx_cal_f->tc_pgdelay;
+
+        return 1;
+
+    } else if(sub_register == TC_PG_TEST) {
+
+        fr[0] = tx_cal_f->tc_pgtest;
+
+        return 1;
+    }
+
+    return 0;
+}
+
+void fs_ctrl_formater(spi_frame fr, void *format, const size_t sub_register) {
+
+    fs_ctrl_format* fs_ctrl_f = (fs_ctrl_format*)format;
+
+    if(sub_register == FS_PLLCFG) {
+
+        fs_ctrl_f->fs_pllcfg = (((uint32_t)fr[3]) << 24) | (((uint32_t)fr[2]) << 16)
+                | (((uint16_t)fr[1]) << 8) | fr[0];
+
+    } else if(sub_register == FS_PLLTUNE) {
+
+        fs_ctrl_f->fs_plltune = fr[0];
+
+    } else if(sub_register == FS_XTALT) {
+
+        fs_ctrl_f->xtalt = fr[0] & 0b00011111;
+
+    }
+}
+
+size_t fs_ctrl_unformater(void *format, spi_frame fr, const size_t sub_register) {
+
+    fs_ctrl_format* fs_ctrl_f = (fs_ctrl_format*)format;
+
+    if(sub_register == FS_PLLCFG) {
+
+        fr[3] = (fs_ctrl_f->fs_pllcfg & 0xFF000000) >> 24;
+        fr[2] = (fs_ctrl_f->fs_pllcfg & 0x00FF0000) >> 16;
+        fr[1] = (fs_ctrl_f->fs_pllcfg & 0x0000FF00) >> 8;
+        fr[0] = fs_ctrl_f->fs_pllcfg & 0x000000FF;
+
+        return 4;
+
+    } else if(sub_register == FS_PLLTUNE) {
+
+        fr[0] = fs_ctrl_f->fs_plltune;
+
+        return 1;
+
+    } else if(sub_register == FS_XTALT) {
+
+        fr[0] = 0b01100000 | fs_ctrl_f->xtalt;
+
+        return 1;
 
     }
 

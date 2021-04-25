@@ -1,4 +1,4 @@
-/*
+/**
  * This file is part of the UCM-237 distribution (https://github.com/UCM-237/Distributed_localization_DWM1001).
  * Copyright (c) 2021 Complutense university of Madrid, Madrid, Spain.
  *
@@ -91,8 +91,8 @@ size_t eui_unformater(void *format, spi_frame fr, const size_t sub_register);
 
 // Sub-registers of the pan address register.
 typedef enum {
-    SHORT_ADR = 0,
-    PAN_ID = 2,
+    SHORT_ADR = 0x00,
+    PAN_ID = 0x02,
 } pan_adr_subregister;
 
 // Structure of the extended unique identifier register.
@@ -1037,11 +1037,7 @@ typedef struct {
 } chan_ctrl_format;
 
 /**
-<<<<<<< HEAD
- * @brief Formats a spi_frame to a chan_ctrl_format.
-=======
  * @brief Formats a spi_frame to an chan_ctrl_format.
->>>>>>> 86e5a0b426e19588ef3552c2e2b7c528f5f527a8
  *
  * @param[in] fr: spi_frame to initialize the chan_ctrl_format(format).
  * @param[out] format: Structure which will contains the spi_frame formatted.
@@ -1053,11 +1049,7 @@ typedef struct {
 void chan_ctrl_formater(spi_frame fr, void *format, const size_t sub_register);
 
 /**
-<<<<<<< HEAD
  * @brief Unformats a chan_ctrl_format to a spi_frame.
-=======
- * @brief Unformats an chan_ctrl_format to a spi_frame.
->>>>>>> 86e5a0b426e19588ef3552c2e2b7c528f5f527a8
  *
  * @param[in] format: Structure which contains the values of the fields of the CHAN_CTRL register.
  * @param[out] fr: spi_frame where this function will store the chan_ctrl_format structure.
@@ -1074,17 +1066,17 @@ size_t chan_ctrl_unformater(void *format, spi_frame fr, const size_t sub_registe
 
 // Sub-registers of the user-specified short/long TX/RX SFD sequences register.
 typedef enum {
-    USR_SFD_OCT_0_TO_3 = 0,
-    USR_SFD_OCT_4_TO_7 = 0X04,
-    USR_SFD_OCT_8_TO_11 = 0X08,
-    USR_SFD_OCT_12_TO_15 = 0X0C,
-    USR_SFD_OCT_16_TO_19 = 0X10,
-    USR_SFD_OCT_20_TO_23 = 0X14,
-    USR_SFD_OCT_24_TO_27 = 0X18,
-    USR_SFD_OCT_28_TO_31 = 0X1C,
-    USR_SFD_OCT_32_TO_35 = 0X20,
-    USR_SFD_OCT_36_TO_39 = 0X24,
-    USR_SFD_OCT_40_TO_41 = 0X28,
+    USR_SFD_OCT_0_TO_3 = 0x00,
+    USR_SFD_OCT_4_TO_7 = 0x04,
+    USR_SFD_OCT_8_TO_11 = 0x08,
+    USR_SFD_OCT_12_TO_15 = 0x0C,
+    USR_SFD_OCT_16_TO_19 = 0x10,
+    USR_SFD_OCT_20_TO_23 = 0x14,
+    USR_SFD_OCT_24_TO_27 = 0x18,
+    USR_SFD_OCT_28_TO_31 = 0x1C,
+    USR_SFD_OCT_32_TO_35 = 0x20,
+    USR_SFD_OCT_36_TO_39 = 0x24,
+    USR_SFD_OCT_40_TO_41 = 0x28,
 } usr_sfd_subregister;
 
 // Structure of the user-specified short/long TX/RX SFD sequences register.
@@ -1203,11 +1195,11 @@ size_t usr_sfd_unformater(void *format, spi_frame fr, const size_t sub_register)
 
 // Sub-registers of the automatic gain control configuration and control register.
 typedef enum {
-    AGC_CTRL1 = 0,
-    AGC_TUNE1 = 0X04,
-    AGC_TUNE2 = 0X0C,
-    AGC_TUNE3 = 0X12,
-    AGC_STAT1 = 0X1E,
+    AGC_CTRL1 = 0x00,
+    AGC_TUNE1 = 0x04,
+    AGC_TUNE2 = 0x0C,
+    AGC_TUNE3 = 0x12,
+    AGC_STAT1 = 0x1E,
 } agc_ctrl_subregister;
 
 // Structure of the automatic gain control configuration and control register.
@@ -1250,11 +1242,11 @@ size_t agc_ctrl_unformater(void *format, spi_frame fr, const size_t sub_register
 
 /******* EXT_SYNC *******/
 
-// Sub-registers of the external clock synchronization counter configuration.
+// Sub-registers of the external clock synchronization counter configuration register.
 typedef enum {
-    EC_CTRL = 0,
-    EC_RXTC = 0X04,
-    EC_GOLP = 0X0C,
+    EC_CTRL = 0x00,
+    EC_RXTC = 0x04,
+    EC_GOLP = 0x0C,
 } ext_sync_subregister;
 
 // Structure of the external clock synchronization counter configuration register.
@@ -1317,9 +1309,9 @@ void acc_mem_formater(spi_frame fr, void *format, const size_t sub_register);
 
 /******* GPIO_CTRL *******/
 
-// Sub-registers of the external clock synchronization counter configuration.
+// Sub-registers of the GPIO control register.
 typedef enum {
-    GPIO_MODE = 0,
+    GPIO_MODE = 0x00,
     GPIO_DIR = 0x08,
     GPIO_DOUT = 0x0C,
     GPIO_IRQE = 0x10,
@@ -1622,7 +1614,7 @@ typedef struct {
 void gpio_ctrl_formater(spi_frame fr, void *format, const size_t sub_register);
 
 /**
- * @brief Unformats an gpio_ctrl_format to a spi_frame.
+ * @brief Unformats a gpio_ctrl_format to a spi_frame.
  *
  * @param[in] format: Structure which contains the values of the fields of the GPIO_CTRL register.
  * @param[out] fr: spi_frame where this function will store the gpio_ctrl_format structure.
@@ -1634,5 +1626,237 @@ void gpio_ctrl_formater(spi_frame fr, void *format, const size_t sub_register);
  *
  */
 size_t gpio_ctrl_unformater(void *format, spi_frame fr, const size_t sub_register);
+
+/******* DRX_CONF *******/
+
+// Sub-registers of the digital receiver configuration register.
+typedef enum {
+    DRX_TUNE0B = 0x02,
+    DRX_TUNE1A = 0x04,
+    DRX_TUNE1B = 0x06,
+    DRX_TUNE2 = 0x08,
+    DRX_SFDTOC = 0x20,
+    DRX_PRETOC = 0x24,
+    DRX_TUNE4H = 0x26,
+    DRX_CAR_INT = 0x28,
+    RXPACC_NOSAT = 0x2C,
+} drx_conf_subregister;
+
+// Structure of the digital receiver configuration register.
+typedef struct {
+    uint16_t rxpacc_nosat;        // Digital debug register. (RO)
+    unsigned int drx_car_int :21; // Carrier recovery integrator. (RO)
+    uint16_t drx_tune4h;          // Digital tuning register (RW)
+    uint16_t drx_pretoc;          // Preamble detection timeout count. (RW)
+    uint16_t drx_sfdtoc;          // SFD detection timeout count. (RW)
+    uint32_t drx_tune2;           // Digital tuning register 2. (RW)
+    uint16_t drx_tune1b;          // Digital tuning register 1b. (RW)
+    uint16_t drx_tune1a;          // Digital tuning register 1a. (RW)
+    uint16_t drx_tune0b;          // Digital tuning register 0b. (RW)
+} drx_conf_format;
+
+/**
+ * @brief Formats a spi_frame to a drx_conf_format.
+ *
+ * @param[in] fr: spi_frame to initialize the drx_conf_format(format).
+ * @param[out] format: Structure which will contains the spi_frame formatted.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @note: This function must receive an drx_conf_format to work.
+ *
+ */
+void drx_conf_formater(spi_frame fr, void *format, const size_t sub_register);
+
+/**
+ * @brief Unformats a drx_conf_format to a spi_frame.
+ *
+ * @param[in] format: Structure which contains the values of the fields of the DRX_CONF register.
+ * @param[out] fr: spi_frame where this function will store the gpio_ctrl_format structure.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @return size_t: Size of the spi_frame formed with the given drx_conf_format structure.
+ *
+ * @note: This function must receive a drx_conf_format value to work.
+ *
+ */
+size_t drx_conf_unformater(void *format, spi_frame fr, const size_t sub_register);
+
+/******* RF_CONF *******/
+
+// Sub-registers of the analog RF configuration register.
+typedef enum {
+    SRF_CONF = 0x00,
+    RF_RXCTRLH = 0x0B,
+    RF_TXCTRL = 0x0C,
+    RF_STATUS = 0x2C,
+    LDOTUNE = 0x30,
+} rf_conf_subregister;
+
+// Possible values of the txrxsw field.
+typedef enum {
+    RF_TX = 0x2,
+    RF_RX = 0X1,
+} txrxsw_value;
+
+// Possible values of the ldofen field.
+typedef enum {
+    ENEABLE_LDOS = 0x1F,
+    DISABLE_LDOS = 0X00,
+} ldofen_value;
+
+// Possible values of the pllfen field.
+typedef enum {
+    ENEABLE_CLK_PLL = 0x5,
+    ENEABLE_CLK_PLL_AND_RF_PLL = 0x7,
+} pllfen_value;
+
+// Possible values of the txfen field.
+typedef enum {
+    FORCE_ALL_TX_BLOCKS_ON = 0x1F,
+    FORCE_ALL_TX_BLOCKS_OFF = 0x00,
+} txfen_value;
+
+// Structure of the analog RF configuration register.
+typedef struct {
+    uint64_t ldotune;          // Controls the output voltage levels of the on chip LDOs. (RW)
+    unsigned int rfplllock: 1; // RF PLL lock status. (RO)
+    unsigned int cpllhigh: 1;  // Clock PLL high flag status bit. (RO)
+    unsigned int cplllow: 1;   // Clock PLL low flag status bit. (RO)
+    unsigned int cplllock: 1;  // Clock PLL lock status. (RO)
+    unsigned int txmq :3;      // Transmit mixer Q-factor tuning register. (RW)
+    unsigned int txmtune :4;   // Transmit mixer tuning register. (RW)
+    uint8_t rfrxctrlh;         // Analog RX control register. (RW)
+    txrxsw_value txrxsw;       // Force the TX/RX switch. (RW)
+    ldofen_value ldofen;       // Force the enable to all LDO’s. (RW)
+    pllfen_value pllfen;       // PLL block force enables. (RW)
+    txfen_value txfen;         // Transmit block force enable. (RW)
+} rf_conf_format;
+
+/**
+ * @brief Formats a spi_frame to a rf_conf_format.
+ *
+ * @param[in] fr: spi_frame to initialize the rf_conf_format(format).
+ * @param[out] format: Structure which will contains the spi_frame formatted.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @note: This function must receive an rf_conf_format to work.
+ *
+ */
+void rf_conf_formater(spi_frame fr, void *format, const size_t sub_register);
+
+/**
+ * @brief Unformats a rf_conf_format to a spi_frame.
+ *
+ * @param[in] format: Structure which contains the values of the fields of the RF_CONF register.
+ * @param[out] fr: spi_frame where this function will store the rf_conf_format structure.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @return size_t: Size of the spi_frame formed with the given rf_conf_format structure.
+ *
+ * @note: This function must receive a rf_conf_format value to work.
+ *
+ */
+size_t rf_conf_unformater(void *format, spi_frame fr, const size_t sub_register);
+
+/******* TX_CAL *******/
+
+// Sub-registers of the transmitter calibration block register.
+typedef enum {
+    TC_SARC = 0x00,
+    TC_SARL = 0x03,
+    TC_SARW = 0x06,
+    TC_PG_CTRL = 0x08,
+    TC_PG_STATUS = 0x09,
+    TC_PG_DELAY = 0x0B,
+    TC_PG_TEST = 0x0C,
+} tx_cal_subregister;
+
+#define SAR_TEMP_LEAST_BIT_VALUE 1.14 // (degrees centigrade)
+#define calculate_temperature(register_value) register_value * SAR_TEMP_LEAST_BIT_VALUE
+
+#define SAR_BAT_LEAST_BIT_VALUE 0.006 // (volts)
+#define calculate_voltage(register_value) register_value * SAR_BAT_LEAST_BIT_VALUE
+
+// Structure of the transmitter calibration block register.
+typedef struct {
+    uint8_t tc_pgtest;          // Pulse generator test. (RW)
+    uint8_t tc_pgdelay;         // Pulse generator delay. (RW)
+    unsigned int delay_cnt: 12; // PG status. (RO)
+    unsigned int pg_start: 1;   // Start the pulse generator calibration. Note: This bit is self clearing. (RW)
+    unsigned int pg_tmeas: 4;   // Number of clock cycles over which to run the pulse generator cal counter. (RW)
+    double sar_wbat;            // SAR reading of Voltage level taken at last wakeup event. (RO)
+    double sar_wtemp;           // SAR reading of temperature level taken at last wakeup event. (RO)
+    double sar_lvbat;           // Latest SAR reading for Voltage level. (RO)
+    double sar_ltemp;           // Latest SAR reading for Temperature level. (RO)
+    unsigned int sar_ctrl :1;   // Writing 1 sets SAR enable and writing 0 clears the enable. (RW)
+} tx_cal_format;
+
+/**
+ * @brief Formats a spi_frame to a tx_cal_format.
+ *
+ * @param[in] fr: spi_frame to initialize the tx_cal_format(format).
+ * @param[out] format: Structure which will contains the spi_frame formatted.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @note: This function must receive an tx_cal_format to work.
+ *
+ */
+void tx_cal_formater(spi_frame fr, void *format, const size_t sub_register);
+
+/**
+ * @brief Unformats a tx_cal_format to a spi_frame.
+ *
+ * @param[in] format: Structure which contains the values of the fields of the TX_CAL register.
+ * @param[out] fr: spi_frame where this function will store the tx_cal_format structure.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @return size_t: Size of the spi_frame formed with the given tx_cal_format structure.
+ *
+ * @note: This function must receive a tx_cal_format value to work.
+ *
+ */
+size_t tx_cal_unformater(void *format, spi_frame fr, const size_t sub_register);
+
+/******* FS_CTRL *******/
+
+// Sub-registers of the frequency synthesizer control block register.
+typedef enum {
+    FS_PLLCFG = 0x07,
+    FS_PLLTUNE = 0x0B,
+    FS_XTALT = 0x0E,
+} fs_ctrl_subregister;
+
+// Structure of the frequency synthesizer control block register.
+typedef struct {
+    unsigned int xtalt :5; // Crystal trim. (RW)
+    uint8_t fs_plltune;    // PLL Tuning. (RW)
+    uint32_t fs_pllcfg;    // PLL configuration. (RW)
+} fs_ctrl_format;
+
+/**
+ * @brief Formats a spi_frame to a fs_ctrl_format.
+ *
+ * @param[in] fr: spi_frame to initialize the fs_ctrl_format(format).
+ * @param[out] format: Structure which will contains the spi_frame formatted.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @note: This function must receive an fs_ctrl_format to work.
+ *
+ */
+void fs_ctrl_formater(spi_frame fr, void *format, const size_t sub_register);
+
+/**
+ * @brief Unformats a fs_ctrl_format to a spi_frame.
+ *
+ * @param[in] format: Structure which contains the values of the fields of the FS_CTRL register.
+ * @param[out] fr: spi_frame where this function will store the fs_ctrl_format structure.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @return size_t: Size of the spi_frame formed with the given fs_ctrl_format structure.
+ *
+ * @note: This function must receive a fs_ctrl_format value to work.
+ *
+ */
+size_t fs_ctrl_unformater(void *format, spi_frame fr, const size_t sub_register);
 
 #endif // _FORMAT_H_
