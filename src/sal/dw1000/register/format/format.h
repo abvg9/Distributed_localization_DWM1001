@@ -1877,7 +1877,6 @@ typedef struct {
                                 // powered oscillator. (RW)
     unsigned int smxx: 1;       // This bit needs to be set to 0 for correct operation in the SLEEP state within the DW1000. By
                                 // default this bit is set to 1. (RW)
-
     unsigned int sleep_cen: 1;  // This bit enables the sleep counter. (RW)
     uint16_t sleep_tim;         // Sleep time. The units of sleep_tim depend on which timer is running. (RW)
     unsigned int lpclkdiva: 11; // This field specifies a divider count for dividing the raw DW1000 XTAL oscillator frequency to
