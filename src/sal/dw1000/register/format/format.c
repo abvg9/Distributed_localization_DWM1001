@@ -69,16 +69,22 @@ size_t pan_addr_unformater(void *format, spi_frame fr, const size_t sub_register
     pan_adr_format *pan_adr_f = ((pan_adr_format*) format);
 
     if(sub_register == PAN_ID) {
+
         fr[1] = (pan_adr_f->pan_id & 0xFF00) >> 8;
         fr[0] = pan_adr_f->pan_id & 0xFF;
+
+        return 2;
+
     } else if(sub_register == SHORT_ADR) {
+
         fr[1] = (pan_adr_f->short_addr & 0xFF00) >> 8;
         fr[0] = pan_adr_f->short_addr & 0xFF;
-    } else {
-        return 0;
+
+        return 2;
+
     }
 
-    return 2;
+    return 0;
 }
 
 void sys_cfg_formater(spi_frame fr, void *format, const size_t sub_register) {
@@ -185,15 +191,14 @@ size_t tx_fctrl_unformater(void* format, spi_frame fr, const size_t sub_register
     tx_fctrl_format *tx_fctrl_f = ((tx_fctrl_format*) format);
 
     if(sub_register == REST) {
+
         fr[3] = tx_fctrl_f->txboffs >> 2;
-
         fr[2] = ((tx_fctrl_f->txboffs & 0b0000000011) << 6) | tx_fctrl_f->pe_txpsr << 2 | tx_fctrl_f->txprf;
-
         fr[1] = tx_fctrl_f->tr << 7 | tx_fctrl_f->txbr << 5 | ((tx_fctrl_f->tfle & 0b110) >> 1);
-
         fr[0] = ((tx_fctrl_f->tfle & 0b001) << 7) | tx_fctrl_f->tflen;
 
         return 4;
+
     } else if(sub_register == IFSDELAY) {
 
         fr[0] = tx_fctrl_f->ifsdelay;
@@ -538,7 +543,6 @@ void rx_fqual_formater(spi_frame fr, void *format, const size_t sub_register) {
 void rx_ttcki_formater(spi_frame fr, void *format, const size_t sub_register) {
 
     rx_ttcki_value* rx_ttcki = (rx_ttcki_value*) format;
-
     *rx_ttcki = (((uint32_t)fr[3]) << 24) | (((uint32_t)fr[2]) << 16) | (((uint32_t)fr[1]) << 8) | fr[0];
 
 }
@@ -668,9 +672,7 @@ size_t ack_resp_t_unformater(void *format, spi_frame fr, const size_t sub_regist
     const uint32_t reg_value = w4r_tim_calculate_register_val(ack_resp_t_f->w4r_tim);
 
     fr[2] = (reg_value & 0b11110000000000000000) >> 16;
-
     fr[1] = (reg_value & 0b00001111111100000000) >> 8;
-
     fr[0] = reg_value & 0b00000000000011111111;
 
     return 4;
@@ -679,7 +681,6 @@ size_t ack_resp_t_unformater(void *format, spi_frame fr, const size_t sub_regist
 void rx_sniff_formater(spi_frame fr, void *format, const size_t sub_register) {
 
     rx_sniff_format* rx_sniff_f = (rx_sniff_format*)format;
-
     rx_sniff_f->sniff_offt = calculate_sniff_offt(fr[1]);
 
     rx_sniff_f->sniff_ont = fr[0] & 0b00001111;
@@ -689,7 +690,6 @@ void rx_sniff_formater(spi_frame fr, void *format, const size_t sub_register) {
 size_t rx_sniff_unformater(void *format, spi_frame fr, const size_t sub_register) {
 
     rx_sniff_format* rx_sniff_f = (rx_sniff_format*)format;
-
     fr[1] = sniff_offt_calculate_register_val(rx_sniff_f->sniff_offt);
 
     fr[0] = rx_sniff_f->sniff_ont;
@@ -783,58 +783,80 @@ void usr_sfd_formater(spi_frame fr, void *format, const size_t sub_register) {
     usr_sfd_format* usr_sfd_f = (usr_sfd_format*) format;
 
     if(sub_register == USR_SFD_OCT_0_TO_3) {
+
         usr_sfd_f->sfd_length = fr[0];
         usr_sfd_f->tx_ssfd_magl = fr[1];
         usr_sfd_f->tx_ssfd_magh = fr[2];
         usr_sfd_f->tx_ssfd_sgnl = fr[3];
+
     } else if(sub_register == USR_SFD_OCT_4_TO_7) {
+
         usr_sfd_f->tx_ssfd_sgnh = fr[0];
         usr_sfd_f->rx_ssfd_magl = fr[1];
         usr_sfd_f->rx_ssfd_magh = fr[2];
         usr_sfd_f->rx_ssfd_sgnl = fr[3];
+
     } else if(sub_register == USR_SFD_OCT_8_TO_11) {
+
         usr_sfd_f->rx_ssfd_sgnh = fr[0];
         usr_sfd_f->tx_lsfd_mag0 = fr[1];
         usr_sfd_f->tx_lsfd_mag1 = fr[2];
         usr_sfd_f->tx_lsfd_mag2 = fr[3];
+
     } else if(sub_register == USR_SFD_OCT_12_TO_15) {
+
         usr_sfd_f->tx_lsfd_mag3 = fr[0];
         usr_sfd_f->tx_lsfd_mag4 = fr[1];
         usr_sfd_f->tx_lsfd_mag5 = fr[2];
         usr_sfd_f->tx_lsfd_mag6 = fr[3];
+
     } else if(sub_register == USR_SFD_OCT_16_TO_19) {
+
         usr_sfd_f->tx_lsfd_mag7 = fr[0];
         usr_sfd_f->tx_lsfd_sgn0 = fr[1];
         usr_sfd_f->tx_lsfd_sgn1 = fr[2];
         usr_sfd_f->tx_lsfd_sgn2 = fr[3];
+
     } else if(sub_register == USR_SFD_OCT_20_TO_23) {
+
         usr_sfd_f->tx_lsfd_sgn3 = fr[0];
         usr_sfd_f->tx_lsfd_sgn4 = fr[1];
         usr_sfd_f->tx_lsfd_sgn5 = fr[2];
         usr_sfd_f->tx_lsfd_sgn6 = fr[3];
+
     } else if(sub_register == USR_SFD_OCT_24_TO_27) {
+
         usr_sfd_f->tx_lsfd_sgn7 = fr[0];
         usr_sfd_f->rx_lsfd_mag0 = fr[1];
         usr_sfd_f->rx_lsfd_mag1 = fr[2];
         usr_sfd_f->rx_lsfd_mag2 = fr[3];
+
     } else if(sub_register == USR_SFD_OCT_28_TO_31) {
+
         usr_sfd_f->rx_lsfd_mag3 = fr[0];
         usr_sfd_f->rx_lsfd_mag4 = fr[1];
         usr_sfd_f->rx_lsfd_mag5 = fr[2];
         usr_sfd_f->rx_lsfd_mag6 = fr[3];
+
     } else if(sub_register == USR_SFD_OCT_32_TO_35) {
+
         usr_sfd_f->rx_lsfd_mag7 = fr[0];
         usr_sfd_f->rx_lsfd_sgn0 = fr[1];
         usr_sfd_f->rx_lsfd_sgn1 = fr[2];
         usr_sfd_f->rx_lsfd_sgn2 = fr[3];
+
     } else if(sub_register == USR_SFD_OCT_36_TO_39) {
+
         usr_sfd_f->rx_lsfd_sgn2 = fr[0];
         usr_sfd_f->rx_lsfd_sgn3 = fr[1];
         usr_sfd_f->rx_lsfd_sgn4 = fr[2];
         usr_sfd_f->rx_lsfd_sgn5 = fr[3];
+
     } else if(sub_register == USR_SFD_OCT_40_TO_41) {
+
         usr_sfd_f->rx_lsfd_sgn6 = fr[0];
         usr_sfd_f->rx_lsfd_sgn7 = fr[1];
+
     }
 
 }
@@ -1730,6 +1752,75 @@ size_t fs_ctrl_unformater(void *format, spi_frame fr, const size_t sub_register)
     } else if(sub_register == FS_XTALT) {
 
         fr[0] = 0b01100000 | fs_ctrl_f->xtalt;
+
+        return 1;
+
+    }
+
+    return 0;
+}
+
+void aon_formater(spi_frame fr, void *format, const size_t sub_register) {
+
+    aon_format* aon_f = (aon_format*)format;
+
+    if(sub_register == AON_CFG1) {
+
+        aon_f->sleep_cen = fr[0] & 0b00000001;
+        aon_f->smxx = (fr[0] & 0b00000010) >> 1;
+        aon_f->lposc_cal = (fr[0] & 0b00000100) >> 2;
+
+    } else if(sub_register == AON_CFG0) {
+
+        aon_f->sleep_en = fr[0] & 0b00000001;
+        aon_f->wake_pin = (fr[0] & 0b00000010) >> 1;
+        aon_f->wake_spi = (fr[0] & 0b00000100) >> 2;
+        aon_f->wake_cnt = (fr[0] & 0b00001000) >> 3;
+        aon_f->lpdiv_en = (fr[0] & 0b00010000) >> 4;
+
+        aon_f->lpclkdiva = (((uint16_t)fr[1]) << 3) | (fr[0] & 0b11100000) >> 5;
+        aon_f->sleep_tim = (((uint16_t)fr[3]) << 8) | fr[2];
+
+    } else if(sub_register == AON_ADDR) {
+
+        aon_f->aon_addr = fr[0];
+
+    }
+
+}
+
+size_t aon_unformater(void *format, spi_frame fr, const size_t sub_register) {
+
+    aon_format* aon_f = (aon_format*)format;
+
+    if(sub_register == AON_CFG1) {
+
+        fr[0] = (((uint8_t)aon_f->sleep_cen) << 2) | (((uint8_t)aon_f->smxx) << 1) | aon_f->lposc_cal;
+        fr[1] = 0;
+
+        return 2;
+
+    }  else if(sub_register == AON_CFG0) {
+
+        fr[0] =  (((uint8_t)(aon_f->lpclkdiva & 0b00000000111)) << 5) |
+                 (((uint8_t)aon_f->lpdiv_en) << 4) |
+                 (((uint8_t)aon_f->wake_cnt) << 3) |
+                 (((uint8_t)aon_f->wake_spi) << 2) |
+                 (((uint8_t)aon_f->wake_pin) << 1) |
+                 aon_f->sleep_en;
+
+
+        fr[1] = (aon_f->lpclkdiva & 0b11111111000) >> 3;
+
+        fr[2] = aon_f->sleep_tim & 0x00FF;
+
+        fr[3] = (aon_f->sleep_tim & 0xFF00) >> 8;
+
+        return 4;
+
+    } else if(sub_register == AON_ADDR) {
+
+        fr[0] = aon_f->aon_addr;
 
         return 1;
 

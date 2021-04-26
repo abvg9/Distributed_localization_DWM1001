@@ -1859,4 +1859,63 @@ void fs_ctrl_formater(spi_frame fr, void *format, const size_t sub_register);
  */
 size_t fs_ctrl_unformater(void *format, spi_frame fr, const size_t sub_register);
 
+/******* AON *******/
+
+// Sub-registers of the always on system control interface block register.
+typedef enum {
+    AON_WCFG = 0x00,
+    AON_CTRL = 0x02,
+    AON_RDAT = 0x03,
+    AON_ADDR = 0x04,
+    AON_CFG0 = 0x06,
+    AON_CFG1 = 0x0A,
+} aon_subregister;
+
+// Structure of the always on system control interface block register.
+typedef struct {
+    unsigned int lposc_cal: 1;  // This bit enables the calibration function that measures the period of the IC’s internal low
+                                // powered oscillator. (RW)
+    unsigned int smxx: 1;       // This bit needs to be set to 0 for correct operation in the SLEEP state within the DW1000. By
+                                // default this bit is set to 1. (RW)
+
+    unsigned int sleep_cen: 1;  // This bit enables the sleep counter. (RW)
+    uint16_t sleep_tim;         // Sleep time. The units of sleep_tim depend on which timer is running. (RW)
+    unsigned int lpclkdiva: 11; // This field specifies a divider count for dividing the raw DW1000 XTAL oscillator frequency to
+                                // set an LP clock frequency. (RW)
+    unsigned int lpdiv_en: 1;   // Low power divider enable configuration. (RW)
+    unsigned int wake_cnt: 1;   // Wake when sleep counter elapses. (RW)
+    unsigned int wake_spi: 1;   // Wake using SPI access. (RW)
+    unsigned int wake_pin: 1;   // Wake using WAKEUP pin. (RW)
+    unsigned int sleep_en: 1;   // This is the sleep enable configuration bit. (RW)
+
+    uint8_t aon_addr;           // AON direct access address. (RW)
+
+} aon_format;
+
+/**
+ * @brief Formats a spi_frame to a aon_format.
+ *
+ * @param[in] fr: spi_frame to initialize the aon_format(format).
+ * @param[out] format: Structure which will contains the spi_frame formatted.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @note: This function must receive an aon_format to work.
+ *
+ */
+void aon_formater(spi_frame fr, void *format, const size_t sub_register);
+
+/**
+ * @brief Unformats a aon_format to a spi_frame.
+ *
+ * @param[in] format: Structure which contains the values of the fields of the AON register.
+ * @param[out] fr: spi_frame where this function will store the aon_format structure.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @return size_t: Size of the spi_frame formed with the given aon_format structure.
+ *
+ * @note: This function must receive a aon_format value to work.
+ *
+ */
+size_t aon_unformater(void *format, spi_frame fr, const size_t sub_register);
+
 #endif // _FORMAT_H_

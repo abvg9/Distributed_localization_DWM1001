@@ -89,6 +89,7 @@ const command COMMAND_MAP[] = {
         RESERVED_REGISTER,                                      // RESERVED_10
         {3U, RW, tx_cal_formater, tx_cal_unformater},           // TX_CAL
         {4U, RW, fs_ctrl_formater, fs_ctrl_unformater},         // FS_CTRL
+        {4U, RW, aon_formater, aon_unformater},                 // AON
 };
 
 /**
