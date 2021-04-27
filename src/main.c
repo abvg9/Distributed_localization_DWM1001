@@ -1,5 +1,5 @@
 #include "ch.h"
-#include "dwm1000.h"
+#include "dw1000.h"
 
 int main(void) {
 
@@ -7,8 +7,6 @@ int main(void) {
     chSysInit();
 
     if(dwm_eneable()) {
-        read_command(EUI);
-        read_command(PANADR);
     }
 
     while (true) {
