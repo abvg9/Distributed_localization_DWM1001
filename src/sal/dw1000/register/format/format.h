@@ -1,8 +1,6 @@
 /**
- * This file is part of the UCM-237 distribution (https://github.com/UCM-237/Distributed_localization_DWM1001).
- * Copyright (c) 2021 Complutense university of Madrid, Madrid, Spain.
- *
- * Author: Alvaro Velasco Garcia. <https://github.com/abvg9>
+ * This file is part of the abvg9 distribution (https://github.com/abvg9/Distributed_localization_DWM1001).
+ * Copyright (c) 2021 Álvaro Velsco García, Madrid, Spain.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -131,8 +129,8 @@ size_t pan_addr_unformater(void *format, spi_frame fr, const size_t sub_register
 
 // Posible values of the phr_mode field.
 typedef enum {
-    standard = 0b00,
-    long_frames = 0b11
+    STANDARD = 0b00,
+    LONG_FRAMES = 0b11
 } phr_mode;
 
 // Structure of the system configuration register.
@@ -587,7 +585,7 @@ typedef enum {
 typedef struct {
     uint16_t fp_ampl2;  // First path amplitude point 2.
     uint16_t std_noise; // Standard deviation of noise.
-    uint16_t cir_pwr;   // Channel impulse response power.
+    uint16_t cir_pwr;   // Impulse response power.
     uint16_t fp_ampl3;  // First path amplitude point 3.
 } rx_fqual_format;
 
@@ -640,7 +638,7 @@ typedef struct {
     uint8_t rsmpdel;         // Reports an internal re-sampler delay value.
     signed int rxtofs: 19;   // RX time tracking offset.
     unsigned int rcphase :9; // Reports the receive carrier phase adjustment at time the ranging
-                             // Time stamp is made. This field contains the value in degrees.
+                             // time stamp is made. This field contains the value in degrees.
                              // Therefore its maximum value must be 360
 } rx_ttcko_format;
 
@@ -1032,8 +1030,8 @@ typedef struct {
     unsigned int tnssfd :1;                        // This bit enables the use of a user specified (non-standard) SFD in the transmitter.
     transmit_receive_pulse_repetition_freq rxprf;  // This two bit field selects the PRF used in the receiver.
     unsigned int dwsfd :1;                         // This bit enables a non-standard decawave proprietary SFD sequence.
-    channel rx_chan :4;                            // This selects the receive channel.
-    channel tx_chan :4;                            // This selects the transmit channel.
+    channel rx_chan;                               // This selects the receive channel.
+    channel tx_chan;                               // This selects the transmit channel.
 } chan_ctrl_format;
 
 /**
@@ -1601,6 +1599,19 @@ typedef struct {
     gpio_raw_state_value grawp0; // This bit reflects the raw state of GPIO0.
 } gpio_raw_state_format;
 
+typedef struct {
+    gpio_mode_ctrl_format gpio_mode_ctrl_f;
+    gpio_direction_ctrl_format gpio_direction_ctrl_f;
+    gpio_data_output_ctrl_format gpio_data_output_ctrl_f;
+    gpio_irq_ctrl_format gpio_irq_ctrl_f;
+    gpio_irq_sense_ctrl_format gpio_irq_sense_ctrl_f;
+    gpio_irq_mode_ctrl_format gpio_irq_mode_ctrl_f;
+    gpio_irq_both_edges_mode_format gpio_irq_both_edges_mode_f;
+    gpio_irq_latch_clear_mode_format gpio_irq_latch_clear_mode_f;
+    gpio_irq_de_bounce_mode_format gpio_irq_de_bounce_mode_f;
+    gpio_raw_state_format gpio_raw_state_f;
+} gpio_ctrl_format;
+
 /**
  * @brief Formats a spi_frame to a gpio_ctrl_format.
  *
@@ -1688,6 +1699,10 @@ typedef enum {
     SRF_CONF = 0x00,
     RF_RXCTRLH = 0x0B,
     RF_TXCTRL = 0x0C,
+    RF_TLD_BIAS = 0x11,     // This sub-register is classified as reserved, but it is necessary
+                            // write in it to obtain the temperature and the voltage.
+    RF_TLD_ADC_BIAS = 0x12, // This sub-register is classified as reserved, but it is necessary
+                            // write in it to obtain the temperature and the voltage.
     RF_STATUS = 0x2C,
     LDOTUNE = 0x30,
 } rf_conf_subregister;
@@ -1700,8 +1715,8 @@ typedef enum {
 
 // Possible values of the ldofen field.
 typedef enum {
-    ENEABLE_LDOS = 0x1F,
-    DISABLE_LDOS = 0X00,
+    ENEABLE_ALL_LDOS = 0x1F,
+    DISABLE_ALL_LDOS = 0X00,
 } ldofen_value;
 
 // Possible values of the pllfen field.
@@ -1723,6 +1738,8 @@ typedef struct {
     unsigned int cpllhigh: 1;  // Clock PLL high flag status bit. (RO)
     unsigned int cplllow: 1;   // Clock PLL low flag status bit. (RO)
     unsigned int cplllock: 1;  // Clock PLL lock status. (RO)
+    uint8_t rf_tld_bias;       // Enable TLD bias. (RO)
+    uint8_t rf_tld_adc_bias;   // Enable TLD bias and ADC bias. (RO)
     unsigned int txmq :3;      // Transmit mixer Q-factor tuning register. (RW)
     unsigned int txmtune :4;   // Transmit mixer tuning register. (RW)
     uint8_t rfrxctrlh;         // Analog RX control register. (RW)
@@ -1772,10 +1789,10 @@ typedef enum {
 } tx_cal_subregister;
 
 #define SAR_TEMP_LEAST_BIT_VALUE 1.14 // (degrees centigrade)
-#define calculate_temperature(register_value) register_value * SAR_TEMP_LEAST_BIT_VALUE
+#define calculate_temperature(register_value, otp_temp) (register_value - otp_temp) * SAR_TEMP_LEAST_BIT_VALUE + 23.0
 
-#define SAR_BAT_LEAST_BIT_VALUE 0.006 // (volts)
-#define calculate_voltage(register_value) register_value * SAR_BAT_LEAST_BIT_VALUE
+#define SAR_BAT_LEAST_BIT_VALUE 0.005780 // (volts)(1/173)
+#define calculate_voltage(register_value, otp_v_bat) (register_value - otp_v_bat) * SAR_BAT_LEAST_BIT_VALUE + 3.3
 
 // Structure of the transmitter calibration block register.
 typedef struct {
@@ -1784,10 +1801,10 @@ typedef struct {
     unsigned int delay_cnt: 12; // PG status. (RO)
     unsigned int pg_start: 1;   // Start the pulse generator calibration. Note: This bit is self clearing. (RW)
     unsigned int pg_tmeas: 4;   // Number of clock cycles over which to run the pulse generator cal counter. (RW)
-    double sar_wbat;            // SAR reading of Voltage level taken at last wakeup event. (RO)
-    double sar_wtemp;           // SAR reading of temperature level taken at last wakeup event. (RO)
-    double sar_lvbat;           // Latest SAR reading for Voltage level. (RO)
-    double sar_ltemp;           // Latest SAR reading for Temperature level. (RO)
+    uint8_t sar_wbat;           // SAR reading of Voltage level taken at last wakeup event. (RO)
+    uint8_t sar_wtemp;          // SAR reading of temperature level taken at last wakeup event. (RO)
+    uint8_t sar_lvbat;          // Latest SAR reading for Voltage level. (RO)
+    uint8_t sar_ltemp;          // Latest SAR reading for Temperature level. (RO)
     unsigned int sar_ctrl :1;   // Writing 1 sets SAR enable and writing 0 clears the enable. (RW)
 } tx_cal_format;
 
@@ -1886,13 +1903,27 @@ typedef struct {
     unsigned int wake_spi: 1;   // Wake using SPI access. (RW)
     unsigned int wake_pin: 1;   // Wake using WAKEUP pin. (RW)
     unsigned int sleep_en: 1;   // This is the sleep enable configuration bit. (RW)
-
     uint8_t aon_addr;           // AON direct access address. (RW)
-
+    uint8_t aon_rdat;           // AON Direct Access Read Data Result. (RW)
+    unsigned int dca_enab :1;   // Direct AON memory access enable bit. (RW)
+    unsigned int dca_read :1;   // Direct AON memory access read. (RW)
+    unsigned int upl_cfg :1;    // Upload the AON block configurations to the AON. (RW)
+    unsigned int save :1;       // When this bit is set the DW1000 will copy the user configurations from the host interface
+                                // register set into the AON memory. (RW)
+    unsigned int restore :1;    // When this bit is set the DW1000 will copy the user configurations from the AON memory
+                                // to the host interface register set. (RW)
+    unsigned int onw_lld0 :1;   // On Wake-up load the LDOTUNE value from OTP.
+    unsigned int onw_llde :1;   // On Wake-up load the LDE microcode.
+    unsigned int pres_sleep :1; // Preserve Sleep.
+    unsigned int onw_l64p :1;   // On Wake-up load the Length64 receiver operating parameter set.
+    unsigned int onw_ldc :1;    // On Wake-upload configurations from the AON memory into the host interface register set.
+    unsigned int onw_leui :1;   // On Wake-up load the EUI from OTP memory into EUI register.
+    unsigned int onw_rx :1;     // On Wake-up turn on the receiver.
+    unsigned int onw_rad :1;    // On Wake-up Run the (temperature and voltage) analog to digital converters.
 } aon_format;
 
 /**
- * @brief Formats a spi_frame to a aon_format.
+ * @brief Formats a spi_frame to an aon_format.
  *
  * @param[in] fr: spi_frame to initialize the aon_format(format).
  * @param[out] format: Structure which will contains the spi_frame formatted.
@@ -1904,7 +1935,7 @@ typedef struct {
 void aon_formater(spi_frame fr, void *format, const size_t sub_register);
 
 /**
- * @brief Unformats a aon_format to a spi_frame.
+ * @brief Unformats an aon_format to a spi_frame.
  *
  * @param[in] format: Structure which contains the values of the fields of the AON register.
  * @param[out] fr: spi_frame where this function will store the aon_format structure.
@@ -1916,5 +1947,310 @@ void aon_formater(spi_frame fr, void *format, const size_t sub_register);
  *
  */
 size_t aon_unformater(void *format, spi_frame fr, const size_t sub_register);
+
+/******* OTP_IF *******/
+
+// Memory direction of the one time programmable memory interface register.
+typedef enum {
+    LDOTUNE_ADDRESS = 0x04,
+    PARTID_ADDRESS = 0x06,
+    LOTID_ADDRESS = 0x07,
+    VBAT_ADDRESS = 0x08,
+    VTEMP_ADDRESS = 0x09,
+    XTRIM_ADDRESS = 0x1E,
+} otp_memory_direction;
+
+// Sub-registers of the one time programmable memory interface register.
+typedef enum {
+    OTP_WDAT = 0x00,
+    OTP_ADDR = 0x04,
+    OTP_CTRL = 0x06,
+    OTP_STAT = 0x08,
+    OTP_RDAT = 0x0A,
+    OTP_SRDAT = 0x0E,
+    OTP_SF = 0x12,
+} otp_if_subregister;
+
+// Possible values of the ops_sel field.
+typedef enum {
+    OPS_SEL_LENGTH_64 = 0b00,
+    OPS_SEL_TIGHT = 0b01,
+    OPS_SEL_DEFAULT = 0b10,
+    OPS_SEL_RESERVED = 0b10, // This value should be 0b11, but this is to prevent used it.
+} ops_sel_value;
+
+// Structure of the one time programmable memory interface register.
+typedef struct {
+    ops_sel_value ops_sel;         // Operating parameter set selection. (RW)
+    unsigned int ldo_kick:1;       // This bit when set initiates the loading of the LDOTUNE_CAL parameter from OTP address 0x4
+                                   // into the register RF_CONF Sub-register LDOTUNE. (RW)
+    unsigned int ops_kick:1;       // This bit when set initiates a load of the operating parameter set selected by the OPS_SEL
+                                   // configuration below. (RW)
+    uint32_t otp_srdat;            // OTP special register read data. (RW)
+    uint32_t otp_rdat;             // OTP read data. (RO)
+    unsigned int otp_vpok :1;      // OTP programming voltage OK. (RW)
+    unsigned int otp_prgd :1;      // OTP programming done. (RW)
+    unsigned int otp_rden :1;      // This bit forces the OTP into manual read mode. (RW)
+    unsigned int otp_read :1;      // This bit commands a read operation from the address specified in the OTP_ADDR register,
+                                   // the value read will then be available in the OTP_RDAT register. (RW)
+    unsigned int otp_mrwr :1;      // OTP mode register write. (RW)
+    unsigned int otp_prog :1;      // Setting this bit will cause the contents of OTP_WDAT to be written to OTP_ADDR. (RW)
+    unsigned int otp_mr :4;        // OTP mode register. (RW)
+    unsigned int lde_load :1;      // This bit forces a load of LDE microcode. (RW)
+    unsigned int otp_address : 12; // OTP address. (RW)
+    uint32_t otp_wdat;             // OTP write data. (RW)
+} otp_if_format;
+
+/**
+ * @brief Formats a spi_frame to an otp_if_format.
+ *
+ * @param[in] fr: spi_frame to initialize the otp_if_format(format).
+ * @param[out] format: Structure which will contains the spi_frame formatted.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @note: This function must receive an aon_format to work.
+ *
+ */
+void otp_if_formater(spi_frame fr, void *format, const size_t sub_register);
+
+/**
+ * @brief Unformats an otp_if_format to a spi_frame.
+ *
+ * @param[in] format: Structure which contains the values of the fields of the OTP_IF register.
+ * @param[out] fr: spi_frame where this function will store the otp_if_format structure.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @return size_t: Size of the spi_frame formed with the given otp_if_format structure.
+ *
+ * @note: This function must receive a otp_if_format value to work.
+ *
+ */
+size_t otp_if_unformater(void *format, spi_frame fr, const size_t sub_register);
+
+/******* LDE_IF *******/
+
+// Sub-registers of the leading edge detection interface register.
+typedef enum {
+    LDE_THRESH = 0x0000,
+    LDE_CFG1 = 0x0806,
+    LDE_PPINDX = 0x1000,
+    LDE_PPAMPL = 0x1002,
+    LDE_RXANTD = 0x1804,
+    LDE_CFG2 = 0x1806,
+    LDE_REPC = 0x2804,
+} lde_if_subregister;
+
+// Structure of the leading edge detection interface register.
+typedef struct {
+    uint16_t lde_thresh;    // LDE threshold report. (RO)
+    unsigned int pmult :3;  // Peak multiplier. (RW)
+    unsigned int ntm :5;    // Noise threshold multiplier. (RW)
+    uint16_t lde_ppindx;    // LDE peak path index. (RO)
+    uint16_t lde_ppampl;    // LDE peak path amplitude. (RO)
+    uint16_t lde_rxantd;    // LDE receive antenna delay configuration. (RW)
+    uint16_t lde_cfg2;      // LDE configuration register 2. (RW)
+    uint16_t lde_repc;      // LDE replica coefficient configuration. (RW)
+} lde_if_format;
+
+/**
+ * @brief Formats a spi_frame to a lde_if_format.
+ *
+ * @param[in] fr: spi_frame to initialize the lde_if_format(format).
+ * @param[out] format: Structure which will contains the spi_frame formatted.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @note: This function must receive an lde_if_format to work.
+ *
+ */
+void lde_if_formater(spi_frame fr, void *format, const size_t sub_register);
+
+/**
+ * @brief Unformats a lde_if_format to a spi_frame.
+ *
+ * @param[in] format: Structure which contains the values of the fields of the LDE_IF register.
+ * @param[out] fr: spi_frame where this function will store the lde_if_format structure.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @return size_t: Size of the spi_frame formed with the given lde_if_format structure.
+ *
+ * @note: This function must receive a lde_if_format value to work.
+ *
+ */
+size_t lde_if_unformater(void *format, spi_frame fr, const size_t sub_register);
+
+/******* DIG_DIAG *******/
+
+// Sub-registers of the digital diagnostics interface register.
+typedef enum {
+    EVC_CTRL = 0x00,
+    EVC_PHE = 0x04,
+    EVC_RSE = 0x06,
+    EVC_FCG = 0x08,
+    EVC_FCE = 0x0A,
+    EVC_FFR = 0x0C,
+    EVC_OVR = 0x0E,
+    EVC_STO = 0x10,
+    EVC_PTO = 0x12,
+    EVC_FWTO = 0x14,
+    EVC_TXFS = 0x16,
+    EVC_HPW = 0x18,
+    EVC_TPW = 0x1A,
+    DIAG_TMC = 0x24,
+} dig_diag_subregister;
+
+// Structure of the digital diagnostics interface register.
+typedef struct {
+    unsigned int evc_clr :1;   // Event counters clear. (RW)
+    unsigned int evc_en :1;    // Event counters enable. (RW)
+    unsigned int evc_phe :12;  // PHR error event counter. (RO)
+    unsigned int evc_rse :12;  // Reed solomon decoder (frame sync loss) error event counter. (RO)
+    unsigned int evc_fcg :12;  // Frame check sequence good event counter. (RO)
+    unsigned int evc_fce :12;  // Frame check sequence error event counter. (RO)
+    unsigned int evc_ffr :12;  // Frame filter rejection event counter. (RO)
+    unsigned int evc_ovr :12;  // RX overrun error event counter. (RO)
+    unsigned int evc_sto :12;  // SFD timeout errors event counter. (RO)
+    unsigned int evc_pto :12;  // Preamble detection timeout event counter. (RO)
+    unsigned int evc_fwto :12; // RX frame wait timeout counter. (RO)
+    unsigned int evc_txfs :12; // TX frame sent event counter. (RO)
+    unsigned int evc_hpw :12;  // Half period warning event counter. (RO)
+    unsigned int evc_tpw :12;  // TX power-up warning event counter. (RO)
+    unsigned int tx_pstm :1;   // Transmit Power Spectrum Test Mode. (RW)
+} dig_diag_format;
+
+/**
+ * @brief Formats a spi_frame to a dig_diag_format.
+ *
+ * @param[in] fr: spi_frame to initialize the dig_diag_format(format).
+ * @param[out] format: Structure which will contains the spi_frame formatted.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @note: This function must receive an dig_diag_format to work.
+ *
+ */
+void dig_diag_formater(spi_frame fr, void *format, const size_t sub_register);
+
+/**
+ * @brief Unformats a dig_diag_format to a spi_frame.
+ *
+ * @param[in] format: Structure which contains the values of the fields of the DIG_DIAG register.
+ * @param[out] fr: spi_frame where this function will store the dig_diag_format structure.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @return size_t: Size of the spi_frame formed with the given dig_diag_format structure.
+ *
+ * @note: This function must receive a dig_diag_format value to work.
+ *
+ */
+size_t dig_diag_unformater(void *format, spi_frame fr, const size_t sub_register);
+
+/******* PMSC *******/
+
+// Sub-registers of the power management system control block register.
+typedef enum {
+    PMSC_CTRL0 = 0x00,
+    PMSC_CTRL1 = 0x04,
+    PMSC_SNOZT = 0x0C,
+    PMSC_TXFSEQ = 0x26,
+    PMSC_LEDC = 0x28,
+} pmsc_subregister;
+
+#define BLINK_TIM_LEAST_BIT_VALUE 0.014 // (seconds)
+#define BLINK_TIME_WRAP_PERIOD (BLINK_TIM_LEAST_BIT_VALUE * pow(2, 8))
+#define calculate_blink_time(register_value) register_value * BLINK_TIM_LEAST_BIT_VALUE
+#define blink_time_calculate_seconds(seconds) seconds / BLINK_TIM_LEAST_BIT_VALUE
+
+#define SNOZ_TIM_LEAST_BIT_VALUE 0.017 // (seconds)
+#define SNOZ_TIM_WRAP_PERIOD (SNOZ_TIM_LEAST_BIT_VALUE * pow(2, 8))
+#define calculate_snoz_time(register_value) register_value * SNOZ_TIM_LEAST_BIT_VALUE
+#define snoz_time_calculate_seconds(seconds) seconds / SNOZ_TIM_LEAST_BIT_VALUE
+
+// Possible values of the pktseq field.
+typedef enum {
+    PKTSEQ_ENABLE_PMSC_CONTROL_ANALOG_SUBSYS = 0x00,
+    PKTSEQ_DISABLE_PMSC_CONTROL_ANALOG_SUBSYS = 0xE7,
+} pktseq_value;
+
+// Possible values of the sysclks field.
+typedef enum {
+    SYSCLKS_AUTO = 0b00,
+    SYSCLKS_19_2MHZ = 0b01,
+    SYSCLKS_125MHZ = 0b10,
+    SYSCLKS_RESERVED = 0b10, // This value should be 0b11, but this is to prevent used it.
+} sysclks_value;
+
+// Possible values of the rxclks field.
+typedef enum {
+    RXCLKS_AUTO = 0b00,
+    RXCLKS_19_2MHZ = 0b01,
+    RXCLKS_125MHZ = 0b10,
+    RXCLKS_OFF = 0b10, // This value should be 0b11, but this is to prevent used it.
+} rxclks_value;
+
+// Possible values of the txclks field.
+typedef enum {
+    TXCLKS_AUTO = 0b00,
+    TXCLKS_19_2MHZ = 0b01,
+    TXCLKS_125MHZ = 0b10,
+    TXCLKS_OFF = 0b10, // This value should be 0b11, but this is to prevent used it.
+} txclks_value;
+
+// Structure of the digital diagnostics interface register.
+typedef struct {
+    sysclks_value sysclks;       // System clock selection. (RW)
+    rxclks_value rxclks;         // Receiver clock selection. (RW)
+    txclks_value txclks;         // Transmitter clock selection. (RW)
+    unsigned int face :1;        // Force accumulator clock enable. (RW)
+    unsigned int adcce :1;       // Analog-to-Digital converter clock enable. (RW)
+    unsigned int amce :1;        // Accumulator memory clock enable. (RW)
+    unsigned int gpce :1;        // GPIO clock enable. (RW)
+    unsigned int gprn :1;        // GPIO reset (NOT), active low. (RW)
+    unsigned int gpdce :1;       // GPIO De-bounce clock enable. (RW)
+    unsigned int gpdrn :1;       // GPIO de-bounce reset (NOT), active low. (RW)
+    unsigned int khzclken :1;    // Kilohertz clock enable. (RW)
+    unsigned int pll2_seq_en :1; // Value 0 means normal (TX sequencing control), value 1 means RX SNIFF mode control. (RW)
+    unsigned int softreset :4;   // These four bits reset the IC TX, RX, Host Interface and the PMSC itself, essentially allowing
+                                 // a reset of the IC under software control. (RW)
+    unsigned int arx2init :1;    // Automatic transition from receive mode into the INIT state. (RW)
+    pktseq_value pktseq;         // Controls PMSC control of analog RF subsystems. (RW)
+    unsigned int atxslp :1;      // After TX automatically sleep. (RW)
+    unsigned int arxslp :1;      // After RX automatically sleep. (RW)
+    unsigned int snoze :1;       // Snooze enable. (RW)
+    unsigned int snozr :1;       // Snooze repeat. (RW)
+    unsigned int pllsyn :1;      // This enables a special 1 GHz clock used for some external SYNC modes. (RW)
+    unsigned int lderune :1;     // LDE run enable. (RW)
+    unsigned int khzclkdiv :6;   // Kilohertz clock divisor. (RW)
+    double snoz_tim;             // Snooze time period. (RW)
+    uint16_t txfseq;             // PMSC fine grain TX sequencing control. (RW)
+    unsigned int blnk_now :4;    // Manually triggers an LED blink. There is one trigger bit per LED IO. (RW)
+    unsigned int blnk_en :1;     // Blink enable. (RW)
+    double blink_tim;            // Blink time count value. (RW)
+
+} pmsc_format;
+
+/**
+ * @brief Formats a pmsc_format to a dig_diag_format.
+ *
+ * @param[in] fr: spi_frame to initialize the pmsc_format(format).
+ * @param[out] format: Structure which will contains the spi_frame formatted.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @note: This function must receive an pmsc_format to work.
+ *
+ */
+void pmsc_formater(spi_frame fr, void *format, const size_t sub_register);
+
+/**
+ * @brief Unformats a pmsc_format to a spi_frame.
+ *
+ * @param[in] format: Structure which contains the values of the fields of the PMSC register.
+ * @param[out] fr: spi_frame where this function will store the pmsc_format structure.
+ * @param[in] sub_register: Enumerate that indicates the sub-register.
+ *
+ * @return size_t: Size of the spi_frame formed with the given pmsc_format structure.
+ *
+ * @note: This function must receive a pmsc_format value to work.
+ *
+ */
+size_t pmsc_unformater(void *format, spi_frame fr, const size_t sub_register);
 
 #endif // _FORMAT_H_

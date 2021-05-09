@@ -1,8 +1,6 @@
 /**
- * This file is part of the UCM-237 distribution (https://github.com/UCM-237/Distributed_localization_DWM1001).
- * Copyright (c) 2021 Complutense university of Madrid, Madrid, Spain.
- *
- * Author: Alvaro Velasco Garcia. <https://github.com/abvg9>
+ * This file is part of the abvg9 distribution (https://github.com/abvg9/Distributed_localization_DWM1001).
+ * Copyright (c) 2021 Álvaro Velsco García, Madrid, Spain.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -76,7 +74,7 @@ typedef enum {
     FS_CTRL     = 0X2B,
     AON         = 0X2C,
     OTP_IF      = 0X2D,
-    LDE_CTRL    = 0X2E,
+    LDE_IF      = 0X2E,
     DIG_DIAG    = 0X2F,
     RESERVED_11 = 0X30,
     RESERVED_12 = 0X31,
@@ -125,7 +123,7 @@ bool get_eui(eui_format* eui_f);
 /**
  * @brief Sets the extended unique identifier register value.
  *
- * @param[out] eui_f: Structure that contains the value that will be written in the register.
+ * @param[in] eui_f: Structure that contains the value that will be written in the register.
  *
  * @return bool: Returns true if the register can be set, otherwise false.
  *
@@ -145,12 +143,14 @@ bool get_pan_adr(pan_adr_format* pan_adr_f);
 /**
  * @brief Sets the pan address register value.
  *
- * @param[out] pan_adr_f: Structure in will be stored the value of the register.
+ * @param[in] pan_adr_f: Structure in will be stored the value of the register.
+ * @param[in] subregister: Sub-register which will be set. If this function received an
+ *                         undefined enumerate value, it will set all the sub-registers.
  *
  * @return bool: True if the register can be set, otherwise false.
  *
  */
-bool set_pan_adr(pan_adr_format* pan_adr_f);
+bool set_pan_adr(pan_adr_format* pan_adr_f, const pan_adr_subregister subregister);
 
 /**
  * @brief Gets the system configuration register value.
@@ -165,7 +165,7 @@ bool get_sys_cfg(sys_cfg_format* sys_cfg_f);
 /**
  * @brief Sets the system configuration register value.
  *
- * @param[out] sys_cfg_f: Structure that contains the value that will be written in the register.
+ * @param[in] sys_cfg_f: Structure that contains the value that will be written in the register.
  *
  * @return bool: Returns true if the register can be set, otherwise false.
  *
@@ -189,26 +189,30 @@ bool get_sys_time(double* seconds);
  * @brief Gets the transmit frame control register value.
  *
  * @param[out] seconds: Structure in will be stored the value of the register.
+ * @param[in] subregister: Sub-register which will be set. If this function received an
+ *                         undefined enumerate value, it will get all the sub-registers.
  *
  * @return bool: Returns true if the register can be gotten, otherwise false.
  *
  */
-bool get_tx_fctrl(tx_fctrl_format* tx_fctrl_f);
+bool get_tx_fctrl(tx_fctrl_format* tx_fctrl_f, const tx_fctrl_subregister subregister);
 
 /**
  * @brief Sets the transmit frame control register value.
  *
- * @param[out] pan_adr_f: Structure in will be stored the value of the register.
+ * @param[in] pan_adr_f: Structure in will be stored the value of the register.
+ * @param[in] subregister: Sub-register which will be set. If this function received an
+ *                         undefined enumerate value, it will set all the sub-registers.
  *
  * @return bool: True if the register can be set, otherwise false.
  *
  */
-bool set_tx_fctrl(tx_fctrl_format* tx_fctrl_f);
+bool set_tx_fctrl(tx_fctrl_format* tx_fctrl_f, const tx_fctrl_subregister subregister);
 
 /**
  * @brief Sets the transmit buffer register value.
  *
- * @param[out] frame: Message to store in the transmit buffer register.
+ * @param[in] frame: Message to store in the transmit buffer register.
  * @param[in] frame_size: Size in bytes of the given uwb_frame.
  *
  * @note: Depend on the phr_mode selected in the system configuration register
@@ -264,7 +268,7 @@ bool set_rx_fwto(double* seconds);
 /**
  * @brief Gets the system control register value.
  *
- * @param[in] sys_ctrl_f: Structure in will be stored the value of the register.
+ * @param[out] sys_ctrl_f: Structure in will be stored the value of the register.
  *
  * @return bool: Returns true if the register can be gotten, otherwise false.
  *
@@ -284,7 +288,7 @@ bool set_sys_ctrl(sys_ctrl_format* sys_ctrl_f);
 /**
  * @brief Gets the system event mask register value.
  *
- * @param[in] sys_evt_msk_f: Structure in will be stored the value of the register.
+ * @param[out] sys_evt_msk_f: Structure in will be stored the value of the register.
  *
  * @return bool: Returns true if the register can be gotten, otherwise false.
  *
@@ -304,22 +308,26 @@ bool set_sys_event_msk(sys_evt_msk_format* sys_evt_msk_f);
 /**
  * @brief Gets the system event status register register value.
  *
- * @param[in] sys_evt_sts_f: Structure in will be stored the value of the register.
+ * @param[out] sys_evt_sts_f: Structure in will be stored the value of the register.
+ * @param[in] subregister: Sub-register which will be set. If this function received an
+ *                         undefined enumerate value, it will get all the sub-registers.
  *
  * @return bool: Returns true if the register can be gotten, otherwise false.
  *
  */
-bool get_sys_event_sts(sys_evt_sts_format* sys_evt_sts_f);
+bool get_sys_event_sts(sys_evt_sts_format* sys_evt_sts_f, const sys_evt_sts_subregister subregister);
 
 /**
  * @brief Sets the system event status register value.
  *
  * @param[in] sys_evt_sts_f: Structure that contains the value that will be written in the register.
+ * @param[in] subregister: Sub-register which will be set. If this function received an
+ *                         undefined enumerate value, it will set all the sub-registers.
  *
  * @return bool: Returns true if the register can be set, otherwise false.
  *
  */
-bool set_sys_event_sts(sys_evt_sts_format* sys_evt_sts_f);
+bool set_sys_event_sts(sys_evt_sts_format* sys_evt_sts_f, const sys_evt_sts_subregister subregister);
 
 /**
  * @brief Gets the rx frame information register value.
@@ -349,17 +357,19 @@ bool get_rx_buffer(uwb_frame frame, const uint16_t frame_size);
 /**
  * @brief Gets the rx frame quality information register value.
  *
- * @param[in] rx_fqual_f: Structure in will be stored the value of the register.
+ * @param[out] rx_fqual_f: Structure in will be stored the value of the register.
+ * @param[in] subregister: Sub-register which will be set. If this function received an
+ *                         undefined enumerate value, it will get all the sub-registers.
  *
  * @return bool: Returns true if the register can be gotten, otherwise false.
  *
  */
-bool get_rx_fqual(rx_fqual_format* rx_fqual_f);
+bool get_rx_fqual(rx_fqual_format* rx_fqual_f, const rx_finfo_subregister subregister);
 
 /**
  * @brief Gets the receiver time tracking interval register value.
  *
- * @param[in] rx_ttcki: Enumerate in will be stored the value of the register.
+ * @param[out] rx_ttcki: Enumerate in will be stored the value of the register.
  *
  * @return bool: Returns true if the register can be gotten, otherwise false.
  *
@@ -369,37 +379,43 @@ bool get_rx_ttcki(rx_ttcki_value* rx_ttcki);
 /**
  * @brief Gets the receiver time tracking offset register value.
  *
- * @param[in] rx_ttcko_f: Structure in will be stored the value of the register.
+ * @param[out] rx_ttcko_f: Structure in will be stored the value of the register.
+ * @param[in] subregister: Sub-register which will be set. If this function received an
+ *                         undefined enumerate value, it will get all the sub-registers.
  *
  * @return bool: Returns true if the register can be gotten, otherwise false.
  *
  */
-bool get_rx_ttcko(rx_ttcko_format* rx_ttcko_f);
+bool get_rx_ttcko(rx_ttcko_format* rx_ttcko_f, const rx_ttcko_subregister subregister);
 
 /**
  * @brief Gets the receiver time stamp register value.
  *
- * @param[in] rx_time_f: Structure in will be stored the value of the register.
+ * @param[out] rx_time_f: Structure in will be stored the value of the register.
+ * @param[in] subregister: Sub-register which will be set. If this function received an
+ *                         undefined enumerate value, it will get all the sub-registers.
  *
  * @return bool: Returns true if the register can be gotten, otherwise false.
  *
  */
-bool get_rx_time(rx_time_format* rx_time_f);
+bool get_rx_time(rx_time_format* rx_time_f, const rx_time_subregister subregister);
 
 /**
  * @brief Gets the transmitter time stamp register value.
  *
- * @param[in] tx_time_f: Structure in will be stored the value of the register.
+ * @param[out] tx_time_f: Structure in will be stored the value of the register.
+ * @param[in] subregister: Sub-register which will be set. If this function received an
+ *                         undefined enumerate value, it will get all the sub-registers.
  *
  * @return bool: Returns true if the register can be gotten, otherwise false.
  *
  */
-bool get_tx_time(tx_time_format* tx_time_f);
+bool get_tx_time(tx_time_format* tx_time_f, const tx_time_subregister subregister);
 
 /**
  * @brief Gets the transmitter antenna delay register value.
  *
- * @param[in] seconds: Value in will be stored the value of the register.
+ * @param[out] seconds: Value in will be stored the value of the register.
  *
  * @return bool: Returns true if the register can be gotten, otherwise false.
  *
@@ -419,7 +435,7 @@ bool set_tx_antd(double* seconds);
 /**
  * @brief Gets the system status register value.
  *
- * @param[in] sys_status_f: Structure in will be stored the value of the register.
+ * @param[out] sys_status_f: Structure in will be stored the value of the register.
  *
  * @return bool: Returns true if the register can be gotten, otherwise false.
  *
@@ -429,7 +445,7 @@ bool get_sys_status(sys_status_format* sys_status_f);
 /**
  * @brief Gets the acknowledgment time and response time register value.
  *
- * @param[in] ack_resp_t_f: Structure in will be stored the value of the register.
+ * @param[out] ack_resp_t_f: Structure in will be stored the value of the register.
  *
  * @return bool: Returns true if the register can be gotten, otherwise false.
  *
@@ -449,7 +465,7 @@ bool set_ack_resp_t(ack_resp_t_format* ack_resp_t_f);
 /**
  * @brief Gets the sniff mode configuration register value.
  *
- * @param[in] rx_sniff_f: Structure in will be stored the value of the register.
+ * @param[out] rx_sniff_f: Structure in will be stored the value of the register.
  *
  * @return bool: Returns true if the register can be gotten, otherwise false.
  *
@@ -469,7 +485,7 @@ bool set_rx_sniff(rx_sniff_format* rx_sniff_f);
 /**
  * @brief Gets the tx power control register value.
  *
- * @param[in] tx_power_f: Structure in will be stored the value of the register.
+ * @param[out] tx_power_f: Structure in will be stored the value of the register.
  *
  * @return bool: Returns true if the register can be gotten, otherwise false.
  *
@@ -489,12 +505,12 @@ bool set_tx_power(tx_power_format* tx_power_f);
 /**
  * @brief Gets the channel control register value.
  *
- * @param[in] chan_ctrl_f: Structure in will be stored the value of the register.
+ * @param[out] chan_ctrl_f: Structure in will be stored the value of the register.
  *
  * @return bool: Returns true if the register can be gotten, otherwise false.
  *
  */
-bool get_chan_ctrl_power(chan_ctrl_format* chan_ctrl_f);
+bool get_chan_ctrl(chan_ctrl_format* chan_ctrl_f);
 
 /**
  * @brief Sets the channel control register value.
@@ -504,72 +520,84 @@ bool get_chan_ctrl_power(chan_ctrl_format* chan_ctrl_f);
  * @return bool: Returns true if the register can be set, otherwise false.
  *
  */
-bool set_chan_ctrl_power(chan_ctrl_format* chan_ctrl_f);
+bool set_chan_ctrl(chan_ctrl_format* chan_ctrl_f);
 
 /**
  * @brief Gets the user-specified short/long TX/RX SFD sequences register value.
  *
- * @param[in] usr_sfd_f: Structure in will be stored the value of the register.
+ * @param[out] usr_sfd_f: Structure in will be stored the value of the register.
+ * @param[in] subregister: Sub-register which will be set. If this function received an
+ *                         undefined enumerate value, it will get all the sub-registers.
  *
  * @return bool: Returns true if the register can be gotten, otherwise false.
  *
  */
-bool get_usr_sfd(usr_sfd_format* usr_sfd_f);
+bool get_usr_sfd(usr_sfd_format* usr_sfd_f, const usr_sfd_subregister subregister);
 
 /**
  * @brief Sets the user-specified short/long TX/RX SFD sequences register value.
  *
  * @param[in] usr_sfd_f: Structure that contains the value that will be written in the register.
+ * @param[in] subregister: Sub-register which will be set. If this function received an
+ *                         undefined enumerate value, it will set all the sub-registers.
  *
  * @return bool: Returns true if the register can be set, otherwise false.
  *
  */
-bool set_usr_sfd(usr_sfd_format* usr_sfd_f);
+bool set_usr_sfd(usr_sfd_format* usr_sfd_f, const usr_sfd_subregister subregister);
 
 /**
- * @brief Gets the user-specified short/long TX/RX SFD sequences register value.
+ * @brief Gets the automatic gain control configuration and control register.
  *
- * @param[in] usr_sfd_f: Structure in will be stored the value of the register.
+ * @param[out] agc_ctrl_f: Structure in will be stored the value of the register.
+ * @param[in] subregister: Sub-register which will be set. If this function received an
+ *                         undefined enumerate value, it will get all the sub-registers.
  *
  * @return bool: Returns true if the register can be gotten, otherwise false.
  *
  */
-bool get_agc_ctrl(agc_ctrl_format* agc_ctrl_f);
+bool get_agc_ctrl(agc_ctrl_format* agc_ctrl_f, const agc_ctrl_subregister subregister);
 
 /**
- * @brief Sets the user-specified short/long TX/RX SFD sequences register value.
+ * @brief Sets the automatic gain control configuration and control register.
  *
  * @param[in] agc_ctrl_f: Structure that contains the value that will be written in the register.
+ * @param[in] subregister: Sub-register which will be set. If this function received an
+ *                         undefined enumerate value, it will set all the sub-registers.
  *
  * @return bool: Returns true if the register can be set, otherwise false.
  *
  */
-bool set_agc_ctrl(agc_ctrl_format* agc_ctrl_f);
+bool set_agc_ctrl(agc_ctrl_format* agc_ctrl_f, const agc_ctrl_subregister subregister);
 
 /**
  * @brief Gets the external clock synchronization counter configuration register value.
  *
- * @param[in] ext_sync_f: Structure in will be stored the value of the register.
+ * @param[out] ext_sync_f: Structure in will be stored the value of the register.
+ * @param[in] subregister: Sub-register which will be set. If this function received an
+ *                         undefined enumerate value, it will get all the sub-registers.
  *
  * @return bool: Returns true if the register can be gotten, otherwise false.
  *
  */
-bool get_ext_sync(ext_sync_format* ext_sync_f);
+bool get_ext_sync(ext_sync_format* ext_sync_f, const ext_sync_subregister subregister);
 
 /**
  * @brief Sets the external clock synchronization counter configuration register value.
  *
  * @param[in] ext_sync_f: Structure that contains the value that will be written in the register.
+ * @param[in] subregister: Sub-register which will be set. If this function received an
+ *                         undefined enumerate value, it will set all the sub-registers.
  *
  * @return bool: Returns true if the register can be set, otherwise false.
  *
  */
-bool set_ext_sync(ext_sync_format* ext_sync_f);
+bool set_ext_sync(ext_sync_format* ext_sync_f, const ext_sync_subregister subregister);
 
 /**
  * @brief Gets one of the accumulator samples of the read access to accumulator data memory register value.
  *
- * @param[in] acc_mem_f: Structure in will be stored the value of the register.
+ * @param[out] acc_mem_f: Structure in will be stored the value of the register.
  * @param[in] offset: Indicates which accumulator sample will be got.
  *
  * @return bool: Returns true if the register can be gotten, otherwise false.
@@ -578,273 +606,243 @@ bool set_ext_sync(ext_sync_format* ext_sync_f);
 bool get_acc_mem(acc_mem_field* acc_mem_f, const size_t offset);
 
 /**
- * @brief Gets the GPIO mode sub-register value.
+ * @brief Gets the GPIO register value.
  *
- * @param[in] gpio_mode_ctrl_f: Structure in will be stored the value of the register.
+ * @param[out] gpio_ctrl_f: Structure in will be stored the value of the register.
+ * @param[in] subregister: Sub-register which will be set. If this function received an
+ *                         undefined enumerate value, it will get all the sub-registers.
  *
  * @return bool: Returns true if the register can be gotten, otherwise false.
  *
  */
-bool get_gpio_mode_ctrl(gpio_mode_ctrl_format* gpio_mode_ctrl_f);
+bool get_gpio_ctrl(gpio_ctrl_format* gpio_ctrl_format, const gpio_ctrl_subregister subregister);
 
 /**
- * @brief Sets the GPIO mode sub-register value.
+ * @brief Sets the GPIO register value.
  *
- * @param[in] gpio_mode_ctrl_f: Structure that contains the value that will be written in the register.
+ * @param[in] gpio_ctrl_f: Structure that contains the value that will be written in the register.
+ * @param[in] subregister: Sub-register which will be set. If this function received an
+ *                         undefined enumerate value, it will set all the sub-registers.
  *
  * @return bool: Returns true if the register can be set, otherwise false.
  *
  */
-bool set_gpio_mode_ctrl(gpio_mode_ctrl_format* gpio_mode_ctrl_f);
-
-/**
- * @brief Gets the GPIO mode sub-register value.
- *
- * @param[in] gpio_direction_ctrl_f: Structure in will be stored the value of the register.
- *
- * @return bool: Returns true if the register can be gotten, otherwise false.
- *
- */
-bool get_gpio_direction_ctrl(gpio_direction_ctrl_format* gpio_direction_ctrl_f);
-
-/**
- * @brief Sets the GPIO mode sub-register value.
- *
- * @param[in] gpio_direction_ctrl_f: Structure that contains the value that will be written in the register.
- *
- * @return bool: Returns true if the register can be set, otherwise false.
- *
- */
-bool set_gpio_direction_ctrl(gpio_direction_ctrl_format* gpio_direction_ctrl_f);
-
-/**
- * @brief Gets the GPIO data output control sub-register value.
- *
- * @param[in] gpio_data_output_ctrl_f: Structure in will be stored the value of the register.
- *
- * @return bool: Returns true if the register can be gotten, otherwise false.
- *
- */
-bool get_gpio_data_output_ctrl(gpio_data_output_ctrl_format* gpio_data_output_ctrl_f);
-
-/**
- * @brief Sets the GPIO data output control sub-register value.
- *
- * @param[in] gpio_data_output_ctrl_f: Structure that contains the value that will be written in the register.
- *
- * @return bool: Returns true if the register can be set, otherwise false.
- *
- */
-bool set_gpio_data_output_ctrl(gpio_data_output_ctrl_format* gpio_data_output_ctrl_f);
-
-/**
- * @brief Gets the GPIO interrupt enable sub-register value.
- *
- * @param[in] gpio_irq_ctrl_f: Structure in will be stored the value of the register.
- *
- * @return bool: Returns true if the register can be gotten, otherwise false.
- *
- */
-bool get_gpio_irq_ctrl(gpio_irq_ctrl_format* gpio_irq_ctrl_f);
-
-/**
- * @brief Sets the GPIO interrupt enable sub-register value.
- *
- * @param[in] gpio_irq_ctrl_f: Structure that contains the value that will be written in the register.
- *
- * @return bool: Returns true if the register can be set, otherwise false.
- *
- */
-bool set_gpio_irq_ctrl(gpio_irq_ctrl_format* gpio_irq_ctrl_f);
-
-/**
- * @brief Gets the GPIO Interrupt sense selection sub-register value.
- *
- * @param[in] gpio_irq_sense_ctrl_f: Structure in will be stored the value of the register.
- *
- * @return bool: Returns true if the register can be gotten, otherwise false.
- *
- */
-bool get_gpio_irq_sense_ctrl(gpio_irq_sense_ctrl_format* gpio_irq_sense_ctrl_f);
-
-/**
- * @brief Sets the GPIO Interrupt sense selection sub-register value.
- *
- * @param[in] gpio_irq_sense_ctrl_f: Structure that contains the value that will be written in the register.
- *
- * @return bool: Returns true if the register can be set, otherwise false.
- *
- */
-bool set_gpio_irq_sense_ctrl(gpio_irq_sense_ctrl_format* gpio_irq_sense_ctrl_f);
-
-/**
- * @brief Gets the GPIO Interrupt Mode (Level/Edge) sub-register value.
- *
- * @param[in] gpio_irq_mode_ctrl_f: Structure in will be stored the value of the register.
- *
- * @return bool: Returns true if the register can be gotten, otherwise false.
- *
- */
-bool get_gpio_irq_mode_ctrl(gpio_irq_mode_ctrl_format* gpio_irq_mode_ctrl_f);
-
-/**
- * @brief Sets the GPIO Interrupt Mode (Level/Edge) sub-register value.
- *
- * @param[in] gpio_irq_mode_ctrl_f: Structure that contains the value that will be written in the register.
- *
- * @return bool: Returns true if the register can be set, otherwise false.
- *
- */
-bool set_gpio_irq_mode_ctrl(gpio_irq_mode_ctrl_format* gpio_irq_mode_ctrl_f);
-
-/**
- * @brief Gets the GPIO Interrupt both edge select sub-register value.
- *
- * @param[in] gpio_irq_both_edges_mode_f: Structure in will be stored the value of the register.
- *
- * @return bool: Returns true if the register can be gotten, otherwise false.
- *
- */
-bool get_gpio_irq_both_edges_mode_ctrl(gpio_irq_both_edges_mode_format* gpio_irq_both_edges_mode_f);
-
-/**
- * @brief Sets the GPIO Interrupt both edge select sub-register value.
- *
- * @param[in] gpio_irq_both_edges_mode_f: Structure that contains the value that will be written in the register.
- *
- * @return bool: Returns true if the register can be set, otherwise false.
- *
- */
-bool set_gpio_irq_both_edges_mode_ctrl(gpio_irq_both_edges_mode_format* gpio_irq_both_edges_mode_f);
-
-/**
- * @brief Gets the GPIO interrupt latch clear sub-register value.
- *
- * @param[in] gpio_irq_latch_clear_mode_f: Structure in will be stored the value of the register.
- *
- * @return bool: Returns true if the register can be gotten, otherwise false.
- *
- */
-bool get_gpio_irq_latch_clear_mode_ctrl(gpio_irq_latch_clear_mode_format* gpio_irq_latch_clear_mode_f);
-
-/**
- * @brief Sets the GPIO interrupt latch clear sub-register value.
- *
- * @param[in] gpio_irq_latch_clear_mode_f: Structure that contains the value that will be written in the register.
- *
- * @return bool: Returns true if the register can be set, otherwise false.
- *
- */
-bool set_gpio_irq_latch_clear_mode_ctrl(gpio_irq_latch_clear_mode_format* gpio_irq_latch_clear_mode_f);
-
-/**
- * @brief Gets the GPIO interrupt de-bounce sub-register value.
- *
- * @param[in] gpio_irq_de_bounce_mode_f: Structure in will be stored the value of the register.
- *
- * @return bool: Returns true if the register can be gotten, otherwise false.
- *
- */
-bool get_gpio_irq_de_bounce_mode_ctrl(gpio_irq_de_bounce_mode_format* gpio_irq_de_bounce_mode_f);
-
-/**
- * @brief Sets the GPIO interrupt de-bounce sub-register value.
- *
- * @param[in] gpio_irq_de_bounce_mode_f: Structure that contains the value that will be written in the register.
- *
- * @return bool: Returns true if the register can be set, otherwise false.
- *
- */
-bool set_gpio_irq_de_bounce_mode_ctrl(gpio_irq_de_bounce_mode_format* gpio_irq_de_bounce_mode_f);
-
-/**
- * @brief Gets the GPIO raw state sub-register value.
- *
- * @param[in] gpio_raw_state_f: Structure in will be stored the value of the register.
- *
- * @return bool: Returns true if the register can be gotten, otherwise false.
- *
- */
-bool get_gpio_raw_state_ctrl(gpio_raw_state_format* gpio_raw_state_f);
+bool set_gpio_ctrl(gpio_ctrl_format* gpio_ctrl_format, const gpio_ctrl_subregister subregister);
 
 /**
  * @brief Gets the digital receiver configuration register value.
  *
- * @param[in] drx_conf_f: Structure in will be stored the value of the register.
+ * @param[out] drx_conf_f: Structure in will be stored the value of the register.
+ * @param[in] subregister: Sub-register which will be set. If this function received an
+ *                         undefined enumerate value, it will get all the sub-registers.
  *
  * @return bool: Returns true if the register can be gotten, otherwise false.
  *
  */
-bool get_drx_conf(drx_conf_format* drx_conf_f);
+bool get_drx_conf(drx_conf_format* drx_conf_f, const drx_conf_subregister subregister);
 
 /**
  * @brief Sets the digital receiver configuration register value.
  *
  * @param[in] drx_conf_f: Structure that contains the value that will be written in the register.
+ * @param[in] subregister: Sub-register which will be set. If this function received an
+ *                         undefined enumerate value, it will set all the sub-registers.
  *
  * @return bool: Returns true if the register can be set, otherwise false.
  *
  */
-bool set_drx_conf(drx_conf_format* drx_conf_f);
+bool set_drx_conf(drx_conf_format* drx_conf_f, const drx_conf_subregister subregister);
 
 /**
  * @brief Gets the analog RF configuration register value.
  *
- * @param[in] rf_conf_f: Structure in will be stored the value of the register.
+ * @param[out] rf_conf_f: Structure in will be stored the value of the register.
+ * @param[in] subregister: Sub-register which will be set. If this function received an
+ *                         undefined enumerate value, it will get all the sub-registers.
  *
  * @return bool: Returns true if the register can be gotten, otherwise false.
  *
  */
-bool get_rf_conf(rf_conf_format* rf_conf_f);
+bool get_rf_conf(rf_conf_format* rf_conf_f, const rf_conf_subregister subregister);
 
 /**
  * @brief Sets the analog RF configuration register value.
  *
  * @param[in] rf_conf_f: Structure that contains the value that will be written in the register.
+ * @param[in] subregister: Sub-register which will be set. If this function received an
+ *                         undefined enumerate value, it will set all the sub-registers.
  *
  * @return bool: Returns true if the register can be set, otherwise false.
  *
  */
-bool set_rf_conf(rf_conf_format* rf_conf_f);
+bool set_rf_conf(rf_conf_format* rf_conf_f, const rf_conf_subregister subregister);
 
 /**
  * @brief Gets the transmitter calibration block register value.
  *
- * @param[in] tx_cal_f: Structure in will be stored the value of the register.
+ * @param[out] tx_cal_f: Structure in will be stored the value of the register.
+ * @param[in] subregister: Sub-register which will be set. If this function received an
+ *                         undefined enumerate value, it will get all the sub-registers.
  *
  * @return bool: Returns true if the register can be gotten, otherwise false.
  *
  */
-bool get_tx_cal(tx_cal_format* tx_cal_f);
+bool get_tx_cal(tx_cal_format* tx_cal_f, const tx_cal_subregister subregister);
 
 /**
  * @brief Sets the transmitter calibration block register value.
  *
  * @param[in] tx_cal_f: Structure that contains the value that will be written in the register.
+ * @param[in] subregister: Sub-register which will be set. If this function received an
+ *                         undefined enumerate value, it will set all the sub-registers.
  *
  * @return bool: Returns true if the register can be set, otherwise false.
  *
  */
-bool set_tx_cal(tx_cal_format* tx_cal_f);
+bool set_tx_cal(tx_cal_format* tx_cal_f, const tx_cal_subregister subregister);
 
 /**
  * @brief Gets the frequency synthesizer control block register value.
  *
- * @param[in] fs_ctrl_f: Structure in will be stored the value of the register.
+ * @param[out] fs_ctrl_f: Structure in will be stored the value of the register.
+ * @param[in] subregister: Sub-register which will be set. If this function received an
+ *                         undefined enumerate value, it will get all the sub-registers.
  *
  * @return bool: Returns true if the register can be gotten, otherwise false.
  *
  */
-bool get_fs_ctrl(fs_ctrl_format* fs_ctrl_f);
+bool get_fs_ctrl(fs_ctrl_format* fs_ctrl_f, const fs_ctrl_subregister subregister);
 
 /**
  * @brief Sets the frequency synthesizer control block register value.
  *
  * @param[in] fs_ctrl_f: Structure that contains the value that will be written in the register.
+ * @param[in] subregister: Sub-register which will be set. If this function received an
+ *                         undefined enumerate value, it will set all the sub-registers.
  *
  * @return bool: Returns true if the register can be set, otherwise false.
  *
  */
-bool set_fs_ctrl(fs_ctrl_format* fs_ctrl_f);
+bool set_fs_ctrl(fs_ctrl_format* fs_ctrl_f, const fs_ctrl_subregister subregister);
+
+/**
+ * @brief Gets the always on system control interface block register value.
+ *
+ * @param[out] aon_f: Structure in will be stored the value of the register.
+ * @param[in] subregister: Sub-register which will be set. If this function received an
+ *                         undefined enumerate value, it will get all the sub-registers.
+ *
+ * @return bool: Returns true if the register can be gotten, otherwise false.
+ *
+ */
+bool get_aon(aon_format* aon_f, const aon_subregister subregister);
+
+/**
+ * @brief Sets the always on system control interface block register value.
+ *
+ * @param[in] aon_f: Structure that contains the value that will be written in the register.
+ * @param[in] subregister: Sub-register which will be set. If this function received an
+ *                         undefined enumerate value, it will set all the sub-registers.
+ *
+ * @return bool: Returns true if the register can be set, otherwise false.
+ *
+ */
+bool set_aon(aon_format* aon_f, const aon_subregister subregister);
+
+/**
+ * @brief Gets the one time programmable memory interface register value.
+ *
+ * @param[out] otp_if_f: Structure in will be stored the value of the register.
+ * @param[in] subregister: Sub-register which will be set. If this function received an
+ *                         undefined enumerate value, it will get all the sub-registers.
+ *
+ * @return bool: Returns true if the register can be gotten, otherwise false.
+ *
+ */
+bool get_otp_if(otp_if_format* otp_if_f, const otp_if_subregister subregister);
+
+/**
+ * @brief Sets the one time programmable memory interface register value.
+ *
+ * @param[in] otp_if_f: Structure that contains the value that will be written in the register.
+ * @param[in] subregister: Sub-register which will be set. If this function received an
+ *                         undefined enumerate value, it will set all the sub-registers.
+ *
+ * @return bool: Returns true if the register can be set, otherwise false.
+ *
+ */
+bool set_otp_if(otp_if_format* otp_if_f, const otp_if_subregister subregister);
+
+/**
+ * @brief Gets the leading edge detection interface register value.
+ *
+ * @param[out] lde_if_f: Structure in will be stored the value of the register.
+ * @param[in] subregister: Sub-register which will be set. If this function received an
+ *                         undefined enumerate value, it will get all the sub-registers.
+ *
+ * @return bool: Returns true if the register can be gotten, otherwise false.
+ *
+ */
+bool get_lde_if(lde_if_format* lde_if_f, const lde_if_subregister subregister);
+
+/**
+ * @brief Sets the leading edge detection interface register value.
+ *
+ * @param[in] lde_if_f: Structure that contains the value that will be written in the register.
+ * @param[in] subregister: Sub-register which will be set. If this function received an
+ *                         undefined enumerate value, it will set all the sub-registers.
+ *
+ * @return bool: Returns true if the register can be set, otherwise false.
+ *
+ */
+bool set_lde_if(lde_if_format* lde_if_f, const lde_if_subregister subregister);
+
+/**
+ * @brief Gets the digital diagnostics interface register value.
+ *
+ * @param[out] dig_diag_f: Structure in will be stored the value of the register.
+ * @param[in] subregister: Sub-register which will be set. If this function received an
+ *                         undefined enumerate value, it will get all the sub-registers.
+ *
+ * @return bool: Returns true if the register can be gotten, otherwise false.
+ *
+ */
+bool get_dig_diag(dig_diag_format* dig_diag_f, const dig_diag_subregister subregister);
+
+/**
+ * @brief Sets the digital diagnostics interface register value.
+ *
+ * @param[in] dig_diag_f: Structure that contains the value that will be written in the register.
+ * @param[in] subregister: Sub-register which will be set. If this function received an
+ *                         undefined enumerate value, it will set all the sub-registers.
+ *
+ * @return bool: Returns true if the register can be set, otherwise false.
+ *
+ */
+bool set_dig_diag(dig_diag_format* dig_diag_f, const dig_diag_subregister subregister);
+
+/**
+ * @brief Gets the power management system control block register value.
+ *
+ * @param[out] pmsc_f: Structure in will be stored the value of the register.
+ * @param[in] subregister: Sub-register which will be set. If this function received an
+ *                         undefined enumerate value, it will get all the sub-registers.
+ *
+ * @return bool: Returns true if the register can be gotten, otherwise false.
+ *
+ */
+bool get_pmsc(pmsc_format* pmsc_f, const pmsc_subregister subregister);
+
+/**
+ * @brief Sets the power management system control block register value.
+ *
+ * @param[in] pmsc_f: Structure that contains the value that will be written in the register.
+ * @param[in] subregister: Sub-register which will be set. If this function received an
+ *                         undefined enumerate value, it will set all the sub-registers.
+ *
+ * @return bool: Returns true if the register can be set, otherwise false.
+ *
+ */
+bool set_pmsc(pmsc_format* pmsc_f, const pmsc_subregister subregister);
 
 #endif // _REGISTER_H_

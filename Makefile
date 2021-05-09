@@ -130,6 +130,7 @@ CSRC = $(ALLCSRC) \
        $(PROJECT_DIRECTORY)/src/driver/button/button.c \
        $(PROJECT_DIRECTORY)/src/sal/dw1000/register/format/format.c \
        $(PROJECT_DIRECTORY)/src/sal/dw1000/register/register.c \
+       $(PROJECT_DIRECTORY)/src/sal/dw1000/params/params.c \
        $(PROJECT_DIRECTORY)/src/sal/dw1000/dw1000.c \
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
@@ -165,6 +166,7 @@ INCDIR = $(CONFDIR) $(ALLINC) $(TESTINC) $(TESTHAL) \
 		 $(PROJECT_DIRECTORY)/src/driver/button \
 		 $(PROJECT_DIRECTORY)/src/sal/dw1000/register/format \
 		 $(PROJECT_DIRECTORY)/src/sal/dw1000/register \
+		 $(PROJECT_DIRECTORY)/src/sal/dw1000/params \
 		 $(PROJECT_DIRECTORY)/src/sal/dw1000 \
 #
 # Project, sources and paths

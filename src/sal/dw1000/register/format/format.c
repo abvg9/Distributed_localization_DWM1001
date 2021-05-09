@@ -1,8 +1,6 @@
 /**
- * This file is part of the UCM-237 distribution (https://github.com/UCM-237/Distributed_localization_DWM1001).
- * Copyright (c) 2021 Complutense university of Madrid, Madrid, Spain.
- *
- * Author: Alvaro Velasco Garcia. <https://github.com/abvg9>
+ * This file is part of the abvg9 distribution (https://github.com/abvg9/Distributed_localization_DWM1001).
+ * Copyright (c) 2021 Álvaro Velsco García, Madrid, Spain.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1607,8 +1605,9 @@ size_t rf_conf_unformater(void *format, spi_frame fr, const size_t sub_register)
         fr[0] = 0;
         fr[1] = (((uint8_t)rf_conf_f->pllfen) << 5) | rf_conf_f->txfen;
         fr[2] = (((uint8_t)rf_conf_f->txrxsw) << 5) | rf_conf_f->ldofen;
+        fr[3] = 0;
 
-        return 3;
+        return 4;
 
     } else if(sub_register == RF_RXCTRLH) {
 
@@ -1634,6 +1633,18 @@ size_t rf_conf_unformater(void *format, spi_frame fr, const size_t sub_register)
         fr[0] = rf_conf_f->ldotune & 0x00000000000000FF;
 
         return 5;
+
+    } else if(sub_register == RF_TLD_BIAS) {
+
+        fr[0] = rf_conf_f->rf_tld_bias;
+
+        return 1;
+
+    } else if(sub_register == RF_TLD_ADC_BIAS) {
+
+        fr[0] = rf_conf_f->rf_tld_adc_bias;
+
+        return 1;
     }
 
     return 0;
@@ -1649,13 +1660,13 @@ void tx_cal_formater(spi_frame fr, void *format, const size_t sub_register) {
 
     } else if(sub_register == TC_SARL) {
 
-        tx_cal_f->sar_lvbat = calculate_temperature(fr[0]);
-        tx_cal_f->sar_ltemp = calculate_voltage(fr[1]);
+        tx_cal_f->sar_lvbat = fr[0];
+        tx_cal_f->sar_ltemp = fr[1];
 
     } else if(sub_register == TC_SARW) {
 
-        tx_cal_f->sar_wbat = calculate_temperature(fr[0]);
-        tx_cal_f->sar_wtemp = calculate_voltage(fr[1]);
+        tx_cal_f->sar_wbat = fr[0];
+        tx_cal_f->sar_wtemp = fr[1];
 
     } else if(sub_register == TC_PG_CTRL) {
 
@@ -1785,6 +1796,30 @@ void aon_formater(spi_frame fr, void *format, const size_t sub_register) {
 
         aon_f->aon_addr = fr[0];
 
+    } else if(sub_register == AON_RDAT) {
+
+        aon_f->aon_rdat = fr[0];
+
+    } else if(sub_register == AON_CTRL) {
+
+        aon_f->dca_enab = (fr[0] & 0b10000000) >> 7;
+        aon_f->dca_read = (fr[0] & 0b00001000) >> 3;
+        aon_f->upl_cfg = (fr[0] & 0b00000100) >> 2;
+        aon_f->save = (fr[0] & 0b00000010) >> 1;
+        aon_f->restore = fr[0] & 0b00000001;
+
+    } else if(sub_register == AON_WCFG) {
+
+        aon_f->onw_l64p = (fr[0] & 0b10000000) >> 7;
+        aon_f->onw_ldc = (fr[0] & 0b01000000) >> 6;
+        aon_f->onw_leui = (fr[0] & 0b00001000) >> 3;
+        aon_f->onw_rx = (fr[0] & 0b00000010) >> 1;
+        aon_f->onw_rad = fr[0] & 0b00000001;
+
+        aon_f->onw_lld0 = (fr[1] & 0b00010000) >> 4;
+        aon_f->onw_llde = (fr[1] & 0b00001000) >> 3;
+        aon_f->pres_sleep = fr[1] & 0b00000001;
+
     }
 
 }
@@ -1824,6 +1859,447 @@ size_t aon_unformater(void *format, spi_frame fr, const size_t sub_register) {
 
         return 1;
 
+    } else if(sub_register == AON_RDAT) {
+
+        fr[0] = aon_f->aon_rdat;
+
+        return 1;
+
+    } else if(sub_register == AON_CTRL) {
+
+        fr[0] = (((uint8_t)aon_f->dca_enab) << 7) |
+                (((uint8_t)aon_f->dca_read) << 3) |
+                (((uint8_t)aon_f->upl_cfg) << 2) |
+                (((uint8_t)aon_f->save) << 1) | aon_f->restore;
+
+        return 1;
+
+    } else if(sub_register == AON_WCFG) {
+
+        fr[0] = (((uint8_t)aon_f->onw_l64p) << 7) |
+                (((uint8_t)aon_f->onw_ldc) << 6) |
+                (((uint8_t)aon_f->onw_leui) << 3) |
+                (((uint8_t)aon_f->onw_rx) << 1) |
+                aon_f->onw_rad;
+
+
+        fr[1] = (((uint8_t)aon_f->onw_lld0) << 4) |
+                (((uint8_t)aon_f->onw_llde) << 3) |
+                aon_f->pres_sleep;
+
+
+        return 2;
+    }
+
+    return 0;
+}
+
+void otp_if_formater(spi_frame fr, void *format, const size_t sub_register) {
+
+    otp_if_format* otp_if_f = (otp_if_format*)format;
+
+    if(sub_register == OTP_WDAT) {
+
+        otp_if_f->otp_wdat = (((uint32_t)fr[3]) << 24) | (((uint32_t)fr[2]) << 16)
+                | (((uint16_t)fr[1]) << 8) | fr[0];
+
+    } else if(sub_register == OTP_ADDR) {
+
+        otp_if_f->otp_address = (((uint16_t)fr[1]) << 8) | fr[0];
+
+    } else if(sub_register == OTP_CTRL) {
+
+        otp_if_f->otp_rden = fr[0] & 0b00000001;
+        otp_if_f->otp_read = (fr[0] & 0b00000010) >> 1;
+        otp_if_f->otp_mrwr = (fr[0] & 0b00001000) >> 3;
+        otp_if_f->otp_prog = (fr[0] & 0b01000000) >> 6;
+        otp_if_f->otp_mr = ((fr[1] & 0b00000111) << 1) | ((fr[0] & 0b10000000) >> 7);
+        otp_if_f->lde_load = (fr[1] & 0b10000000) >> 7;
+
+    } else if(sub_register == OTP_STAT) {
+
+        otp_if_f->otp_prgd = fr[0] & 0b00000001;
+        otp_if_f->otp_vpok = (fr[0] & 0b00000010) >> 1;
+
+    } else if(sub_register == OTP_RDAT) {
+
+        otp_if_f->otp_rdat = (((uint32_t)fr[3]) << 24) | (((uint32_t)fr[2]) << 16)
+                | (((uint16_t)fr[1]) << 8) | fr[0];
+
+    } else if(sub_register == OTP_SRDAT) {
+
+        otp_if_f->otp_srdat = (((uint32_t)fr[3]) << 24) | (((uint32_t)fr[2]) << 16)
+                | (((uint16_t)fr[1]) << 8) | fr[0];
+
+    } else if(sub_register == OTP_SF) {
+
+        otp_if_f->ops_kick = fr[0] & 0b00000001;
+        otp_if_f->ldo_kick = (fr[0] & 0b00000010) >> 1;
+        otp_if_f->ops_sel = (fr[0] & 0b01100000) >> 5;
+
+    }
+
+}
+
+size_t otp_if_unformater(void *format, spi_frame fr, const size_t sub_register) {
+
+    otp_if_format* otp_if_f = (otp_if_format*)format;
+
+    if(sub_register == OTP_WDAT) {
+
+        fr[0] = otp_if_f->otp_wdat && 0x000000FF;
+        fr[1] = (otp_if_f->otp_wdat && 0x0000FF00) >> 8;
+        fr[2] = (otp_if_f->otp_wdat && 0x00FF0000) >> 16;
+        fr[3] = (otp_if_f->otp_wdat && 0xFF000000) >> 24;
+
+        return 4;
+
+    } else if(sub_register == OTP_ADDR) {
+
+        fr[0] = otp_if_f->otp_address & 0b000011111111;
+        fr[1] = (otp_if_f->otp_address & 0b111100000000) >> 8;
+
+        return 2;
+
+    } else if(sub_register == OTP_CTRL) {
+
+        fr[0] = (((uint8_t)(otp_if_f->otp_mr & 0b0001)) << 7) |
+                (((uint8_t)otp_if_f->otp_prog) << 6) |
+                (((uint8_t)otp_if_f->otp_mrwr) << 3) |
+                (((uint8_t)otp_if_f->otp_read) << 1) |
+                otp_if_f->otp_rden;
+
+        fr[1] = (((uint8_t)otp_if_f->lde_load) << 7) |
+                (((uint8_t)(otp_if_f->otp_mr & 0b1110)) >> 1);
+
+
+        return 2;
+
+    } else if(sub_register == OTP_STAT) {
+
+        fr[0] = (((uint8_t)otp_if_f->otp_vpok) << 1) |
+                otp_if_f->otp_prgd;
+
+        fr[1] = 0;
+
+        return 2;
+
+    } else if(sub_register == OTP_SRDAT) {
+
+        fr[0] = otp_if_f->otp_srdat && 0x000000FF;
+        fr[1] = (otp_if_f->otp_srdat && 0x0000FF00) >> 8;
+        fr[2] = (otp_if_f->otp_srdat && 0x00FF0000) >> 16;
+        fr[3] = (otp_if_f->otp_srdat && 0xFF000000) >> 24;
+
+        return 4;
+
+    } else if(sub_register == OTP_SF) {
+
+
+        fr[0] = (((uint8_t)otp_if_f->ops_sel) << 5) |
+                (((uint8_t)otp_if_f->ldo_kick) << 1) |
+                otp_if_f->ops_kick;
+
+        return 1;
+
+    }
+
+    return 0;
+}
+
+void lde_if_formater(spi_frame fr, void *format, const size_t sub_register) {
+
+    lde_if_format* lde_if_f = (lde_if_format*)format;
+
+    if(sub_register == LDE_REPC) {
+
+        lde_if_f->lde_repc = (((uint16_t)fr[1]) << 8) | fr[0];
+
+    } else if(sub_register == LDE_CFG2) {
+
+        lde_if_f->lde_cfg2 = (((uint16_t)fr[1]) << 8) | fr[0];
+
+    } else if(sub_register == LDE_RXANTD) {
+
+        lde_if_f->lde_rxantd = (((uint16_t)fr[1]) << 8) | fr[0];
+
+    } else if(sub_register == LDE_PPAMPL) {
+
+        lde_if_f->lde_ppampl = (((uint16_t)fr[1]) << 8) | fr[0];
+
+    } else if(sub_register == LDE_PPINDX) {
+
+        lde_if_f->lde_ppindx = (((uint16_t)fr[1]) << 8) | fr[0];
+
+    } else if(sub_register == LDE_CFG1) {
+
+        lde_if_f->ntm = fr[0] & 0b00011111;
+        lde_if_f->pmult = (fr[0] & 0b11100000) >> 5;
+
+    } else if(sub_register == LDE_THRESH) {
+
+        lde_if_f->lde_thresh = (((uint16_t)fr[1]) << 8) | fr[0];
+
+    }
+
+}
+
+size_t lde_if_unformater(void *format, spi_frame fr, const size_t sub_register) {
+
+    lde_if_format* lde_if_f = (lde_if_format*)format;
+
+    if(sub_register == LDE_REPC) {
+
+        fr[0] = lde_if_f->lde_repc && 0xFF;
+        fr[1] = (lde_if_f->lde_repc  && 0xFF00) >> 8;
+
+        return 2;
+
+    } else if(sub_register == LDE_CFG2) {
+
+        fr[0] = lde_if_f->lde_cfg2 && 0xFF;
+        fr[1] = (lde_if_f->lde_cfg2  && 0xFF00) >> 8;
+
+        return 2;
+
+    } else if(sub_register == LDE_RXANTD) {
+
+        fr[0] = lde_if_f->lde_rxantd && 0xFF;
+        fr[1] = (lde_if_f->lde_rxantd  && 0xFF00) >> 8;
+
+        return 2;
+
+    } else if(sub_register == LDE_CFG1) {
+
+        fr[0] = (((uint8_t)lde_if_f->pmult) << 5) |
+                lde_if_f->ntm;
+
+        return 1;
+
+    }
+
+    return 0;
+}
+
+void dig_diag_formater(spi_frame fr, void *format, const size_t sub_register) {
+
+    dig_diag_format* dig_diag_f = (dig_diag_format*)format;
+
+    if(sub_register == DIAG_TMC) {
+
+        dig_diag_f->tx_pstm = (fr[0] & 0b00010000) >> 4;
+
+    } else if(sub_register == EVC_TPW) {
+
+        dig_diag_f->evc_tpw =  (((uint16_t)(fr[1] & 0b00001111)) << 8) | fr[0];
+
+    } else if(sub_register == EVC_HPW) {
+
+        dig_diag_f->evc_hpw =  (((uint16_t)(fr[1] & 0b00001111)) << 8) | fr[0];
+
+    } else if(sub_register == EVC_TXFS) {
+
+        dig_diag_f->evc_txfs =  (((uint16_t)(fr[1] & 0b00001111)) << 8) | fr[0];
+
+    } else if(sub_register == EVC_FWTO){
+
+        dig_diag_f->evc_fwto =  (((uint16_t)(fr[1] & 0b00001111)) << 8) | fr[0];
+
+    } else if(sub_register == EVC_PTO) {
+
+        dig_diag_f->evc_pto =  (((uint16_t)(fr[1] & 0b00001111)) << 8) | fr[0];
+
+    } else if(sub_register == EVC_STO) {
+
+        dig_diag_f->evc_sto =  (((uint16_t)(fr[1] & 0b00001111)) << 8) | fr[0];
+
+    } else if(sub_register == EVC_OVR) {
+
+        dig_diag_f->evc_ovr =  (((uint16_t)(fr[1] & 0b00001111)) << 8) | fr[0];
+
+    } else if(sub_register == EVC_FFR) {
+
+        dig_diag_f->evc_ffr =  (((uint16_t)(fr[1] & 0b00001111)) << 8) | fr[0];
+
+    } else if(sub_register == EVC_FCE) {
+
+        dig_diag_f->evc_fce =  (((uint16_t)(fr[1] & 0b00001111)) << 8) | fr[0];
+
+    } else if(sub_register == EVC_FCG) {
+
+        dig_diag_f->evc_fcg =  (((uint16_t)(fr[1] & 0b00001111)) << 8) | fr[0];
+
+    } else if(sub_register == EVC_RSE) {
+
+        dig_diag_f->evc_rse =  (((uint16_t)(fr[1] & 0b00001111)) << 8) | fr[0];
+
+    } else if(sub_register == EVC_PHE) {
+
+        dig_diag_f->evc_phe =  (((uint16_t)(fr[1] & 0b00001111)) << 8) | fr[0];
+
+    } else if(sub_register == EVC_CTRL) {
+
+        dig_diag_f->evc_en = fr[0] & 0b00000001;
+
+        dig_diag_f->evc_clr = (fr[0] & 0b00000010) >> 1;
+
+    }
+
+}
+
+size_t dig_diag_unformater(void *format, spi_frame fr, const size_t sub_register) {
+
+    dig_diag_format* dig_diag_f = (dig_diag_format*)format;
+
+    if(sub_register == DIAG_TMC) {
+
+        fr[0] = ((uint8_t)dig_diag_f->tx_pstm) << 4;
+        fr[1] = 0;
+
+        return 2;
+
+    } else if(sub_register == EVC_CTRL) {
+
+
+        fr[0] = (((uint8_t)dig_diag_f->evc_clr) << 1) | dig_diag_f->evc_en;
+
+        fr[1] = 0;
+        fr[2] = 0;
+        fr[3] = 0;
+
+        return 4;
+    }
+
+    return 0;
+}
+
+void pmsc_formater(spi_frame fr, void *format, const size_t sub_register) {
+
+    pmsc_format* pmsc_f = (pmsc_format*)format;
+
+    if(sub_register == PMSC_LEDC) {
+
+        pmsc_f->blink_tim = calculate_blink_time(fr[0]);
+        pmsc_f->blnk_en = fr[1] & 0b00000001;
+        pmsc_f->blnk_now = fr[2] & 0b00001111;
+
+    } else if(sub_register == PMSC_TXFSEQ) {
+
+        pmsc_f->txfseq =  (((uint16_t)fr[1]) << 8) | fr[0];
+
+    } else if(sub_register == PMSC_SNOZT) {
+
+        pmsc_f->snoz_tim =  calculate_snoz_time(fr[0]);
+
+    } else if(sub_register == PMSC_CTRL1) {
+
+        pmsc_f->arx2init = (fr[0] & 0b00000010) >> 1;
+
+        pmsc_f->pktseq = ((fr[1] & 0b00000111) << 5) | ((fr[0] & 0b11111000) >> 3);
+
+        pmsc_f->atxslp = (fr[1] & 0b00001000) >> 3;
+        pmsc_f->arxslp = (fr[1] & 0b00010000) >> 4;
+        pmsc_f->snoze = (fr[1] & 0b00100000) >> 5;
+        pmsc_f->snozr = (fr[1] & 0b01000000) >> 6;
+        pmsc_f->pllsyn = (fr[1] & 0b10000000) >> 7;
+
+        pmsc_f->lderune = (fr[2] & 0b00000010) >> 1;
+
+        pmsc_f->khzclkdiv = (fr[3] & 0b11111100) >> 2;
+
+    } else if(sub_register == PMSC_CTRL0) {
+
+        pmsc_f->sysclks = fr[0] & 0b00000011;
+        pmsc_f->rxclks = (fr[0] & 0b00001100) >> 2;
+        pmsc_f->txclks = (fr[0] & 0b00110000) >> 4;
+        pmsc_f->face = (fr[0] & 0b01000000) >> 6;
+
+        pmsc_f->adcce = (fr[1] & 0b00000100) >> 2;
+        pmsc_f->amce = (fr[1] & 0b10000000) >> 7;
+
+        pmsc_f->gpce = fr[2] & 0b00000001;
+        pmsc_f->gprn = (fr[2] & 0b00000010) >> 1;
+        pmsc_f->gpdce = (fr[2] & 0b00000100) >> 2;
+        pmsc_f->gpdrn = (fr[2] & 0b00001000) >> 3;
+        pmsc_f->khzclken = (fr[2] & 0b10000000) >> 7;
+
+        pmsc_f->pll2_seq_en = fr[3] & 0b00000001;
+        pmsc_f->softreset = (fr[3] & 0b11110000) >> 4;
+    }
+
+}
+
+size_t pmsc_unformater(void *format, spi_frame fr, const size_t sub_register) {
+
+    pmsc_format* pmsc_f = (pmsc_format*)format;
+
+    if(sub_register == PMSC_LEDC) {
+
+        fr[0] = blink_time_calculate_seconds(pmsc_f->blink_tim);
+
+        fr[1] = pmsc_f->blnk_en;
+
+        fr[2] = pmsc_f->blnk_now;
+
+        fr[3] = 0;
+
+        return 4;
+
+    } else if(sub_register == PMSC_TXFSEQ) {
+
+        fr[0] = pmsc_f->txfseq & 0x00FF;
+
+        fr[1] = (pmsc_f->txfseq & 0xFF00) >> 8;
+
+        return 2;
+
+    } else if(sub_register == PMSC_SNOZT) {
+
+        fr[0] = snoz_time_calculate_seconds(pmsc_f->snoz_tim);
+
+        return 1;
+
+    } else if(sub_register == PMSC_CTRL1) {
+
+        fr[0] = ((pmsc_f->pktseq & 0b00011111) << 3) |
+                (((uint8_t)pmsc_f->arx2init) << 1);
+
+        fr[1] = (((uint8_t)pmsc_f->pllsyn) << 7) |
+                (((uint8_t)pmsc_f->snozr) << 6) |
+                (((uint8_t)pmsc_f->snoze) << 5) |
+                (((uint8_t)pmsc_f->arxslp) << 4) |
+                (((uint8_t)pmsc_f->atxslp) << 3) |
+                ((pmsc_f->pktseq & 0b11100000) >> 5);
+
+        fr[2] = (((uint8_t)pmsc_f->lderune) << 1);
+
+        fr[3] = (((uint8_t)pmsc_f->khzclkdiv) << 2) |
+                0b00000001;
+
+        return 4;
+
+    } else if(sub_register == PMSC_CTRL0) {
+
+        fr[0] = (((uint8_t)pmsc_f->face) << 6) |
+                (((uint8_t)pmsc_f->txclks) << 4) |
+                (((uint8_t)pmsc_f->rxclks) << 2) |
+                pmsc_f->sysclks;
+
+        fr[1] = (((uint8_t)pmsc_f->amce) << 7) |
+                (((uint8_t)pmsc_f->adcce) << 2) |
+                0b00000010;
+
+        fr[2] = (((uint8_t)pmsc_f->khzclken) << 7) |
+                (((uint8_t)pmsc_f->gpdrn) << 3) |
+                (((uint8_t)pmsc_f->gpdce) << 2) |
+                (((uint8_t)pmsc_f->gprn) << 1) |
+                pmsc_f->gpce |
+                0b00110000;
+
+        fr[3] = (((uint8_t)pmsc_f->softreset) << 4) |
+                pmsc_f->pll2_seq_en;
+
+        return 4;
     }
 
     return 0;
