@@ -366,7 +366,6 @@ size_t sys_evt_msk_unformater(void *format, spi_frame fr, const size_t sub_regis
     fr[2] = sys_evt_msk_f->mslp2init << 7;
     fr[2] |= sys_evt_msk_f->mgpioirq << 6;
     fr[2] |= sys_evt_msk_f->mrxpto << 5;
-    fr[2] |= sys_evt_msk_f->mrxovrr << 4;
     fr[2] |= sys_evt_msk_f->mldeerr << 2;
     fr[2] |= sys_evt_msk_f->mrxrfto << 1;
     fr[2] |= sys_evt_msk_f->mrxrfsl;
@@ -446,11 +445,8 @@ size_t sys_evt_sts_unformater(void *format, spi_frame fr, const size_t sub_regis
 
      if(sub_register == SES_OCT_0_TO_3) {
 
-         fr[3] = sys_evt_sts_f->icrbp << 7;
-         fr[3] |= sys_evt_sts_f->hsrbp << 6;
          fr[3] |= sys_evt_sts_f->affrej << 5;
          fr[3] |= sys_evt_sts_f->txberr << 4;
-         fr[3] |= sys_evt_sts_f->hpdwarn << 3;
          fr[3] |= sys_evt_sts_f->rxsfdto << 2;
          fr[3] |= sys_evt_sts_f->clkpll_ll << 1;
          fr[3] |= sys_evt_sts_f->rfpll_ll;
@@ -479,13 +475,11 @@ size_t sys_evt_sts_unformater(void *format, spi_frame fr, const size_t sub_regis
          fr[0] |= sys_evt_sts_f->aat << 3;
          fr[0] |= sys_evt_sts_f->esyncr << 2;
          fr[0] |= sys_evt_sts_f->cplock << 1;
-         fr[0] |= sys_evt_sts_f->irqs;
 
          return 4;
 
      } else if(sub_register == SES_OCT_4) {
 
-         fr[0] = sys_evt_sts_f->txpute << 2;
          fr[0] |= sys_evt_sts_f->rxprej << 1;
          fr[0] |= sys_evt_sts_f->rxrscs;
 

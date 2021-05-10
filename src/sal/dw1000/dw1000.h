@@ -247,9 +247,11 @@ void dw_set_slow_spi_rate(void);
 bool turn_off_transceiver(void);
 
 /**
- * @brief Waits until the pin DW_IRQ is HIGH.
+ * @brief Waits until the pin DW_IRQ is HIGH and return which of the IRQ events is/are active.
  *
- * @return sys_evt_sts_format: Structure that contains wich irq events are active.
+ * @param sys_evt_msk_f[in]: Interruptions to enable and check.
+ *
+ * @return sys_evt_sts_format: Structure that contains which IRQ events is/are active.
  *
  * @note: This function must be called before any other function.
  *

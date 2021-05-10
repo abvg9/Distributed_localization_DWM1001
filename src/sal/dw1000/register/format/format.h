@@ -472,18 +472,18 @@ typedef enum {
 
 // Structure of the system event status register.
 typedef struct {
-    unsigned int icrbp :1;     // IC side receive buffer pointer. (READ ONLY)
-    unsigned int hsrbp :1;     // Host side receive buffer pointer. (READ ONLY)
+    unsigned int icrbp :1;     // IC side receive buffer pointer. (RO)
+    unsigned int hsrbp :1;     // Host side receive buffer pointer. (RO)
     unsigned int affrej :1;    // Automatic frame filtering rejection.
     unsigned int txberr :1;    // Transmit buffer error.
-    unsigned int hpdwarn :1;   // Half period delay warning. (READ ONLY)
+    unsigned int hpdwarn :1;   // Half period delay warning. (RO)
     unsigned int rxsfdto :1;   // Receive SFD timeout.
     unsigned int clkpll_ll :1; // Clock PLL losing lock.
     unsigned int rfpll_ll :1;  // RF PLL losing lock.
     unsigned int slp2init :1;  // SLEEP to INIT.
     unsigned int gpioirq :1;   // GPIO interrupt.
     unsigned int rxpto :1;     // Preamble detection timeout.
-    unsigned int rxovrr :1;    // Receiver overrun. (READ ONLY)
+    unsigned int rxovrr :1;    // Receiver overrun. (RO)
     unsigned int ldeerr :1;    // Leading edge detection processing error.
     unsigned int rxrfto :1;    // Receive frame wait timeout.
     unsigned int rxrfsl :1;    // Receiver reed solomon frame sync loss.
@@ -502,8 +502,8 @@ typedef struct {
     unsigned int aat :1;       // Automatic acknowledge trigger.
     unsigned int esyncr :1;    // External sync clock reset.
     unsigned int cplock :1;    // Clock PLL lock.
-    unsigned int irqs :1;      // Interrupt request status. (READ ONLY)
-    unsigned int txpute :1;    // Transmit power up time error. (READ ONLY)
+    unsigned int irqs :1;      // Interrupt request status. (RO)
+    unsigned int txpute :1;    // Transmit power up time error. (RO)
     unsigned int rxprej :1;    // Receiver preamble rejection.
     unsigned int rxrscs :1;    // Receiver Reed-solomon correction status.
 } sys_evt_sts_format;

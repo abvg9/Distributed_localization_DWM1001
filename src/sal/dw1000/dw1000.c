@@ -660,7 +660,7 @@ bool dw_initialise(const int config_flags) {
         return false;
     }
 
-    ext_sync_f.pllldt = 1;
+    ext_sync_f.pllldt = true;
     if(!set_ext_sync(&ext_sync_f, EC_CTRL)) {
         return false;
     }
@@ -960,13 +960,13 @@ bool dw_send_message(uwb_frame frame, const uint16_t frame_size, uint16_t tx_buf
     }
 
     // Set masks of the events related to the sending of messages.
-    sys_evt_msk_format sys_evt_msk_f;
+    sys_evt_msk_format sys_evt_msk_f = {0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0,
+            0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0};
     sys_evt_msk_f.mtxfrs = true;
-    sys_evt_msk_f.mtxberr = true;
 
     sys_evt_sts_format sys_evt_sts_f = dw_wait_irq_event(sys_evt_msk_f);
 
-    if(sys_evt_msk_f.mtxberr) {
+    if(!sys_evt_sts_f.txfrs) {
 
         // Error in the transmission buffer.
         sys_evt_sts_f.txberr = false;
@@ -984,7 +984,7 @@ bool dw_send_message(uwb_frame frame, const uint16_t frame_size, uint16_t tx_buf
     /* Increment the blink frame sequence number (modulo 256). */
     //tx_msg[BLINK_FRAME_SN_IDX]++;
 
-    return false;
+    return true;
 }
 
 bool dw_receive_message(uwb_frame frame, uint8_t mode) {
@@ -1059,7 +1059,8 @@ bool dw_receive_message(uwb_frame frame, uint8_t mode) {
     }
 
     // Set masks of the events related to the receiving of messages.
-    sys_evt_msk_format sys_evt_msk_f;
+    sys_evt_msk_format sys_evt_msk_f= {0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0,
+            0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0};
     sys_evt_msk_f.mrxfcg = true;
     sys_evt_msk_f.mrxphe = true;
     sys_evt_msk_f.mrxfce = true;
@@ -1103,8 +1104,11 @@ bool dw_receive_message(uwb_frame frame, uint8_t mode) {
         if(!set_sys_event_sts(&sys_evt_sts_f, SES_OCT_0_TO_3)) {
             return false;
         }
+
+        return false;
     }
 
+    return true;
 }
 
 void dw_reset(void) {
@@ -1145,8 +1149,9 @@ bool turn_off_transceiver(void) {
     // thus we need to disable interrupt during this operation.
     chMtxLock(&IRQ_event_mtx);
 
-    // Clear interrupt mask - so we don't get any unwanted events.
-    sys_evt_msk_format clear_mask;
+    // Clear interrupt mask, so we don't get any unwanted events.
+    sys_evt_msk_format clear_mask= {0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0,
+            0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0};
     if(!set_sys_event_msk(&clear_mask)) {
         return false;
     }
@@ -1222,6 +1227,8 @@ bool turn_off_transceiver(void) {
 
 sys_evt_sts_format dw_wait_irq_event(sys_evt_msk_format sys_evt_msk_f) {
 
+    palEnablePadEvent(IOPORT1, DW_IRQ, PAL_EVENT_MODE_RISING_EDGE);
+
     sys_evt_msk_format previous_mask;
     sys_evt_msk_format current_mask;
     get_sys_event_msk(&previous_mask);
@@ -1266,14 +1273,14 @@ sys_evt_sts_format dw_wait_irq_event(sys_evt_msk_format sys_evt_msk_f) {
 
     set_sys_event_msk(&current_mask);
 
-    palEnablePadEvent(IOPORT1, DW_IRQ, PAL_EVENT_MODE_RISING_EDGE);
-
     bool event_happens = false;
     sys_evt_sts_format sys_evt_sts_f;
 
     while(!event_happens) {
 
-        palWaitPadTimeout(IOPORT1, DW_IRQ, TIME_INFINITE);
+        if(!palReadPad(IOPORT1, DW_IRQ)) {
+            palWaitPadTimeout(IOPORT1, DW_IRQ, TIME_INFINITE);
+        }
 
         get_sys_event_sts(&sys_evt_sts_f, -1);
 
@@ -1315,8 +1322,6 @@ sys_evt_sts_format dw_wait_irq_event(sys_evt_msk_format sys_evt_msk_f) {
         event_happens |= sys_evt_msk_f.mcplock & sys_evt_sts_f.cplock;
 
     }
-
-    palDisablePadEvent(IOPORT1, DW_IRQ);
 
     // Clean mask.
     set_sys_event_msk(&previous_mask);
