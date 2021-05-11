@@ -43,70 +43,70 @@ typedef struct {
 
 // Structure which contains all the registers information of the dw1000.
 const command COMMAND_MAP[] = {
-        {4U, RO, dev_id_formater, NULL},                        // DEV_ID
-        {8U, RW, eui_formater, eui_unformater},                 // EUI
-        RESERVED_REGISTER,                                      // RESERVED_1
-        {4U, RW, pan_addr_formater, pan_addr_unformater},       // PAN_ADR
-        {4U, RW, sys_cfg_formater, sys_cfg_unformater},         // SYS_CFG
-        RESERVED_REGISTER,                                      // RESERVED_2
-        {5U, RO, sys_time_formater, NULL},                      // SYS_TIME
-        RESERVED_REGISTER,                                      // RESERVED_3
-        {4U, RW, tx_fctrl_formater, tx_fctrl_unformater},       // TX_FCTRL
-        {1024U, WO, NULL, tx_buffer_unformater},                // TX_BUFFER
-        {5U, RW, dx_time_formater, dx_time_unformater},         // DX_TIME
-        RESERVED_REGISTER,                                      // RESERVED_4
-        {2U, RW, rx_fwto_formater, rx_fwto_unformater},         // RX_FWTO
-        {4U, RW, tx_ctrl_formater, tx_ctrl_unformater},         // SYS_CTRL
-        {4U, RW, sys_evt_msk_formater, sys_evt_msk_unformater}, // SYS_MASK
-        {4U, RW, sys_evt_sts_formater, sys_evt_sts_unformater}, // SYS_STATUS
-        {4U, RO, rx_finfo_formater, NULL},                      // RX_FINFO
-        {1024U, RO, rx_buffer_formater, NULL},                  // RX_BUFFER
-        {4U, RO, rx_fqual_formater, NULL},                      // RX_FQUAL
-        {4U, RO, rx_ttcki_formater, NULL},                      // RX_TTCKI
-        {4U, RO, rx_ttcko_formater, NULL},                      // RX_TTCKO
-        {4U, RO, rx_time_formater, NULL},                       // RX_TIME
-        RESERVED_REGISTER,                                      // RESERVED_5
-        {4U, RO, tx_time_formater, NULL},                       // TX_TIME
-        {2U, RW, tx_antd_formater, tx_antd_unformater},         // TX_ANTD
-        {4U, RO, sys_state_formater, NULL},                     // SYS_STATE
-        {4U, RW, ack_resp_t_formater, ack_resp_t_unformater},   // ACK_RESP_T
-        RESERVED_REGISTER,                                      // RESERVED_6
-        RESERVED_REGISTER,                                      // RESERVED_7
-        {2U, RW, rx_sniff_formater, rx_sniff_unformater},       // RX_SNIFF
-        {4U, RW, tx_power_formater, tx_power_unformater},       // TX_POWER
-        {4U, RW, chan_ctrl_formater, chan_ctrl_unformater},     // CHAN_CTRL
-        RESERVED_REGISTER,                                      // RESERVED_8
-        {4U, RW, usr_sfd_formater, usr_sfd_unformater},         // USR_SFD
-        RESERVED_REGISTER,                                      // RESERVED_9
-        {4U, RW, agc_ctrl_formater, agc_ctrl_unformater},       // AGC_CTRL
-        {4U, RW, ext_sync_formater, ext_sync_unformater},       // EXT_SYNC
-        {4U, RW, acc_mem_formater, NULL},                       // ACC_MEM
-        {4U, RW, gpio_ctrl_formater, gpio_ctrl_unformater},     // GPIO_CTRL
-        {4U, RW, drx_conf_formater, drx_conf_unformater},       // DRX_CONF
-        {5U, RW, rf_conf_formater, rf_conf_unformater},         // RF_CONF
-        RESERVED_REGISTER,                                      // RESERVED_10
-        {3U, RW, tx_cal_formater, tx_cal_unformater},           // TX_CAL
-        {4U, RW, fs_ctrl_formater, fs_ctrl_unformater},         // FS_CTRL
-        {4U, RW, aon_formater, aon_unformater},                 // AON
-        {4U, RW, otp_if_formater, otp_if_unformater},           // OTP_IF
-        {2U, RW, lde_if_formater, lde_if_unformater},           // LDE_IF
-        {4U, RW, dig_diag_formater, dig_diag_unformater},       // DIG_DIAG
-        RESERVED_REGISTER,                                      // RESERVED_11
-        RESERVED_REGISTER,                                      // RESERVED_12
-        RESERVED_REGISTER,                                      // RESERVED_13
-        RESERVED_REGISTER,                                      // RESERVED_14
-        RESERVED_REGISTER,                                      // RESERVED_15
-        RESERVED_REGISTER,                                      // RESERVED_16
-        {4U, RW, pmsc_formater, pmsc_unformater},               // PMSC
-        RESERVED_REGISTER,                                      // RESERVED_17
-        RESERVED_REGISTER,                                      // RESERVED_18
-        RESERVED_REGISTER,                                      // RESERVED_19
-        RESERVED_REGISTER,                                      // RESERVED_20
-        RESERVED_REGISTER,                                      // RESERVED_21
-        RESERVED_REGISTER,                                      // RESERVED_22
-        RESERVED_REGISTER,                                      // RESERVED_23
-        RESERVED_REGISTER,                                      // RESERVED_24
-        RESERVED_REGISTER,                                      // RESERVED_25
+        {4U, RO, dev_id_formater, NULL},                         // DEV_ID
+        {8U, RW, eui_formater, eui_unformater},                  // EUI
+        RESERVED_REGISTER,                                       // RESERVED_1
+        {4U, RW, pan_addr_formater, pan_addr_unformater},        // PAN_ADR
+        {4U, RW, sys_cfg_formater, sys_cfg_unformater},          // SYS_CFG
+        RESERVED_REGISTER,                                       // RESERVED_2
+        {5U, RO, sys_time_formater, NULL},                       // SYS_TIME
+        RESERVED_REGISTER,                                       // RESERVED_3
+        {4U, RW, tx_fctrl_formater, tx_fctrl_unformater},        // TX_FCTRL
+        {TX_RX_BUFFER_MAX_SIZE, WO, NULL, tx_buffer_unformater}, // TX_BUFFER
+        {5U, RW, dx_time_formater, dx_time_unformater},          // DX_TIME
+        RESERVED_REGISTER,                                       // RESERVED_4
+        {2U, RW, rx_fwto_formater, rx_fwto_unformater},          // RX_FWTO
+        {4U, RW, tx_ctrl_formater, tx_ctrl_unformater},          // SYS_CTRL
+        {4U, RW, sys_evt_msk_formater, sys_evt_msk_unformater},  // SYS_MASK
+        {4U, RW, sys_evt_sts_formater, sys_evt_sts_unformater},  // SYS_STATUS
+        {4U, RO, rx_finfo_formater, NULL},                       // RX_FINFO
+        {TX_RX_BUFFER_MAX_SIZE, RO, rx_buffer_formater, NULL},   // RX_BUFFER
+        {4U, RO, rx_fqual_formater, NULL},                       // RX_FQUAL
+        {4U, RO, rx_ttcki_formater, NULL},                       // RX_TTCKI
+        {4U, RO, rx_ttcko_formater, NULL},                       // RX_TTCKO
+        {4U, RO, rx_time_formater, NULL},                        // RX_TIME
+        RESERVED_REGISTER,                                       // RESERVED_5
+        {4U, RO, tx_time_formater, NULL},                        // TX_TIME
+        {2U, RW, tx_antd_formater, tx_antd_unformater},          // TX_ANTD
+        {4U, RO, sys_state_formater, NULL},                      // SYS_STATE
+        {4U, RW, ack_resp_t_formater, ack_resp_t_unformater},    // ACK_RESP_T
+        RESERVED_REGISTER,                                       // RESERVED_6
+        RESERVED_REGISTER,                                       // RESERVED_7
+        {2U, RW, rx_sniff_formater, rx_sniff_unformater},        // RX_SNIFF
+        {4U, RW, tx_power_formater, tx_power_unformater},        // TX_POWER
+        {4U, RW, chan_ctrl_formater, chan_ctrl_unformater},      // CHAN_CTRL
+        RESERVED_REGISTER,                                       // RESERVED_8
+        {4U, RW, usr_sfd_formater, usr_sfd_unformater},          // USR_SFD
+        RESERVED_REGISTER,                                       // RESERVED_9
+        {4U, RW, agc_ctrl_formater, agc_ctrl_unformater},        // AGC_CTRL
+        {4U, RW, ext_sync_formater, ext_sync_unformater},        // EXT_SYNC
+        {4U, RW, acc_mem_formater, NULL},                        // ACC_MEM
+        {4U, RW, gpio_ctrl_formater, gpio_ctrl_unformater},      // GPIO_CTRL
+        {4U, RW, drx_conf_formater, drx_conf_unformater},        // DRX_CONF
+        {5U, RW, rf_conf_formater, rf_conf_unformater},          // RF_CONF
+        RESERVED_REGISTER,                                       // RESERVED_10
+        {3U, RW, tx_cal_formater, tx_cal_unformater},            // TX_CAL
+        {4U, RW, fs_ctrl_formater, fs_ctrl_unformater},          // FS_CTRL
+        {4U, RW, aon_formater, aon_unformater},                  // AON
+        {4U, RW, otp_if_formater, otp_if_unformater},            // OTP_IF
+        {2U, RW, lde_if_formater, lde_if_unformater},            // LDE_IF
+        {4U, RW, dig_diag_formater, dig_diag_unformater},        // DIG_DIAG
+        RESERVED_REGISTER,                                       // RESERVED_11
+        RESERVED_REGISTER,                                       // RESERVED_12
+        RESERVED_REGISTER,                                       // RESERVED_13
+        RESERVED_REGISTER,                                       // RESERVED_14
+        RESERVED_REGISTER,                                       // RESERVED_15
+        RESERVED_REGISTER,                                       // RESERVED_16
+        {4U, RW, pmsc_formater, pmsc_unformater},                // PMSC
+        RESERVED_REGISTER,                                       // RESERVED_17
+        RESERVED_REGISTER,                                       // RESERVED_18
+        RESERVED_REGISTER,                                       // RESERVED_19
+        RESERVED_REGISTER,                                       // RESERVED_20
+        RESERVED_REGISTER,                                       // RESERVED_21
+        RESERVED_REGISTER,                                       // RESERVED_22
+        RESERVED_REGISTER,                                       // RESERVED_23
+        RESERVED_REGISTER,                                       // RESERVED_24
+        RESERVED_REGISTER,                                       // RESERVED_25
 };
 
 /**
@@ -372,17 +372,8 @@ bool set_tx_fctrl(tx_fctrl_format* tx_fctrl_f, const tx_fctrl_subregister subreg
     }
 }
 
-bool set_tx_buffer(uwb_frame frame, const uint16_t frame_size) {
-
-    const uint16_t offset = TX_RX_BUFFER_MAX_SIZE - frame_size;
-    bool ret = false;
-
-    if(offset + frame_size <= TX_RX_BUFFER_MAX_SIZE) {
-        ret = _dw_write_reg(TX_BUFFER, offset, (void*) frame);
-    }
-
-    return ret;
-
+bool set_tx_buffer(uwb_frame frame) {
+    return _dw_write_reg(TX_BUFFER, 0, (void*) frame);
 }
 
 bool get_dx_time(double* seconds) {
@@ -459,16 +450,8 @@ bool get_rx_finfo(rx_finfo_format* rx_finfo_f) {
     return _dw_read_reg(RX_FINFO, 0, (void*) rx_finfo_f);
 }
 
-bool get_rx_buffer(uwb_frame frame, const uint16_t frame_size) {
-
-    const uint16_t offset = TX_RX_BUFFER_MAX_SIZE - frame_size;
-    bool ret = false;
-
-    if(offset + frame_size <= TX_RX_BUFFER_MAX_SIZE) {
-        ret = _dw_read_reg(RX_BUFFER, offset, (void*) frame);
-    }
-
-    return ret;
+bool get_rx_buffer(uwb_frame frame) {
+    return _dw_read_reg(RX_BUFFER, 0, (void*) frame);
 }
 
 bool get_rx_fqual(rx_fqual_format* rx_fqual_f, const rx_finfo_subregister subregister) {

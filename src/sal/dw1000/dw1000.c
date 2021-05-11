@@ -894,16 +894,16 @@ bool dw_initialise(const int config_flags) {
     return true;
 }
 
-bool dw_send_message(uwb_frame frame, const uint16_t frame_size, uint16_t tx_buffer_offset, bool ranging, uint8_t mode) {
+bool dw_send_message(uwb_frame frame, uint16_t tx_buffer_offset, bool ranging, uint8_t mode) {
 
     // Write frame data to DW1000 and prepare transmission.
-    if(!set_tx_buffer(frame, frame_size)){
+    if(!set_tx_buffer(frame)){
         return false;
     }
 
     tx_fctrl_format tx_fctrl_f = dw_local_data.tx_FCTRL;
 
-    tx_fctrl_f.tflen = frame_size;
+    tx_fctrl_f.tflen = TX_RX_BUFFER_MAX_SIZE;
     tx_fctrl_f.txboffs = tx_buffer_offset;
     tx_fctrl_f.tr = ranging;
 
@@ -1080,7 +1080,7 @@ bool dw_receive_message(uwb_frame frame, uint8_t mode) {
         }
 
         if (rx_finfo_f.rxflen <= TX_RX_BUFFER_MAX_SIZE) {
-            if(!get_rx_buffer(frame, rx_finfo_f.rxflen)) {
+            if(!get_rx_buffer(frame)) {
                 return false;
             }
         }
@@ -1094,13 +1094,13 @@ bool dw_receive_message(uwb_frame frame, uint8_t mode) {
     } else {
 
         // Clear RX error events in the DW1000 status register.
-        sys_evt_msk_f.mrxfcg = false;
-        sys_evt_msk_f.mrxphe = false;
-        sys_evt_msk_f.mrxfce = false;
-        sys_evt_msk_f.mrxrfsl = false;
-        sys_evt_msk_f.mrxsfdto = false;
-        sys_evt_msk_f.maffrej = false;
-        sys_evt_msk_f.mldeerr = false;
+        sys_evt_sts_f.rxfcg = false;
+        sys_evt_sts_f.rxphe = false;
+        sys_evt_sts_f.rxfce = false;
+        sys_evt_sts_f.rxrfsl = false;
+        sys_evt_sts_f.rxsfdto = false;
+        sys_evt_sts_f.affrej = false;
+        sys_evt_sts_f.ldeerr = false;
         if(!set_sys_event_sts(&sys_evt_sts_f, SES_OCT_0_TO_3)) {
             return false;
         }
@@ -1327,4 +1327,17 @@ sys_evt_sts_format dw_wait_irq_event(sys_evt_msk_format sys_evt_msk_f) {
     set_sys_event_msk(&previous_mask);
 
     return sys_evt_sts_f;
+}
+
+void init_buffer(uint8_t* buffer, size_t buffer_size, uwb_frame* container) {
+
+    unsigned int i;
+    for(i = 0; i < buffer_size; ++i) {
+        (*container)[i] = buffer[i];
+    }
+
+    for(i = buffer_size; i < TX_RX_BUFFER_MAX_SIZE; ++i) {
+        (*container)[i] = 0;
+    }
+
 }

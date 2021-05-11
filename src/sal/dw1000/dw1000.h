@@ -184,10 +184,12 @@ bool dw_initialise(const int config_flags);
  * @brief Waits for receive a message.
  *
  * @param mode[in]: DWT_START_RX_IMMEDIATE used to enable receiver immediately.
- *                 DWT_START_RX_DELAYED used to set up delayed RX, if "late" error triggers, then the RX will be enabled immediately.
- *                 DWT_START_RX_DELAYED | DWT_IDLE_ON_DLY_ERR used to disable re-enabling of receiver if delayed RX failed due to "late" error.
- *                 DWT_START_RX_IMMEDIATE | DWT_NO_SYNC_PTRS used to re-enable RX without trying to sync IC and host side buffer pointers, typically when
- *                 performing manual RX re-enabling in double buffering mode.
+ *                  DWT_START_RX_DELAYED used to set up delayed RX, if "late" error triggers, then the RX will be enabled immediately.
+ *                  DWT_START_RX_DELAYED | DWT_IDLE_ON_DLY_ERR used to disable re-enabling of receiver if delayed RX failed due to "late" error.
+ *                  DWT_START_RX_IMMEDIATE | DWT_NO_SYNC_PTRS used to re-enable RX without trying to sync IC and host side buffer pointers, typically when
+ *                  performing manual RX re-enabling in double buffering mode.
+ *
+ * @note: See function get_rx_buffer to understand better this function.
  *
  * @return bool: Returns true if the message was received, otherwise false.
  *
@@ -221,10 +223,12 @@ void dw_reset(void);
  *        if > 127 is programmed, DWT_PHRMODE_EXT needs to be set in the phrMode configuration
  *        see dw_configure function.
  *
+ * @note: See function set_tx_buffer to understand better this function.
+ *
  * @return bool: Returns true if the message can be sent, otherwise false.
  *
  */
-bool dw_send_message(uwb_frame frame, const uint16_t frame_size, const uint16_t tx_buffer_offset, const bool ranging, const uint8_t mode);
+bool dw_send_message(uwb_frame frame, const uint16_t tx_buffer_offset, const bool ranging, const uint8_t mode);
 
 /**
  * @brief Sets the rate SPI communication of the dwm1000(8MBPS).
@@ -257,5 +261,7 @@ bool turn_off_transceiver(void);
  *
  */
 sys_evt_sts_format dw_wait_irq_event(sys_evt_msk_format sys_evt_msk_f);
+
+void init_buffer(uint8_t* buffer, size_t buffer_size, uwb_frame* container);
 
 #endif /* _DWM1000_H_ */

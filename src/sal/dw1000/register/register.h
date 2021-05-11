@@ -213,16 +213,18 @@ bool set_tx_fctrl(tx_fctrl_format* tx_fctrl_f, const tx_fctrl_subregister subreg
  * @brief Sets the transmit buffer register value.
  *
  * @param[in] frame: Message to store in the transmit buffer register.
- * @param[in] frame_size: Size in bytes of the given uwb_frame.
  *
  * @note: Depend on the phr_mode selected in the system configuration register
  *        this buffer can be from 127 bytes of size(phr_mode = standard) or
- *        1024 bytes(phr_mode = long_size).
+ *        1024 bytes(phr_mode = long_size). In the two cases, it is mandatory
+ *        that the variable frame has the max length(127 or 1024).
+ *
+ * @note: TX_RX_BUFFER_MAX_SIZE determines the size of the buffer(format.h).
  *
  * @return bool: True if the register can be set, otherwise false.
  *
  */
-bool set_tx_buffer(uwb_frame frame, const uint16_t frame_size);
+bool set_tx_buffer(uwb_frame frame);
 
 /**
  * @brief Gets the delayed send/receiver register value.
@@ -343,16 +345,18 @@ bool get_rx_finfo(rx_finfo_format* rx_finfo_f);
  * @brief Gets the receive buffer register value.
  *
  * @param[out] frame: Array in which will be load the transmit buffer register.
- * @param[in] frame_size: Number of bytes to read from the transmit buffer register.
  *
  * @note: Depend on the phr_mode selected in the system configuration register
  *        this buffer can be from 127 bytes of size(phr_mode = standard) or
- *        1024 bytes(phr_mode = long_size).
+ *        1024 bytes(phr_mode = long_size). In the two cases, it is mandatory
+ *        that the variable frame has the max length(127 or 1024).
+ *
+ * @note: TX_RX_BUFFER_MAX_SIZE determines the size of the buffer(format.h).
  *
  * @return bool: True if the register can be set, otherwise false.
  *
  */
-bool get_rx_buffer(uwb_frame frame, const uint16_t frame_size);
+bool get_rx_buffer(uwb_frame frame);
 
 /**
  * @brief Gets the rx frame quality information register value.

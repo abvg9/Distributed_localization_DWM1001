@@ -26,8 +26,10 @@
 // Defines frames of the SPI dwm1000 communications.
 typedef uint8_t *spi_frame;
 
+#define TX_RX_BUFFER_MAX_SIZE 127U
+
 // Defines frames of the UWB dwm1000 communications.
-typedef uint8_t *uwb_frame;
+typedef uint8_t uwb_frame[TX_RX_BUFFER_MAX_SIZE];
 
 /******* DEV_ID *******/
 
@@ -280,8 +282,6 @@ void tx_fctrl_formater(spi_frame fr, void *format, const size_t sub_register);
 size_t tx_fctrl_unformater(void *format, spi_frame fr, const size_t sub_register);
 
 /******* TX_BUFFER *******/
-
-#define TX_RX_BUFFER_MAX_SIZE 128
 
 /**
  * @brief Unformats an uint8_t* to a spi_frame.

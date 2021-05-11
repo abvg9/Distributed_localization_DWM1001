@@ -41,15 +41,15 @@ size_t eui_unformater(void *format, spi_frame fr, const size_t sub_register) {
 
     eui_format *eui_f = ((eui_format*) format);
 
-    fr[4] = (uint8_t) ((eui_f->ext_ID & 0xFF00000000) >> 32);
-    fr[3] = (uint8_t) ((eui_f->ext_ID & 0x00FF000000) >> 24);
-    fr[2] = (uint8_t) ((eui_f->ext_ID & 0x0000FF0000) >> 16);
-    fr[1] = (uint8_t) ((eui_f->ext_ID & 0x000000FF00) >> 8);
-    fr[0] = (uint8_t) (eui_f->ext_ID & 0x00000000FF);
+    fr[4] = (eui_f->ext_ID & 0xFF00000000) >> 32;
+    fr[3] = (eui_f->ext_ID & 0x00FF000000) >> 24;
+    fr[2] = (eui_f->ext_ID & 0x0000FF0000) >> 16;
+    fr[1] = (eui_f->ext_ID & 0x000000FF00) >> 8;
+    fr[0] = eui_f->ext_ID & 0x00000000FF;
 
-    fr[7] = (uint8_t) ((eui_f->mc_ID & 0xFF0000) >> 16);
-    fr[6] = (uint8_t) ((eui_f->mc_ID & 0x00FF00) >> 8);
-    fr[5] = (uint8_t) (eui_f->mc_ID & 0x0000FF);
+    fr[7] = (eui_f->mc_ID & 0xFF0000) >> 16;
+    fr[6] = (eui_f->mc_ID & 0x00FF00) >> 8;
+    fr[5] = eui_f->mc_ID & 0x0000FF;
 
     return 8;
 }
@@ -122,31 +122,31 @@ size_t sys_cfg_unformater(void *format, spi_frame fr, const size_t sub_register)
 
     sys_cfg_format *sys_cfg_f = ((sys_cfg_format*) format);
 
-    fr[3] = sys_cfg_f->aackpend << 7;
-    fr[3] |= sys_cfg_f->autoack << 6;
-    fr[3] |= sys_cfg_f->rxautr << 5;
-    fr[3] |= sys_cfg_f->rxwtoe << 4;
+    fr[3] = ((uint8_t)sys_cfg_f->aackpend) << 7;
+    fr[3] |= ((uint8_t)sys_cfg_f->autoack) << 6;
+    fr[3] |= ((uint8_t)sys_cfg_f->rxautr) << 5;
+    fr[3] |= ((uint8_t)sys_cfg_f->rxwtoe) << 4;
 
-    fr[2] = sys_cfg_f->rxm110k << 6;
-    fr[2] |= sys_cfg_f->dis_stxp << 3;
+    fr[2] = ((uint8_t)sys_cfg_f->rxm110k) << 6;
+    fr[2] |= ((uint8_t)sys_cfg_f->dis_stxp) << 3;
     fr[2] |= sys_cfg_f->phr_mode;
 
-    fr[1] = sys_cfg_f->fcs_init2f << 7;
-    fr[1] |= sys_cfg_f->dis_rsde << 6;
-    fr[1] |= sys_cfg_f->dis_phe << 5;
-    fr[1] |= sys_cfg_f->dis_drxb << 4;
-    fr[1] |= sys_cfg_f->dis_fce << 3;
-    fr[1] |= sys_cfg_f->spi_edge << 2;
-    fr[1] |= sys_cfg_f->hirq_pol << 1;
+    fr[1] = ((uint8_t)sys_cfg_f->fcs_init2f) << 7;
+    fr[1] |= ((uint8_t)sys_cfg_f->dis_rsde) << 6;
+    fr[1] |= ((uint8_t)sys_cfg_f->dis_phe) << 5;
+    fr[1] |= ((uint8_t)sys_cfg_f->dis_drxb) << 4;
+    fr[1] |= ((uint8_t)sys_cfg_f->dis_fce) << 3;
+    fr[1] |= ((uint8_t)sys_cfg_f->spi_edge) << 2;
+    fr[1] |= ((uint8_t)sys_cfg_f->hirq_pol) << 1;
     fr[1] |= sys_cfg_f->ffa5;
 
-    fr[0] = sys_cfg_f->ffa4 << 7;
-    fr[0] |= sys_cfg_f->ffar << 6;
-    fr[0] |= sys_cfg_f->ffam << 5;
-    fr[0] |= sys_cfg_f->ffaa << 4;
-    fr[0] |= sys_cfg_f->ffad << 3;
-    fr[0] |= sys_cfg_f->ffab << 2;
-    fr[0] |= sys_cfg_f->ffbc << 1;
+    fr[0] = ((uint8_t)sys_cfg_f->ffa4) << 7;
+    fr[0] |= ((uint8_t)sys_cfg_f->ffar) << 6;
+    fr[0] |= ((uint8_t)sys_cfg_f->ffam) << 5;
+    fr[0] |= ((uint8_t)sys_cfg_f->ffaa) << 4;
+    fr[0] |= ((uint8_t)sys_cfg_f->ffad) << 3;
+    fr[0] |= ((uint8_t)sys_cfg_f->ffab) << 2;
+    fr[0] |= ((uint8_t)sys_cfg_f->ffbc) << 1;
     fr[0] |= sys_cfg_f->ffen;
 
     return 4;
@@ -209,17 +209,15 @@ size_t tx_fctrl_unformater(void* format, spi_frame fr, const size_t sub_register
 
 size_t tx_buffer_unformater(void *format, spi_frame fr, const size_t sub_register) {
 
-    const size_t buffer_size = TX_RX_BUFFER_MAX_SIZE - sub_register;
-
     uint8_t* buffer = (uint8_t*) format;
 
-    int i;
-    for( i = buffer_size-1; i >= 0; --i) {
+    unsigned int i;
+    for(i = 0; i < TX_RX_BUFFER_MAX_SIZE; ++i) {
         fr[i] = buffer[i];
     }
 
 
-    return buffer_size;
+    return TX_RX_BUFFER_MAX_SIZE;
 }
 
 void dx_time_formater(spi_frame fr, void *format, const size_t sub_register) {
@@ -292,14 +290,14 @@ size_t tx_ctrl_unformater(void *format, spi_frame fr, const size_t sub_register)
 
     fr[2] = 0;
 
-    fr[1] = sys_ctrl_f->rxdlye << 1;
+    fr[1] = ((uint8_t)sys_ctrl_f->rxdlye) << 1;
     fr[1] |= sys_ctrl_f->rxenab;
 
-    fr[0] = sys_ctrl_f->wait4resp << 7;
-    fr[0] |= sys_ctrl_f->trxoff << 6;
-    fr[0] |= sys_ctrl_f->cansfcs << 3;
-    fr[0] |= sys_ctrl_f->txdlys << 2;
-    fr[0] |= sys_ctrl_f->txstrt << 1;
+    fr[0] = ((uint8_t)sys_ctrl_f->wait4resp) << 7;
+    fr[0] |= ((uint8_t)sys_ctrl_f->trxoff) << 6;
+    fr[0] |= ((uint8_t)sys_ctrl_f->cansfcs) << 3;
+    fr[0] |= ((uint8_t)sys_ctrl_f->txdlys) << 2;
+    fr[0] |= ((uint8_t)sys_ctrl_f->txstrt) << 1;
     fr[0] |= sys_ctrl_f->sfcst;
 
     return 4;
@@ -356,36 +354,36 @@ size_t sys_evt_msk_unformater(void *format, spi_frame fr, const size_t sub_regis
 
     sys_evt_msk_format *sys_evt_msk_f = ((sys_evt_msk_format*) format);
 
-    fr[3] = sys_evt_msk_f->maffrej << 5;
-    fr[3] |= sys_evt_msk_f->mtxberr << 4;
-    fr[3] |= sys_evt_msk_f->mhpdwarn << 3;
-    fr[3] |= sys_evt_msk_f->mrxsfdto << 2;
-    fr[3] |= sys_evt_msk_f->mcpllll << 1;
+    fr[3] = ((uint8_t)sys_evt_msk_f->maffrej) << 5;
+    fr[3] |= ((uint8_t)sys_evt_msk_f->mtxberr) << 4;
+    fr[3] |= ((uint8_t)sys_evt_msk_f->mhpdwarn) << 3;
+    fr[3] |= ((uint8_t)sys_evt_msk_f->mrxsfdto) << 2;
+    fr[3] |= ((uint8_t)sys_evt_msk_f->mcpllll) << 1;
     fr[3] |= sys_evt_msk_f->mrfpllll;
 
-    fr[2] = sys_evt_msk_f->mslp2init << 7;
-    fr[2] |= sys_evt_msk_f->mgpioirq << 6;
-    fr[2] |= sys_evt_msk_f->mrxpto << 5;
-    fr[2] |= sys_evt_msk_f->mldeerr << 2;
-    fr[2] |= sys_evt_msk_f->mrxrfto << 1;
+    fr[2] = ((uint8_t)sys_evt_msk_f->mslp2init) << 7;
+    fr[2] |= ((uint8_t)sys_evt_msk_f->mgpioirq) << 6;
+    fr[2] |= ((uint8_t)sys_evt_msk_f->mrxpto) << 5;
+    fr[2] |= ((uint8_t)sys_evt_msk_f->mldeerr) << 2;
+    fr[2] |= ((uint8_t)sys_evt_msk_f->mrxrfto) << 1;
     fr[2] |= sys_evt_msk_f->mrxrfsl;
 
-    fr[1] = sys_evt_msk_f->mrxfce << 7;
-    fr[1] |= sys_evt_msk_f->mrxfcg << 6;
-    fr[1] |= sys_evt_msk_f->mrxdfr << 5;
-    fr[1] |= sys_evt_msk_f->mrxphe << 4;
-    fr[1] |= sys_evt_msk_f->mrxphd << 3;
-    fr[1] |= sys_evt_msk_f->mldedone << 2;
-    fr[1] |= sys_evt_msk_f->mrxsfdd << 1;
+    fr[1] = ((uint8_t)sys_evt_msk_f->mrxfce) << 7;
+    fr[1] |= ((uint8_t)sys_evt_msk_f->mrxfcg) << 6;
+    fr[1] |= ((uint8_t)sys_evt_msk_f->mrxdfr) << 5;
+    fr[1] |= ((uint8_t)sys_evt_msk_f->mrxphe) << 4;
+    fr[1] |= ((uint8_t)sys_evt_msk_f->mrxphd) << 3;
+    fr[1] |= ((uint8_t)sys_evt_msk_f->mldedone) << 2;
+    fr[1] |= ((uint8_t)sys_evt_msk_f->mrxsfdd) << 1;
     fr[1] |= sys_evt_msk_f->mrxprd;
 
-    fr[0] = sys_evt_msk_f->mtxfrs << 7;
-    fr[0] |= sys_evt_msk_f->mtxphs << 6;
-    fr[0] |= sys_evt_msk_f->mtxprs << 5;
-    fr[0] |= sys_evt_msk_f->mtxfrb << 4;
-    fr[0] |= sys_evt_msk_f->maat << 3;
-    fr[0] |= sys_evt_msk_f->mesyncr << 2;
-    fr[0] |= sys_evt_msk_f->mcplock << 1;
+    fr[0] = ((uint8_t)sys_evt_msk_f->mtxfrs) << 7;
+    fr[0] |= ((uint8_t)sys_evt_msk_f->mtxphs) << 6;
+    fr[0] |= ((uint8_t)sys_evt_msk_f->mtxprs) << 5;
+    fr[0] |= ((uint8_t)sys_evt_msk_f->mtxfrb) << 4;
+    fr[0] |= ((uint8_t)sys_evt_msk_f->maat) << 3;
+    fr[0] |= ((uint8_t)sys_evt_msk_f->mesyncr) << 2;
+    fr[0] |= ((uint8_t)sys_evt_msk_f->mcplock) << 1;
 
     return 4;
 }
@@ -445,42 +443,42 @@ size_t sys_evt_sts_unformater(void *format, spi_frame fr, const size_t sub_regis
 
      if(sub_register == SES_OCT_0_TO_3) {
 
-         fr[3] |= sys_evt_sts_f->affrej << 5;
-         fr[3] |= sys_evt_sts_f->txberr << 4;
-         fr[3] |= sys_evt_sts_f->rxsfdto << 2;
-         fr[3] |= sys_evt_sts_f->clkpll_ll << 1;
+         fr[3] |= ((uint8_t)sys_evt_sts_f->affrej) << 5;
+         fr[3] |= ((uint8_t)sys_evt_sts_f->txberr) << 4;
+         fr[3] |= ((uint8_t)sys_evt_sts_f->rxsfdto) << 2;
+         fr[3] |= ((uint8_t)sys_evt_sts_f->clkpll_ll) << 1;
          fr[3] |= sys_evt_sts_f->rfpll_ll;
 
-         fr[2] = sys_evt_sts_f->slp2init << 7;
-         fr[2] |= sys_evt_sts_f->gpioirq << 6;
-         fr[2] |= sys_evt_sts_f->rxpto << 5;
-         fr[2] |= sys_evt_sts_f->rxovrr << 4;
-         fr[2] |= sys_evt_sts_f->ldeerr << 2;
-         fr[2] |= sys_evt_sts_f->rxrfto << 1;
+         fr[2] = ((uint8_t)sys_evt_sts_f->slp2init) << 7;
+         fr[2] |= ((uint8_t)sys_evt_sts_f->gpioirq) << 6;
+         fr[2] |= ((uint8_t)sys_evt_sts_f->rxpto) << 5;
+         fr[2] |= ((uint8_t)sys_evt_sts_f->rxovrr) << 4;
+         fr[2] |= ((uint8_t)sys_evt_sts_f->ldeerr) << 2;
+         fr[2] |= ((uint8_t)sys_evt_sts_f->rxrfto) << 1;
          fr[2] |= sys_evt_sts_f->rxrfsl;
 
-         fr[1] = sys_evt_sts_f->rxfce << 7;
-         fr[1] |= sys_evt_sts_f->rxfcg << 6;
-         fr[1] |= sys_evt_sts_f->rxdfr << 5;
-         fr[1] |= sys_evt_sts_f->rxphe << 4;
-         fr[1] |= sys_evt_sts_f->rxphd << 3;
-         fr[1] |= sys_evt_sts_f->ldedone << 2;
-         fr[1] |= sys_evt_sts_f->rxsfdd << 1;
+         fr[1] = ((uint8_t)sys_evt_sts_f->rxfce) << 7;
+         fr[1] |= ((uint8_t)sys_evt_sts_f->rxfcg) << 6;
+         fr[1] |= ((uint8_t)sys_evt_sts_f->rxdfr) << 5;
+         fr[1] |= ((uint8_t)sys_evt_sts_f->rxphe) << 4;
+         fr[1] |= ((uint8_t)sys_evt_sts_f->rxphd) << 3;
+         fr[1] |= ((uint8_t)sys_evt_sts_f->ldedone) << 2;
+         fr[1] |= ((uint8_t)sys_evt_sts_f->rxsfdd) << 1;
          fr[1] |= sys_evt_sts_f->rxprd;
 
-         fr[0] = sys_evt_sts_f->txfrs << 7;
-         fr[0] |= sys_evt_sts_f->txphs << 6;
-         fr[0] |= sys_evt_sts_f->txprs << 5;
-         fr[0] |= sys_evt_sts_f->txfrb << 4;
-         fr[0] |= sys_evt_sts_f->aat << 3;
-         fr[0] |= sys_evt_sts_f->esyncr << 2;
-         fr[0] |= sys_evt_sts_f->cplock << 1;
+         fr[0] = ((uint8_t)sys_evt_sts_f->txfrs) << 7;
+         fr[0] |= ((uint8_t)sys_evt_sts_f->txphs) << 6;
+         fr[0] |= ((uint8_t)sys_evt_sts_f->txprs) << 5;
+         fr[0] |= ((uint8_t)sys_evt_sts_f->txfrb) << 4;
+         fr[0] |= ((uint8_t)sys_evt_sts_f->aat) << 3;
+         fr[0] |= ((uint8_t)sys_evt_sts_f->esyncr) << 2;
+         fr[0] |= ((uint8_t)sys_evt_sts_f->cplock) << 1;
 
          return 4;
 
      } else if(sub_register == SES_OCT_4) {
 
-         fr[0] |= sys_evt_sts_f->rxprej << 1;
+         fr[0] = ((uint8_t)sys_evt_sts_f->rxprej) << 1;
          fr[0] |= sys_evt_sts_f->rxrscs;
 
          return 1;
@@ -505,12 +503,10 @@ void rx_finfo_formater(spi_frame fr, void *format, const size_t sub_register) {
 
 void rx_buffer_formater(spi_frame fr, void *format, const size_t sub_register) {
 
-    const size_t buffer_size = TX_RX_BUFFER_MAX_SIZE - sub_register;
+    uint8_t* buffer = (uint8_t*)format;
 
-    uint8_t* buffer = (uint8_t*) format;
-
-    int i;
-    for( i = buffer_size-1; i >= 0; --i) {
+    unsigned int i;
+    for(i = 0; i < TX_RX_BUFFER_MAX_SIZE; ++i) {
         buffer[i] = fr[i];
     }
 
@@ -711,16 +707,16 @@ size_t tx_power_unformater(void *format, spi_frame fr, const size_t sub_register
 
     tx_power_format* tx_power_f = (tx_power_format*)format;
 
-    fr[3] = tx_power_f->field_32_24.coarse_da_setting << 5;
+    fr[3] = ((uint8_t)tx_power_f->field_32_24.coarse_da_setting) << 5;
     fr[3] |= tx_power_f->field_32_24.fine_mixer_setting;
 
-    fr[2] = tx_power_f->field_23_16.coarse_da_setting << 5;
+    fr[2] = ((uint8_t)tx_power_f->field_23_16.coarse_da_setting) << 5;
     fr[2] |= tx_power_f->field_23_16.fine_mixer_setting;
 
-    fr[1] = tx_power_f->field_15_8.coarse_da_setting << 5;
+    fr[1] = ((uint8_t)tx_power_f->field_15_8.coarse_da_setting) << 5;
     fr[1] |= tx_power_f->field_15_8.fine_mixer_setting;
 
-    fr[0] = tx_power_f->field_7_0.coarse_da_setting << 5;
+    fr[0] = ((uint8_t)tx_power_f->field_7_0.coarse_da_setting) << 5;
     fr[0] |= tx_power_f->field_7_0.fine_mixer_setting;
 
     return 4;
@@ -753,14 +749,14 @@ size_t chan_ctrl_unformater(void *format, spi_frame fr, const size_t sub_registe
 
     chan_ctrl_format* chan_ctrl_f = (chan_ctrl_format*)format;
 
-    fr[3] = ((chan_ctrl_f->tx_pcode & 0b11100) >> 2);
+    fr[3] = ((uint8_t)(chan_ctrl_f->tx_pcode & 0b11100)) >> 2;
     fr[3] |= ((uint8_t)chan_ctrl_f->rx_pcode) << 3;
 
-    fr[2] = chan_ctrl_f->dwsfd << 1;
-    fr[2] |= chan_ctrl_f->rxprf << 2;
-    fr[2] |= chan_ctrl_f->tnssfd << 4;
-    fr[2] |= chan_ctrl_f->rnssfd << 5;
-    fr[2] |= ((uint8_t)chan_ctrl_f->tx_pcode & 0b00011) << 6;
+    fr[2] = ((uint8_t)chan_ctrl_f->dwsfd) << 1;
+    fr[2] |= ((uint8_t)chan_ctrl_f->rxprf) << 2;
+    fr[2] |= ((uint8_t)chan_ctrl_f->tnssfd) << 4;
+    fr[2] |= ((uint8_t)chan_ctrl_f->rnssfd) << 5;
+    fr[2] |= ((uint8_t)(chan_ctrl_f->tx_pcode & 0b00011)) << 6;
 
     fr[1] = 0;
 
@@ -1059,7 +1055,7 @@ size_t ext_sync_unformater(void *format, spi_frame fr, const size_t sub_register
 
     if(sub_register == EC_CTRL) {
 
-        fr[1] = (ext_sync_f->ostrm << 3) | ((ext_sync_f->wait & 0b11100000) >> 5);
+        fr[1] = (((uint8_t)ext_sync_f->ostrm) << 3) | ((ext_sync_f->wait & 0b11100000) >> 5);
 
         fr[0] = ext_sync_f->ostsm | (((uint8_t)ext_sync_f->osrsm) << 1) | (((uint8_t)ext_sync_f->pllldt) << 2)
                 | ((ext_sync_f->wait & 0b00011111) << 3);
