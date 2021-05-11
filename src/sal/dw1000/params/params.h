@@ -65,7 +65,7 @@ extern const uint16_t dtune1[NUM_PRF];
 #define DRX_TUNE4H_PRE64        0x0010
 #define DRX_TUNE4H_PRE128PLUS   0x0028
 
-#define DW_SFDTOC_DEF          0x1041  // default SFD timeout value
+#define DW_SFDTOC_DEF           0x1041  // Default SFD timeout value.
 
 #define FS_PLLCFG_CH1           0x09000407UL    // Operating Channel 1.
 #define FS_PLLCFG_CH2           0x08400508UL    // Operating Channel 2.

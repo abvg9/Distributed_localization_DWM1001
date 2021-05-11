@@ -139,7 +139,7 @@ bool dw_configure(void) {
     }
 
     lde_if_f.lde_repc = reg_16;
-    // Set the lde_replicaCoeff.
+    // Set the lde_replica coefficient.
     if(!set_lde_if(&lde_if_f, LDE_REPC)) {
         return false;
     }
@@ -153,14 +153,14 @@ bool dw_configure(void) {
 
     if(prf_index) {
 
-        lde_if_f.lde_cfg2 = LDE_PARAM3_64;
+        lde_if_f.lde_cfg2 = (uint16_t)LDE_PARAM3_64;
         if(!set_lde_if(&lde_if_f, LDE_CFG2)) {
             return false;
         }
 
     } else {
 
-        lde_if_f.lde_cfg2 = LDE_PARAM3_16;
+        lde_if_f.lde_cfg2 = (uint16_t)LDE_PARAM3_16;
         if(!set_lde_if(&lde_if_f, LDE_CFG2)) {
             return false;
         }
@@ -261,7 +261,7 @@ bool dw_configure(void) {
     }
 
     drx_conf_f.drx_sfdtoc = dw_conf.sfd_TO;
-    if(!set_drx_conf(&drx_conf_f, DRX_TUNE2)) {
+    if(!set_drx_conf(&drx_conf_f, DRX_SFDTOC)) {
          return false;
     }
 
@@ -279,12 +279,12 @@ bool dw_configure(void) {
          return false;
     }
 
-    // Set (non-standard) user SFD for improved performance,
+    // Set (non-standard) user SFD for improved performance.
     if(dw_conf.ns_SFD) {
 
         // Write non standard (DW) SFD length.
         usr_sfd_format usr_sfd_f;
-        if(!get_usr_sfd(&usr_sfd_f, -1)) {
+        if(!get_usr_sfd(&usr_sfd_f, USR_SFD_OCT_0_TO_3)) {
             return false;
         }
 
@@ -310,7 +310,7 @@ bool dw_configure(void) {
     chan_ctrl_f.tx_pcode = dw_conf.tx_code;
     chan_ctrl_f.rx_pcode = dw_conf.rx_code;
 
-    if(!get_chan_ctrl(&chan_ctrl_f)) {
+    if(!set_chan_ctrl(&chan_ctrl_f)) {
         return false;
     }
 
@@ -896,22 +896,24 @@ bool dw_initialise(const int config_flags) {
 
 bool dw_send_message(uwb_frame frame, uint16_t tx_buffer_offset, bool ranging, uint8_t mode) {
 
-    // Write frame data to DW1000 and prepare transmission.
+    // Write frame data to DW1000.
     if(!set_tx_buffer(frame)){
         return false;
     }
 
+    // Prepare transmission.
     tx_fctrl_format tx_fctrl_f = dw_local_data.tx_FCTRL;
 
     tx_fctrl_f.tflen = TX_RX_BUFFER_MAX_SIZE;
     tx_fctrl_f.txboffs = tx_buffer_offset;
     tx_fctrl_f.tr = ranging;
 
-    if(!set_tx_fctrl(&tx_fctrl_f, -1)) {
+    if(!set_tx_fctrl(&tx_fctrl_f, REST)) {
         return false;
     }
 
     // Start transmission.
+
     sys_ctrl_format sys_ctrl_f;
     if(!get_sys_ctrl(&sys_ctrl_f)) {
         return false;
@@ -922,6 +924,8 @@ bool dw_send_message(uwb_frame frame, uint16_t tx_buffer_offset, bool ranging, u
         dw_local_data.wait_4_resp = true;
     }
 
+    sys_evt_sts_format sys_evt_sts_f;
+
     if (mode & DW_START_TX_DELAYED) {
 
         // Both SYS_CTRL_TXSTRT and SYS_CTRL_TXDLYS to correctly enable TX.
@@ -931,7 +935,6 @@ bool dw_send_message(uwb_frame frame, uint16_t tx_buffer_offset, bool ranging, u
             return false;
         }
 
-        sys_evt_sts_format sys_evt_sts_f;
         if(!get_sys_event_sts(&sys_evt_sts_f, -1)) {
             return false;
         }
@@ -957,6 +960,7 @@ bool dw_send_message(uwb_frame frame, uint16_t tx_buffer_offset, bool ranging, u
         if(!set_sys_ctrl(&sys_ctrl_f)) {
             return false;
         }
+
     }
 
     // Set masks of the events related to the sending of messages.
@@ -964,7 +968,7 @@ bool dw_send_message(uwb_frame frame, uint16_t tx_buffer_offset, bool ranging, u
             0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0};
     sys_evt_msk_f.mtxfrs = true;
 
-    sys_evt_sts_format sys_evt_sts_f = dw_wait_irq_event(sys_evt_msk_f);
+    sys_evt_sts_f = dw_wait_irq_event(sys_evt_msk_f);
 
     if(!sys_evt_sts_f.txfrs) {
 
@@ -981,9 +985,6 @@ bool dw_send_message(uwb_frame frame, uint16_t tx_buffer_offset, bool ranging, u
         return false;
     }
 
-    /* Increment the blink frame sequence number (modulo 256). */
-    //tx_msg[BLINK_FRAME_SN_IDX]++;
-
     return true;
 }
 
@@ -996,7 +997,7 @@ bool dw_receive_message(uwb_frame frame, uint8_t mode) {
 
         // Need to make sure that the host/IC buffer pointers are aligned before starting RX.
         sys_evt_sts_format sys_evt_sts_f;
-        if(!get_sys_event_sts(&sys_evt_sts_f, -1)) {
+        if(!get_sys_event_sts(&sys_evt_sts_f, SES_OCT_0_TO_3)) {
             return false;
         }
 
@@ -1036,7 +1037,7 @@ bool dw_receive_message(uwb_frame frame, uint8_t mode) {
     if (mode & DWT_START_RX_DELAYED) {
 
         sys_evt_sts_format sys_evt_sts_f;
-        if(!get_sys_event_sts(&sys_evt_sts_f, -1)) {
+        if(!get_sys_event_sts(&sys_evt_sts_f, SES_OCT_0_TO_3)) {
             return false;
         }
 
@@ -1044,7 +1045,9 @@ bool dw_receive_message(uwb_frame frame, uint8_t mode) {
         if (sys_evt_sts_f.hpdwarn) {
 
             // Turn the delayed receive off.
-            turn_off_transceiver();
+            if(!turn_off_transceiver()) {
+                return false;
+            }
 
             // If DWT_IDLE_ON_DLY_ERR not set then re-enable receiver.
             if((mode & DWT_IDLE_ON_DLY_ERR) == 0) {
