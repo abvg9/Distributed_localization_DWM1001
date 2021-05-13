@@ -173,28 +173,32 @@ bool dw_get_voltage_bat_and_temp(double* temperature, double* voltage);
 bool dw_initialise(const int config_flags);
 
 // Defined constants for "mode" bitmask parameter passed into dw_receive_message() function.
-#define DWT_START_RX_IMMEDIATE  0
-#define DWT_START_RX_DELAYED    1 // Set up delayed RX, if "late" error triggers, then the RX will be enabled immediately
-#define DWT_IDLE_ON_DLY_ERR     2 // If delayed RX failed due to "late" error then if this
-                                  // flag is set the RX will not be re-enabled immediately, and device will be in IDLE when function exits
-#define DWT_NO_SYNC_PTRS        4 // Do not try to sync IC side and Host side buffer pointers when enabling RX. This is used to perform manual RX
-                                  // re-enabling when receiving a frame in double buffer mode.
+#define DW_START_RX_IMMEDIATE  0
+#define DW_START_RX_DELAYED    1 // Set up delayed RX, if "late" error triggers, then the RX will be enabled immediately
+#define DW_IDLE_ON_DLY_ERR     2 // If delayed RX failed due to "late" error then if this
+                                 // flag is set the RX will not be re-enabled immediately, and device will be in IDLE when function exits
+#define DW_NO_SYNC_PTRS        4 // Do not try to sync IC side and Host side buffer pointers when enabling RX. This is used to perform manual RX
+                                 // re-enabling when receiving a frame in double buffer mode.
 
 /**
  * @brief Waits for receive a message.
  *
+ * @param frame[in]: Will contain the received message.
  * @param mode[in]: DWT_START_RX_IMMEDIATE used to enable receiver immediately.
  *                  DWT_START_RX_DELAYED used to set up delayed RX, if "late" error triggers, then the RX will be enabled immediately.
  *                  DWT_START_RX_DELAYED | DWT_IDLE_ON_DLY_ERR used to disable re-enabling of receiver if delayed RX failed due to "late" error.
  *                  DWT_START_RX_IMMEDIATE | DWT_NO_SYNC_PTRS used to re-enable RX without trying to sync IC and host side buffer pointers, typically when
  *                  performing manual RX re-enabling in double buffering mode.
+ * param wait_timer[in]: Timer that determines the number of seconds that will be waiting for a message.
+ *                       If wait_timer < 0, it will wait until the expected message be received(infinitely).
+ *                       If wait_timer < SDF_TO, it will wait until the SDF time out expires.
  *
  * @note: See function get_rx_buffer to understand better this function.
  *
  * @return bool: Returns true if the message was received, otherwise false.
  *
  */
-bool dw_receive_message(uwb_frame frame, uint8_t mode);
+bool dw_receive_message(uwb_frame frame, const uint8_t mode, const double wait_timer);
 
 /**
  * @brief Resets the dw1000.
@@ -262,6 +266,19 @@ bool turn_off_transceiver(void);
  */
 sys_evt_sts_format dw_wait_irq_event(sys_evt_msk_format sys_evt_msk_f);
 
-void init_buffer(uint8_t* buffer, size_t buffer_size, uwb_frame* container);
+/**
+ * @brief Initializes the transmit/receive container.
+ *
+ * @param buffer[in]: Message to store in the container.
+ * @param buffer_size[in]: Size of the message.
+ * @param container[in]: Container that will store the message. This container always has
+ *                       TX_RX_BUFFER_MAX_SIZE length.
+ *
+ * @return bool: If the container could be initialized, otherwise false.
+ *
+ * @note: buffer_size must be lower or equal than TX_RX_BUFFER_MAX_SIZE.
+ *
+ */
+bool init_buffer(uint8_t* buffer, const size_t buffer_size, uwb_frame* container);
 
 #endif /* _DWM1000_H_ */

@@ -988,9 +988,9 @@ bool dw_send_message(uwb_frame frame, uint16_t tx_buffer_offset, bool ranging, u
     return true;
 }
 
-bool dw_receive_message(uwb_frame frame, uint8_t mode) {
+bool dw_receive_message(uwb_frame frame, const uint8_t mode, const double wait_timer) {
 
-    if ((mode & DWT_NO_SYNC_PTRS) == 0) {
+    if ((mode & DW_NO_SYNC_PTRS) == 0) {
 
         // Synchronizes rx buffer pointers need to make sure that the host/IC
         // buffer pointers are aligned before starting RX.
@@ -1025,7 +1025,7 @@ bool dw_receive_message(uwb_frame frame, uint8_t mode) {
 
     sys_ctrl_f.rxenab = true;
 
-    if (mode & DWT_START_RX_DELAYED) {
+    if (mode & DW_START_RX_DELAYED) {
         sys_ctrl_f.rxdlye = true;
     }
 
@@ -1034,7 +1034,7 @@ bool dw_receive_message(uwb_frame frame, uint8_t mode) {
     }
 
     // Check for errors.
-    if (mode & DWT_START_RX_DELAYED) {
+    if (mode & DW_START_RX_DELAYED) {
 
         sys_evt_sts_format sys_evt_sts_f;
         if(!get_sys_event_sts(&sys_evt_sts_f, SES_OCT_0_TO_3)) {
@@ -1050,7 +1050,7 @@ bool dw_receive_message(uwb_frame frame, uint8_t mode) {
             }
 
             // If DWT_IDLE_ON_DLY_ERR not set then re-enable receiver.
-            if((mode & DWT_IDLE_ON_DLY_ERR) == 0) {
+            if((mode & DW_IDLE_ON_DLY_ERR) == 0) {
                 sys_ctrl_f.rxenab = true;
                 if(!get_sys_ctrl(&sys_ctrl_f)) {
                     return false;
@@ -1059,6 +1059,15 @@ bool dw_receive_message(uwb_frame frame, uint8_t mode) {
 
             return false;
         }
+    }
+
+    systime_t start;
+    sysinterval_t end;
+    const bool enable_timer = wait_timer > 0.0;
+
+    if(enable_timer) {
+        start = chVTGetSystemTime();
+        end = chTimeAddX(start, TIME_S2I(wait_timer));
     }
 
     // Set masks of the events related to the receiving of messages.
@@ -1073,6 +1082,31 @@ bool dw_receive_message(uwb_frame frame, uint8_t mode) {
     sys_evt_msk_f.mldeerr = true;
 
     sys_evt_sts_format sys_evt_sts_f = dw_wait_irq_event(sys_evt_msk_f);
+
+    if(enable_timer && !chVTIsSystemTimeWithin(start, end)) {
+        sys_evt_sts_f.rxsfdto = false;
+    }
+
+    while(sys_evt_sts_f.rxsfdto) {
+
+        sys_ctrl_f.rxenab = true;
+
+        if(!set_sys_ctrl(&sys_ctrl_f)) {
+            return false;
+        }
+
+        sys_evt_sts_f.rxsfdto = false;
+        if(!set_sys_event_sts(&sys_evt_sts_f, SES_OCT_0_TO_3)) {
+            return false;
+        }
+
+        sys_evt_sts_f = dw_wait_irq_event(sys_evt_msk_f);
+
+        if(enable_timer && !chVTIsSystemTimeWithin(start, end)) {
+            sys_evt_sts_f.rxsfdto = false;
+        }
+
+    }
 
     if (sys_evt_sts_f.rxfcg) {
 
@@ -1332,7 +1366,11 @@ sys_evt_sts_format dw_wait_irq_event(sys_evt_msk_format sys_evt_msk_f) {
     return sys_evt_sts_f;
 }
 
-void init_buffer(uint8_t* buffer, size_t buffer_size, uwb_frame* container) {
+bool init_buffer(uint8_t* buffer, const size_t buffer_size, uwb_frame* container) {
+
+    if(buffer_size > TX_RX_BUFFER_MAX_SIZE) {
+        return false;
+    }
 
     unsigned int i;
     for(i = 0; i < buffer_size; ++i) {
@@ -1343,4 +1381,5 @@ void init_buffer(uint8_t* buffer, size_t buffer_size, uwb_frame* container) {
         (*container)[i] = 0;
     }
 
+    return true;
 }
