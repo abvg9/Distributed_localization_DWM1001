@@ -252,13 +252,9 @@ size_t tx_buffer_unformatter(void *format, spi_frame fr, const size_t sub_regist
     // Payload.
 
     #if defined(DEFAULT_PAYLOAD_FORMAT)
-
-        uwb_frame_f->payload_unformatter_f(uwb_frame_f->raw_payload, &fr[10]);
-
+        payload_unformatter_f(uwb_frame_f->raw_payload, &fr[10]);
     #else
-
         uwb_frame_f->payload_formatter_f(payload_spi_frame, uwb_frame_f);
-
     #endif
 
     // Check sum.
