@@ -281,10 +281,12 @@ size_t tx_fctrl_unformatter(void *format, spi_frame fr, const size_t sub_registe
 
 /******* TX_BUFFER *******/
 
+#define DEFAULT_PAYLOAD_FORMAT // If his flag is not defined, you must provide uwb_frame_payload(fields of the payload), payload_formatter
+                               // and payload_formatter_f values. Comment this line to disable default payload format.
 #define FIXED_FRAME_FIELDS_SIZE 12
 
 // Default configuration of payload field.
-#define uwb_frame_payload                         \
+#define uwb_frame_payload                                              \
     uint8_t raw_payload[TX_RX_BUFFER_MAX_SIZE-FIXED_FRAME_FIELDS_SIZE] \
 
 #define payload_formatter                                     \
@@ -313,13 +315,13 @@ void payload_unformatter_f(void *format, spi_frame fr);
 
 // Frame format encoded as per the ISO/IEC 24730-62:2013 standard.
 typedef struct {
-    uint8_t fr_ctrl;    // Frame control byte.
-    uint8_t seq_num;    // Sequence number byte.
-    uint64_t dev_id;    // Device ID.
-    uint16_t check_sum; // Frame check-sum.
-    uwb_frame_payload;  // By default, this field contains an array with the rest of the frame's bytes,
-                        // but you can define a specific format for the payload. It it mandatory that:
-                        // sizeof(uwb_frame_payload) = TX_RX_BUFFER_MAX_SIZE - fr_ctrl - sec_num - dev_id - check_sum.
+    uint8_t fr_ctrl;     // Frame control byte.
+    uint8_t seq_num;     // Sequence number byte.
+    uint64_t dev_id;     // Device ID.
+    uint16_t check_sum;  // Frame check-sum.
+    uwb_frame_payload;   // By default, this field contains an array with the rest of the frame's bytes,
+                         // but you can define a specific format for the payload. It it mandatory that:
+                         // sizeof(uwb_frame_payload) = TX_RX_BUFFER_MAX_SIZE - fr_ctrl - sec_num - dev_id - check_sum.
     payload_formatter;   // Pointer to the function that formats the spi_frame. (Automatic points to default payload formatter).
     payload_unformatter; // Pointer to the function that unformats the spi_frame. (Automatic points to default payload unformatter).
 } uwb_frame_format;
