@@ -367,11 +367,16 @@ bool dw_eneable(const int config_flags) {
 
     dw_set_slow_spi_rate();
 
+    // Initialize device.
     ret &= dw_initialise(config_flags);
 
     dw_set_fast_spi_rate();
 
+    // Configure device.
     ret &= dw_configure();
+
+    // Configure leds.
+    ret &= dw_set_leds(true);
 
     return ret;
 }
@@ -894,7 +899,7 @@ bool dw_initialise(const int config_flags) {
     return true;
 }
 
-bool dw_send_message(uwb_frame frame, uint16_t tx_buffer_offset, bool ranging, uint8_t mode) {
+bool dw_send_message(uwb_frame_format* frame, uint16_t tx_buffer_offset, bool ranging, uint8_t mode) {
 
     // Write frame data to DW1000.
     if(!set_tx_buffer(frame)){
@@ -988,7 +993,7 @@ bool dw_send_message(uwb_frame frame, uint16_t tx_buffer_offset, bool ranging, u
     return true;
 }
 
-bool dw_receive_message(uwb_frame frame, const uint8_t mode, const double wait_timer) {
+bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const double wait_timer) {
 
     if ((mode & DW_NO_SYNC_PTRS) == 0) {
 
@@ -1161,6 +1166,70 @@ void dw_set_fast_spi_rate(void) {
         spiStart(&SPID1, &spi_cfg);
         fast_SPI = true;
     }
+}
+
+bool dw_set_leds(const bool enable) {
+
+    gpio_ctrl_format gpio_ctrl_format;
+    if(!get_gpio_ctrl(&gpio_ctrl_format, GPIO_MODE)) {
+        return false;
+    }
+
+    if(enable) {
+
+        // Set up MFIO for LED output.
+        gpio_ctrl_format.gpio_mode_ctrl_f.msgp2 = MSGP2_RXLED;
+        gpio_ctrl_format.gpio_mode_ctrl_f.msgp2 = MSGP3_TXLED;
+
+        if(!set_gpio_ctrl(&gpio_ctrl_format, GPIO_MODE)) {
+            return false;
+        }
+
+        // Enable LP Oscillator to run from counter and turn on de-bounce clock.
+        pmsc_format pmsc_f;
+        if(!get_pmsc(&pmsc_f, PMSC_CTRL0)) {
+            return false;
+        }
+
+        pmsc_f.gpdce = true;
+        pmsc_f.khzclken = true;
+        pmsc_f.blnk_en = true;
+        pmsc_f.blink_tim = 1.0; // Blink 1 second.
+
+        if(!set_pmsc(&pmsc_f, PMSC_CTRL0)) {
+            return false;
+        }
+
+        // Make LEDs blink once.
+        if(!get_pmsc(&pmsc_f, PMSC_LEDC)) {
+            return false;
+        }
+
+        pmsc_f.blnk_now = 0xF;
+
+        if(!set_pmsc(&pmsc_f, PMSC_LEDC)) {
+            return false;
+        }
+
+        // Clear force blink bits.
+        pmsc_f.blnk_now = 0;
+
+        if(!set_pmsc(&pmsc_f, PMSC_LEDC)) {
+            return false;
+        }
+
+    } else {
+
+        // Clear the GPIO bits that are used for LED control.
+        gpio_ctrl_format.gpio_mode_ctrl_f.msgp2 = MSGP2_DEFAULT_MODE;
+        gpio_ctrl_format.gpio_mode_ctrl_f.msgp2 = MSGP3_DEFAULT_MODE;
+
+        if(!set_gpio_ctrl(&gpio_ctrl_format, GPIO_MODE)) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 void dw_set_slow_spi_rate(void) {
@@ -1366,19 +1435,19 @@ sys_evt_sts_format dw_wait_irq_event(sys_evt_msk_format sys_evt_msk_f) {
     return sys_evt_sts_f;
 }
 
-bool init_buffer(uint8_t* buffer, const size_t buffer_size, uwb_frame* container) {
+bool init_buffer(uint8_t* buffer, const size_t buffer_size, uint8_t* container) {
 
-    if(buffer_size > TX_RX_BUFFER_MAX_SIZE) {
+    if(buffer_size > TX_RX_BUFFER_MAX_SIZE-FIXED_FRAME_FIELDS_SIZE) {
         return false;
     }
 
     unsigned int i;
     for(i = 0; i < buffer_size; ++i) {
-        (*container)[i] = buffer[i];
+        container[i] = buffer[i];
     }
 
     for(i = buffer_size; i < TX_RX_BUFFER_MAX_SIZE; ++i) {
-        (*container)[i] = 0;
+        container[i] = 0;
     }
 
     return true;

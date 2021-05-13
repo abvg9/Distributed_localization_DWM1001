@@ -23,7 +23,6 @@
 #include <stdbool.h>
 #include "format.h"
 #include "hal.h"
-#include <string.h>
 
 // Dwm1000 registers.
 // The values of the enumerates correspond to the memory addresses of the registers.
@@ -224,7 +223,7 @@ bool set_tx_fctrl(tx_fctrl_format* tx_fctrl_f, const tx_fctrl_subregister subreg
  * @return bool: True if the register can be set, otherwise false.
  *
  */
-bool set_tx_buffer(uwb_frame frame);
+bool set_tx_buffer(uwb_frame_format* frame);
 
 /**
  * @brief Gets the delayed send/receiver register value.
@@ -356,7 +355,7 @@ bool get_rx_finfo(rx_finfo_format* rx_finfo_f);
  * @return bool: True if the register can be set, otherwise false.
  *
  */
-bool get_rx_buffer(uwb_frame frame);
+bool get_rx_buffer(uwb_frame_format* frame);
 
 /**
  * @brief Gets the rx frame quality information register value.

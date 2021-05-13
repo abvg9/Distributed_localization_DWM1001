@@ -22,14 +22,12 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <math.h>
+#include <string.h>
 
 // Defines frames of the SPI dwm1000 communications.
 typedef uint8_t *spi_frame;
 
 #define TX_RX_BUFFER_MAX_SIZE 127U
-
-// Defines frames of the UWB dwm1000 communications.
-typedef uint8_t uwb_frame[TX_RX_BUFFER_MAX_SIZE];
 
 /******* DEV_ID *******/
 
@@ -51,7 +49,7 @@ typedef struct {
  * @note: This function must receive a dev_id_format structure to work.
  *
  */
-void dev_id_formater(spi_frame fr, void *format, const size_t sub_register);
+void dev_id_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /******* EUI *******/
 
@@ -71,7 +69,7 @@ typedef struct {
  * @note: This function must receive an eui_format structure to work.
  *
  */
-void eui_formater(spi_frame fr, void *format, const size_t sub_register);
+void eui_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /**
  * @brief Unformats an eui_format structure to a spi_frame.
@@ -85,7 +83,7 @@ void eui_formater(spi_frame fr, void *format, const size_t sub_register);
  * @note: This function must receive an eui_format structure to work.
  *
  */
-size_t eui_unformater(void *format, spi_frame fr, const size_t sub_register);
+size_t eui_unformatter(void *format, spi_frame fr, const size_t sub_register);
 
 /******* PANADR *******/
 
@@ -95,14 +93,14 @@ typedef enum {
     PAN_ID = 0x02,
 } pan_adr_subregister;
 
-// Structure of the extended unique identifier register.
+// Structure of the pan address register.
 typedef struct {
     uint16_t pan_id;
     uint16_t short_addr;
 } pan_adr_format;
 
 /**
- * @brief Formats a spi_frame to a pan_addr_format structure.
+ * @brief Formats a spi_frame to a pan_adr_format structure.
  *
  * @param[in] fr: The spi_frame to initialize the structure.
  * @param[out] format: Structure which will contains the spi_frame formatted.
@@ -111,7 +109,7 @@ typedef struct {
  * @note: This function must receive a pan_adr_format structure to work.
  *
  */
-void pan_addr_formater(spi_frame fr, void *format, const size_t sub_register);
+void pan_addr_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /**
  * @brief Unformats a pan_adr_format structure to a spi_frame.
@@ -125,7 +123,7 @@ void pan_addr_formater(spi_frame fr, void *format, const size_t sub_register);
  * @note: This function must receive a pan_adr_format structure to work.
  *
  */
-size_t pan_addr_unformater(void *format, spi_frame fr, const size_t sub_register);
+size_t pan_addr_unformatter(void *format, spi_frame fr, const size_t sub_register);
 
 /******* SYS_CFG *******/
 
@@ -164,7 +162,7 @@ typedef struct {
 } sys_cfg_format;
 
 /**
- * @brief Formats a spi_frame to a sys_cfg_formater structure.
+ * @brief Formats a spi_frame to a sys_cfg_formatter structure.
  *
  * @param[in] fr: The spi_frame to initialize the structure.
  * @param[out] format: Structure which will contains the spi_frame formatted.
@@ -172,7 +170,7 @@ typedef struct {
  * @note: This function must receive a sys_cfg_format structure to work.
  *
  */
-void sys_cfg_formater(spi_frame fr, void *format, const size_t sub_register);
+void sys_cfg_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /**
  * @brief Unformats a sys_cfg_format structure to a spi_frame.
@@ -186,7 +184,7 @@ void sys_cfg_formater(spi_frame fr, void *format, const size_t sub_register);
  * @note: This function must receive a sys_cfg_format structure to work.
  *
  */
-size_t sys_cfg_unformater(void *format, spi_frame fr, const size_t sub_register);
+size_t sys_cfg_unformatter(void *format, spi_frame fr, const size_t sub_register);
 
 /******* SYS_TIME *******/
 #define STR_COUNTER_WRAP_PERIOD 17.2074 // (seconds)
@@ -205,7 +203,7 @@ size_t sys_cfg_unformater(void *format, spi_frame fr, const size_t sub_register)
  * @note: The returned value will be in units of seconds.
  *
  */
-void sys_time_formater(spi_frame fr, void *format, const size_t sub_register);
+void sys_time_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /******* TX_FCTRL *******/
 
@@ -265,7 +263,7 @@ typedef enum {
  * @note: This function must receive a tx_fctrl_format structure to work.
  *
  */
-void tx_fctrl_formater(spi_frame fr, void *format, const size_t sub_register);
+void tx_fctrl_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /**
  * @brief Unformats a tx_fctrl_format structure to a spi_frame.
@@ -279,9 +277,52 @@ void tx_fctrl_formater(spi_frame fr, void *format, const size_t sub_register);
  * @note: This function must receive a tx_fctrl_format structure to work.
  *
  */
-size_t tx_fctrl_unformater(void *format, spi_frame fr, const size_t sub_register);
+size_t tx_fctrl_unformatter(void *format, spi_frame fr, const size_t sub_register);
 
 /******* TX_BUFFER *******/
+
+#define FIXED_FRAME_FIELDS_SIZE 12
+
+// Default configuration of payload field.
+#define uwb_frame_payload                         \
+    uint8_t raw_payload[TX_RX_BUFFER_MAX_SIZE-FIXED_FRAME_FIELDS_SIZE] \
+
+#define payload_formatter                                     \
+    void (*payload_formatter_f)(spi_frame f, void* structure) \
+
+/**
+ * @brief Default formatter payload function.
+ *
+ * @param[in] fr: The spi_frame to initialize the uwb_frame_payload.
+ * @param[out] format: uwb_frame_payload which will contains the spi_frame formatted.
+ *
+ */
+void payload_formatter_f(spi_frame fr, void *format);
+
+#define payload_unformatter                                     \
+    void (*payload_unformatter_f)(void* structure, spi_frame f) \
+
+/**
+ * @brief Default unformatter payload function.
+ *
+ * @param[in] format: uwb_frame_payload which contains the payload.
+ * @param[out] fr: spi_frame where this function will store the uwb_frame_payload(format).
+ *
+ */
+void payload_unformatter_f(void *format, spi_frame fr);
+
+// Frame format encoded as per the ISO/IEC 24730-62:2013 standard.
+typedef struct {
+    uint8_t fr_ctrl;    // Frame control byte.
+    uint8_t seq_num;    // Sequence number byte.
+    uint64_t dev_id;    // Device ID.
+    uint16_t check_sum; // Frame check-sum.
+    uwb_frame_payload;  // By default, this field contains an array with the rest of the frame's bytes,
+                        // but you can define a specific format for the payload. It it mandatory that:
+                        // sizeof(uwb_frame_payload) = TX_RX_BUFFER_MAX_SIZE - fr_ctrl - sec_num - dev_id - check_sum.
+    payload_formatter;   // Pointer to the function that formats the spi_frame. (Automatic points to default payload formatter).
+    payload_unformatter; // Pointer to the function that unformats the spi_frame. (Automatic points to default payload unformatter).
+} uwb_frame_format;
 
 /**
  * @brief Unformats an uint8_t* to a spi_frame.
@@ -295,7 +336,7 @@ size_t tx_fctrl_unformater(void *format, spi_frame fr, const size_t sub_register
  * @note: This function must receive a uint8_t* array to work.
  *
  */
-size_t tx_buffer_unformater(void *format, spi_frame fr, const size_t sub_register);
+size_t tx_buffer_unformatter(void *format, spi_frame fr, const size_t sub_register);
 
 /******* DX_TIME *******/
 
@@ -306,7 +347,7 @@ size_t tx_buffer_unformater(void *format, spi_frame fr, const size_t sub_registe
 #define dtr_calculate_register_val(seconds) seconds / DTR_K
 
 /**
- * @brief Formats a spi_frame to a double
+ * @brief Formats a spi_frame to a double.
  *
  * @param[in] fr: The spi_frame to initialize the double.
  * @param[out] format: Double which will contains the spi_frame formatted.
@@ -315,7 +356,7 @@ size_t tx_buffer_unformater(void *format, spi_frame fr, const size_t sub_registe
  * @note: This function must receive a double to work.
  *
  */
-void dx_time_formater(spi_frame fr, void *format, const size_t sub_register);
+void dx_time_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /**
  * @brief Unformats a double to a spi_frame.
@@ -327,7 +368,7 @@ void dx_time_formater(spi_frame fr, void *format, const size_t sub_register);
  * @note: This function must receive a double to work.
  *
  */
-size_t dx_time_unformater(void *format, spi_frame fr, const size_t sub_register);
+size_t dx_time_unformatter(void *format, spi_frame fr, const size_t sub_register);
 
 /******* RX_FWTO *******/
 
@@ -347,7 +388,7 @@ size_t dx_time_unformater(void *format, spi_frame fr, const size_t sub_register)
  * @note: This function must receive a double to work.
  *
  */
-void rx_fwto_formater(spi_frame fr, void *format, const size_t sub_register);
+void rx_fwto_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /**
  * @brief Unformats a double to a spi_frame.
@@ -359,7 +400,7 @@ void rx_fwto_formater(spi_frame fr, void *format, const size_t sub_register);
  * @note: This function must receive a double to work.
  *
  */
-size_t rx_fwto_unformater(void *format, spi_frame fr, const size_t sub_register);
+size_t rx_fwto_unformatter(void *format, spi_frame fr, const size_t sub_register);
 
 /******* SYS_CTRL *******/
 
@@ -386,7 +427,7 @@ typedef struct {
  * @note: This function must receive a sys_ctrl_format structure to work.
  *
  */
-void tx_ctrl_formater(spi_frame fr, void *format, const size_t sub_register);
+void tx_ctrl_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /**
  * @brief Unformats a sys_ctrl_format structure to a spi_frame.
@@ -400,7 +441,7 @@ void tx_ctrl_formater(spi_frame fr, void *format, const size_t sub_register);
  * @note: This function must receive a sys_ctrl_format structure to work.
  *
  */
-size_t tx_ctrl_unformater(void *format, spi_frame fr, const size_t sub_register);
+size_t tx_ctrl_unformatter(void *format, spi_frame fr, const size_t sub_register);
 
 /******* SYS_MASK *******/
 
@@ -446,7 +487,7 @@ typedef struct {
  * @note: This function must receive a sys_evt_msk_format structure to work.
  *
  */
-void sys_evt_msk_formater(spi_frame fr, void *format, const size_t sub_register);
+void sys_evt_msk_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /**
  * @brief Unformats a sys_evt_msk_format structure to a spi_frame.
@@ -460,7 +501,7 @@ void sys_evt_msk_formater(spi_frame fr, void *format, const size_t sub_register)
  * @note: This function must receive a sys_evt_msk_format structure to work.
  *
  */
-size_t sys_evt_msk_unformater(void *format, spi_frame fr, const size_t sub_register);
+size_t sys_evt_msk_unformatter(void *format, spi_frame fr, const size_t sub_register);
 
 /******* SYS_STATUS *******/
 
@@ -518,7 +559,7 @@ typedef struct {
  * @note: This function must receive a sys_evt_sts_format structure to work.
  *
  */
-void sys_evt_sts_formater(spi_frame fr, void *format, const size_t sub_register);
+void sys_evt_sts_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /**
  * @brief Unformats a sys_evt_sts_format structure to a spi_frame.
@@ -532,7 +573,7 @@ void sys_evt_sts_formater(spi_frame fr, void *format, const size_t sub_register)
  * @note: This function must receive a sys_evt_sts_format structure to work.
  *
  */
-size_t sys_evt_sts_unformater(void *format, spi_frame fr, const size_t sub_register);
+size_t sys_evt_sts_unformatter(void *format, spi_frame fr, const size_t sub_register);
 
 /******* RX_FINFO *******/
 
@@ -557,7 +598,7 @@ typedef struct {
  * @note: This function must receive a rx_finfo_format structure to work.
  *
  */
-void rx_finfo_formater(spi_frame fr, void *format, const size_t sub_register);
+void rx_finfo_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /******* RX_BUFFER *******/
 
@@ -571,7 +612,7 @@ void rx_finfo_formater(spi_frame fr, void *format, const size_t sub_register);
  * @note: This function must receive a uint8_t* array to work.
  *
  */
-void rx_buffer_formater(spi_frame fr, void *format, const size_t sub_register);
+void rx_buffer_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /******* RX_FQUAL *******/
 
@@ -599,7 +640,7 @@ typedef struct {
  * @note: This function must receive a rx_fqual_format to work.
  *
  */
-void rx_fqual_formater(spi_frame fr, void *format, const size_t sub_register);
+void rx_fqual_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /******* RX_TTCKI *******/
 
@@ -620,7 +661,7 @@ typedef enum {
  * @note: This function must receive a rx_ttcki_value to work.
  *
  */
-void rx_ttcki_formater(spi_frame fr, void *format, const size_t sub_register);
+void rx_ttcki_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /******* RX_TTCKO *******/
 
@@ -652,7 +693,7 @@ typedef struct {
  * @note: This function must receive a rx_ttcko_format to work.
  *
  */
-void rx_ttcko_formater(spi_frame fr, void *format, const size_t sub_register);
+void rx_ttcko_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /******* RX_TIME *******/
 
@@ -687,7 +728,7 @@ typedef struct {
  * @note: This function must receive a rx_time_format to work.
  *
  */
-void rx_time_formater(spi_frame fr, void *format, const size_t sub_register);
+void rx_time_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /******* TX_TIME *******/
 
@@ -714,7 +755,7 @@ typedef struct {
  * @note: This function must receive a tx_time_format to work.
  *
  */
-void tx_time_formater(spi_frame fr, void *format, const size_t sub_register);
+void tx_time_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /******* TX_ANTD *******/
 
@@ -733,7 +774,7 @@ void tx_time_formater(spi_frame fr, void *format, const size_t sub_register);
  * @note: This function must receive a double to work.
  *
  */
-void tx_antd_formater(spi_frame fr, void *format, const size_t sub_register);
+void tx_antd_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /**
  * @brief Unformats a double to a spi_frame.
@@ -747,7 +788,7 @@ void tx_antd_formater(spi_frame fr, void *format, const size_t sub_register);
  * @note: This function must receive a double value to work.
  *
  */
-size_t tx_antd_unformater(void *format, spi_frame fr, const size_t sub_register);
+size_t tx_antd_unformatter(void *format, spi_frame fr, const size_t sub_register);
 
 /******* SYS_STATE *******/
 
@@ -810,7 +851,7 @@ typedef struct {
  * @note: This function must receive a sys_state_format to work.
  *
  */
-void sys_state_formater(spi_frame fr, void *format, const size_t sub_register);
+void sys_state_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /******* ACK_RESP_T *******/
 
@@ -835,7 +876,7 @@ typedef struct {
  * @note: This function must receive an ack_resp_t_format to work.
  *
  */
-void ack_resp_t_formater(spi_frame fr, void *format, const size_t sub_register);
+void ack_resp_t_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /**
  * @brief Unformats an ack_resp_t_format to a spi_frame.
@@ -849,7 +890,7 @@ void ack_resp_t_formater(spi_frame fr, void *format, const size_t sub_register);
  * @note: This function must receive a ack_resp_t_format value to work.
  *
  */
-size_t ack_resp_t_unformater(void *format, spi_frame fr, const size_t sub_register);
+size_t ack_resp_t_unformatter(void *format, spi_frame fr, const size_t sub_register);
 
 /******* RX_SNIFF *******/
 
@@ -874,7 +915,7 @@ typedef struct {
  * @note: This function must receive an rx_sniff_format to work.
  *
  */
-void rx_sniff_formater(spi_frame fr, void *format, const size_t sub_register);
+void rx_sniff_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /**
  * @brief Unformats a rx_sniff_format to a spi_frame.
@@ -888,7 +929,7 @@ void rx_sniff_formater(spi_frame fr, void *format, const size_t sub_register);
  * @note: This function must receive a rx_sniff_format value to work.
  *
  */
-size_t rx_sniff_unformater(void *format, spi_frame fr, const size_t sub_register);
+size_t rx_sniff_unformatter(void *format, spi_frame fr, const size_t sub_register);
 
 /******* TX_POWER *******/
 
@@ -994,7 +1035,7 @@ typedef struct {                // DIS_STXP = 0 |  DIS_STXP = 1
  * @note: This function must receive an tx_power_format to work.
  *
  */
-void tx_power_formater(spi_frame fr, void *format, const size_t sub_register);
+void tx_power_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /**
  * @brief Unformats a tx_power_format to a spi_frame.
@@ -1008,7 +1049,7 @@ void tx_power_formater(spi_frame fr, void *format, const size_t sub_register);
  * @note: This function must receive a tx_power_format value to work.
  *
  */
-size_t tx_power_unformater(void *format, spi_frame fr, const size_t sub_register);
+size_t tx_power_unformatter(void *format, spi_frame fr, const size_t sub_register);
 
 /******* CHAN_CTRL *******/
 
@@ -1044,7 +1085,7 @@ typedef struct {
  * @note: This function must receive an chan_ctrl_format to work.
  *
  */
-void chan_ctrl_formater(spi_frame fr, void *format, const size_t sub_register);
+void chan_ctrl_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /**
  * @brief Unformats a chan_ctrl_format to a spi_frame.
@@ -1058,7 +1099,7 @@ void chan_ctrl_formater(spi_frame fr, void *format, const size_t sub_register);
  * @note: This function must receive a chan_ctrl_format value to work.
  *
  */
-size_t chan_ctrl_unformater(void *format, spi_frame fr, const size_t sub_register);
+size_t chan_ctrl_unformatter(void *format, spi_frame fr, const size_t sub_register);
 
 /******* USR_SFD *******/
 
@@ -1173,7 +1214,7 @@ typedef struct {
  * @note: This function must receive an usr_sfd_format to work.
  *
  */
-void usr_sfd_formater(spi_frame fr, void *format, const size_t sub_register);
+void usr_sfd_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /**
  * @brief Unformats an usr_sfd_format to a spi_frame.
@@ -1187,7 +1228,7 @@ void usr_sfd_formater(spi_frame fr, void *format, const size_t sub_register);
  * @note: This function must receive a usr_sfd_format value to work.
  *
  */
-size_t usr_sfd_unformater(void *format, spi_frame fr, const size_t sub_register);
+size_t usr_sfd_unformatter(void *format, spi_frame fr, const size_t sub_register);
 
 /******* AGC_CTRL *******/
 
@@ -1222,7 +1263,7 @@ typedef struct {
  * @note: This function must receive an agc_ctrl_format to work.
  *
  */
-void agc_ctrl_formater(spi_frame fr, void *format, const size_t sub_register);
+void agc_ctrl_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /**
  * @brief Unformats an agc_ctrl_format to a spi_frame.
@@ -1236,7 +1277,7 @@ void agc_ctrl_formater(spi_frame fr, void *format, const size_t sub_register);
  * @note: This function must receive a agc_ctrl_format value to work.
  *
  */
-size_t agc_ctrl_unformater(void *format, spi_frame fr, const size_t sub_register);
+size_t agc_ctrl_unformatter(void *format, spi_frame fr, const size_t sub_register);
 
 /******* EXT_SYNC *******/
 
@@ -1269,7 +1310,7 @@ typedef struct {
  * @note: This function must receive an ext_sync_format to work.
  *
  */
-void ext_sync_formater(spi_frame fr, void *format, const size_t sub_register);
+void ext_sync_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /**
  * @brief Unformats an ext_sync_format to a spi_frame.
@@ -1283,7 +1324,7 @@ void ext_sync_formater(spi_frame fr, void *format, const size_t sub_register);
  * @note: This function must receive a ext_sync_format value to work.
  *
  */
-size_t ext_sync_unformater(void *format, spi_frame fr, const size_t sub_register);
+size_t ext_sync_unformatter(void *format, spi_frame fr, const size_t sub_register);
 
 /******* ACC_MEM *******/
 
@@ -1303,7 +1344,7 @@ typedef struct {
  * @note: This function must receive an acc_mem_format to work.
  *
  */
-void acc_mem_formater(spi_frame fr, void *format, const size_t sub_register);
+void acc_mem_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /******* GPIO_CTRL *******/
 
@@ -1622,7 +1663,7 @@ typedef struct {
  * @note: This function must receive an gpio_ctrl_format to work.
  *
  */
-void gpio_ctrl_formater(spi_frame fr, void *format, const size_t sub_register);
+void gpio_ctrl_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /**
  * @brief Unformats a gpio_ctrl_format to a spi_frame.
@@ -1636,7 +1677,7 @@ void gpio_ctrl_formater(spi_frame fr, void *format, const size_t sub_register);
  * @note: This function must receive a gpio_ctrl_format value to work.
  *
  */
-size_t gpio_ctrl_unformater(void *format, spi_frame fr, const size_t sub_register);
+size_t gpio_ctrl_unformatter(void *format, spi_frame fr, const size_t sub_register);
 
 /******* DRX_CONF *******/
 
@@ -1676,7 +1717,7 @@ typedef struct {
  * @note: This function must receive an drx_conf_format to work.
  *
  */
-void drx_conf_formater(spi_frame fr, void *format, const size_t sub_register);
+void drx_conf_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /**
  * @brief Unformats a drx_conf_format to a spi_frame.
@@ -1690,7 +1731,7 @@ void drx_conf_formater(spi_frame fr, void *format, const size_t sub_register);
  * @note: This function must receive a drx_conf_format value to work.
  *
  */
-size_t drx_conf_unformater(void *format, spi_frame fr, const size_t sub_register);
+size_t drx_conf_unformatter(void *format, spi_frame fr, const size_t sub_register);
 
 /******* RF_CONF *******/
 
@@ -1759,7 +1800,7 @@ typedef struct {
  * @note: This function must receive an rf_conf_format to work.
  *
  */
-void rf_conf_formater(spi_frame fr, void *format, const size_t sub_register);
+void rf_conf_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /**
  * @brief Unformats a rf_conf_format to a spi_frame.
@@ -1773,7 +1814,7 @@ void rf_conf_formater(spi_frame fr, void *format, const size_t sub_register);
  * @note: This function must receive a rf_conf_format value to work.
  *
  */
-size_t rf_conf_unformater(void *format, spi_frame fr, const size_t sub_register);
+size_t rf_conf_unformatter(void *format, spi_frame fr, const size_t sub_register);
 
 /******* TX_CAL *******/
 
@@ -1818,7 +1859,7 @@ typedef struct {
  * @note: This function must receive an tx_cal_format to work.
  *
  */
-void tx_cal_formater(spi_frame fr, void *format, const size_t sub_register);
+void tx_cal_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /**
  * @brief Unformats a tx_cal_format to a spi_frame.
@@ -1832,7 +1873,7 @@ void tx_cal_formater(spi_frame fr, void *format, const size_t sub_register);
  * @note: This function must receive a tx_cal_format value to work.
  *
  */
-size_t tx_cal_unformater(void *format, spi_frame fr, const size_t sub_register);
+size_t tx_cal_unformatter(void *format, spi_frame fr, const size_t sub_register);
 
 /******* FS_CTRL *******/
 
@@ -1860,7 +1901,7 @@ typedef struct {
  * @note: This function must receive an fs_ctrl_format to work.
  *
  */
-void fs_ctrl_formater(spi_frame fr, void *format, const size_t sub_register);
+void fs_ctrl_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /**
  * @brief Unformats a fs_ctrl_format to a spi_frame.
@@ -1874,7 +1915,7 @@ void fs_ctrl_formater(spi_frame fr, void *format, const size_t sub_register);
  * @note: This function must receive a fs_ctrl_format value to work.
  *
  */
-size_t fs_ctrl_unformater(void *format, spi_frame fr, const size_t sub_register);
+size_t fs_ctrl_unformatter(void *format, spi_frame fr, const size_t sub_register);
 
 /******* AON *******/
 
@@ -1932,7 +1973,7 @@ typedef struct {
  * @note: This function must receive an aon_format to work.
  *
  */
-void aon_formater(spi_frame fr, void *format, const size_t sub_register);
+void aon_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /**
  * @brief Unformats an aon_format to a spi_frame.
@@ -1946,7 +1987,7 @@ void aon_formater(spi_frame fr, void *format, const size_t sub_register);
  * @note: This function must receive a aon_format value to work.
  *
  */
-size_t aon_unformater(void *format, spi_frame fr, const size_t sub_register);
+size_t aon_unformatter(void *format, spi_frame fr, const size_t sub_register);
 
 /******* OTP_IF *******/
 
@@ -2011,7 +2052,7 @@ typedef struct {
  * @note: This function must receive an aon_format to work.
  *
  */
-void otp_if_formater(spi_frame fr, void *format, const size_t sub_register);
+void otp_if_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /**
  * @brief Unformats an otp_if_format to a spi_frame.
@@ -2025,7 +2066,7 @@ void otp_if_formater(spi_frame fr, void *format, const size_t sub_register);
  * @note: This function must receive a otp_if_format value to work.
  *
  */
-size_t otp_if_unformater(void *format, spi_frame fr, const size_t sub_register);
+size_t otp_if_unformatter(void *format, spi_frame fr, const size_t sub_register);
 
 /******* LDE_IF *******/
 
@@ -2062,7 +2103,7 @@ typedef struct {
  * @note: This function must receive an lde_if_format to work.
  *
  */
-void lde_if_formater(spi_frame fr, void *format, const size_t sub_register);
+void lde_if_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /**
  * @brief Unformats a lde_if_format to a spi_frame.
@@ -2076,7 +2117,7 @@ void lde_if_formater(spi_frame fr, void *format, const size_t sub_register);
  * @note: This function must receive a lde_if_format value to work.
  *
  */
-size_t lde_if_unformater(void *format, spi_frame fr, const size_t sub_register);
+size_t lde_if_unformatter(void *format, spi_frame fr, const size_t sub_register);
 
 /******* DIG_DIAG *******/
 
@@ -2127,7 +2168,7 @@ typedef struct {
  * @note: This function must receive an dig_diag_format to work.
  *
  */
-void dig_diag_formater(spi_frame fr, void *format, const size_t sub_register);
+void dig_diag_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /**
  * @brief Unformats a dig_diag_format to a spi_frame.
@@ -2141,7 +2182,7 @@ void dig_diag_formater(spi_frame fr, void *format, const size_t sub_register);
  * @note: This function must receive a dig_diag_format value to work.
  *
  */
-size_t dig_diag_unformater(void *format, spi_frame fr, const size_t sub_register);
+size_t dig_diag_unformatter(void *format, spi_frame fr, const size_t sub_register);
 
 /******* PMSC *******/
 
@@ -2237,7 +2278,7 @@ typedef struct {
  * @note: This function must receive an pmsc_format to work.
  *
  */
-void pmsc_formater(spi_frame fr, void *format, const size_t sub_register);
+void pmsc_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /**
  * @brief Unformats a pmsc_format to a spi_frame.
@@ -2251,6 +2292,6 @@ void pmsc_formater(spi_frame fr, void *format, const size_t sub_register);
  * @note: This function must receive a pmsc_format value to work.
  *
  */
-size_t pmsc_unformater(void *format, spi_frame fr, const size_t sub_register);
+size_t pmsc_unformatter(void *format, spi_frame fr, const size_t sub_register);
 
 #endif // _FORMAT_H_

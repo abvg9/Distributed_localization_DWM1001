@@ -198,7 +198,7 @@ bool dw_initialise(const int config_flags);
  * @return bool: Returns true if the message was received, otherwise false.
  *
  */
-bool dw_receive_message(uwb_frame frame, const uint8_t mode, const double wait_timer);
+bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const double wait_timer);
 
 /**
  * @brief Resets the dw1000.
@@ -232,13 +232,23 @@ void dw_reset(void);
  * @return bool: Returns true if the message can be sent, otherwise false.
  *
  */
-bool dw_send_message(uwb_frame frame, const uint16_t tx_buffer_offset, const bool ranging, const uint8_t mode);
+bool dw_send_message(uwb_frame_format* frame, const uint16_t tx_buffer_offset, const bool ranging, const uint8_t mode);
 
 /**
  * @brief Sets the rate SPI communication of the dwm1000(8MBPS).
  *
  */
 void dw_set_fast_spi_rate(void);
+
+/**
+ * @brief This is used to set up TX/RX GPIOs which could be used to control LEDs.
+ *
+ * @param enable[in] Enable LEDs.
+ *
+ * @return bool: Returns true if the leds can be set, otherwise false.
+ *
+ */
+bool dw_set_leds(const bool enable);
 
 /**
  * @brief Sets the rate SPI communication of the dwm1000(2MBPS).
@@ -279,6 +289,6 @@ sys_evt_sts_format dw_wait_irq_event(sys_evt_msk_format sys_evt_msk_f);
  * @note: buffer_size must be lower or equal than TX_RX_BUFFER_MAX_SIZE.
  *
  */
-bool init_buffer(uint8_t* buffer, const size_t buffer_size, uwb_frame* container);
+bool init_buffer(uint8_t* buffer, const size_t buffer_size, uint8_t* container);
 
 #endif /* _DWM1000_H_ */

@@ -18,7 +18,7 @@
 
 #include "format.h"
 
-void dev_id_formater(spi_frame fr, void *format, const size_t sub_register) {
+void dev_id_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     dev_id_format *dev_id_f = (dev_id_format*) format;
 
@@ -28,7 +28,7 @@ void dev_id_formater(spi_frame fr, void *format, const size_t sub_register) {
     dev_id_f->rev = (fr[0] & 0XF);
 }
 
-void eui_formater(spi_frame fr, void *format, const size_t sub_register) {
+void eui_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     eui_format *eui_f = (eui_format*) format;
 
@@ -37,7 +37,7 @@ void eui_formater(spi_frame fr, void *format, const size_t sub_register) {
             | (uint32_t) fr[3] << 24 | (uint64_t) fr[4] << 32;
 }
 
-size_t eui_unformater(void *format, spi_frame fr, const size_t sub_register) {
+size_t eui_unformatter(void *format, spi_frame fr, const size_t sub_register) {
 
     eui_format *eui_f = ((eui_format*) format);
 
@@ -54,7 +54,7 @@ size_t eui_unformater(void *format, spi_frame fr, const size_t sub_register) {
     return 8;
 }
 
-void pan_addr_formater(spi_frame fr, void *format, const size_t sub_register) {
+void pan_addr_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     pan_adr_format *pan_adr_f = ((pan_adr_format*) format);
 
@@ -62,7 +62,7 @@ void pan_addr_formater(spi_frame fr, void *format, const size_t sub_register) {
     pan_adr_f->short_addr = fr[0] | ((uint16_t) fr[1]) << 8;
 }
 
-size_t pan_addr_unformater(void *format, spi_frame fr, const size_t sub_register) {
+size_t pan_addr_unformatter(void *format, spi_frame fr, const size_t sub_register) {
 
     pan_adr_format *pan_adr_f = ((pan_adr_format*) format);
 
@@ -85,7 +85,7 @@ size_t pan_addr_unformater(void *format, spi_frame fr, const size_t sub_register
     return 0;
 }
 
-void sys_cfg_formater(spi_frame fr, void *format, const size_t sub_register) {
+void sys_cfg_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     sys_cfg_format *sys_cfg_f = ((sys_cfg_format*) format);
 
@@ -118,7 +118,7 @@ void sys_cfg_formater(spi_frame fr, void *format, const size_t sub_register) {
 
 }
 
-size_t sys_cfg_unformater(void *format, spi_frame fr, const size_t sub_register) {
+size_t sys_cfg_unformatter(void *format, spi_frame fr, const size_t sub_register) {
 
     sys_cfg_format *sys_cfg_f = ((sys_cfg_format*) format);
 
@@ -152,7 +152,7 @@ size_t sys_cfg_unformater(void *format, spi_frame fr, const size_t sub_register)
     return 4;
 }
 
-void sys_time_formater(spi_frame fr, void* format, const size_t sub_register) {
+void sys_time_formatter(spi_frame fr, void* format, const size_t sub_register) {
 
     uint64_t register_value  = (uint16_t) fr[1] << 8 | (uint32_t) fr[2] << 16
             | (uint32_t) fr[3] << 24 | (uint64_t) fr[4] << 32;
@@ -161,7 +161,7 @@ void sys_time_formater(spi_frame fr, void* format, const size_t sub_register) {
     *seconds = str_calculate_seconds(register_value);
 }
 
-void tx_fctrl_formater(spi_frame fr, void* format, const size_t sub_register) {
+void tx_fctrl_formatter(spi_frame fr, void* format, const size_t sub_register) {
 
     tx_fctrl_format *tx_fctrl_f = ((tx_fctrl_format*) format);
 
@@ -184,7 +184,7 @@ void tx_fctrl_formater(spi_frame fr, void* format, const size_t sub_register) {
 
 }
 
-size_t tx_fctrl_unformater(void* format, spi_frame fr, const size_t sub_register) {
+size_t tx_fctrl_unformatter(void* format, spi_frame fr, const size_t sub_register) {
 
     tx_fctrl_format *tx_fctrl_f = ((tx_fctrl_format*) format);
 
@@ -207,20 +207,66 @@ size_t tx_fctrl_unformater(void* format, spi_frame fr, const size_t sub_register
     return 0;
 }
 
-size_t tx_buffer_unformater(void *format, spi_frame fr, const size_t sub_register) {
+void payload_formatter_f(spi_frame fr, void *format) {
+
+    uint8_t* buffer = (uint8_t*)format;
+
+    unsigned int i;
+    for(i = 0; i < TX_RX_BUFFER_MAX_SIZE-FIXED_FRAME_FIELDS_SIZE; ++i) {
+        buffer[i] = fr[i];
+    }
+
+}
+
+void payload_unformatter_f(void *format, spi_frame fr) {
 
     uint8_t* buffer = (uint8_t*) format;
 
     unsigned int i;
-    for(i = 0; i < TX_RX_BUFFER_MAX_SIZE; ++i) {
+    for(i = 0; i < TX_RX_BUFFER_MAX_SIZE-FIXED_FRAME_FIELDS_SIZE; ++i) {
         fr[i] = buffer[i];
     }
 
+}
+
+size_t tx_buffer_unformatter(void *format, spi_frame fr, const size_t sub_register) {
+
+    uwb_frame_format* uwb_frame_f = (uwb_frame_format*) format;
+
+    // Control.
+    fr[0] = uwb_frame_f->fr_ctrl;
+
+    // Sequence number.
+    fr[1] = uwb_frame_f->seq_num;
+
+    // Device id.
+    fr[2] = (uwb_frame_f->dev_id & 0xFF00000000000000) >> 56;
+    fr[3] = (uwb_frame_f->dev_id & 0x00FF000000000000) >> 48;
+    fr[4] = (uwb_frame_f->dev_id & 0x0000FF0000000000) >> 40;
+    fr[5] = (uwb_frame_f->dev_id & 0x000000FF00000000) >> 32;
+    fr[6] = (uwb_frame_f->dev_id & 0x00000000FF000000) >> 24;
+    fr[7] = (uwb_frame_f->dev_id & 0x0000000000FF0000) >> 16;
+    fr[8] = (uwb_frame_f->dev_id & 0x000000000000FF00) >> 8;
+    fr[9] = uwb_frame_f->dev_id & 0x00000000000000FF;
+
+    // Payload.
+    uint8_t payload_spi_frame[TX_RX_BUFFER_MAX_SIZE-FIXED_FRAME_FIELDS_SIZE];
+    memcpy(payload_spi_frame, &fr[10], TX_RX_BUFFER_MAX_SIZE-FIXED_FRAME_FIELDS_SIZE);
+
+    if(uwb_frame_f->payload_unformatter_f == NULL) {
+        uwb_frame_f->payload_unformatter_f = payload_unformatter_f;
+    }
+
+    uwb_frame_f->payload_unformatter_f(uwb_frame_f->raw_payload, payload_spi_frame);
+
+    // Check sum.
+    fr[TX_RX_BUFFER_MAX_SIZE-2] = (uwb_frame_f->check_sum & 0xFF00) >> 8;
+    fr[TX_RX_BUFFER_MAX_SIZE-1] = uwb_frame_f->check_sum & 0xFF;
 
     return TX_RX_BUFFER_MAX_SIZE;
 }
 
-void dx_time_formater(spi_frame fr, void *format, const size_t sub_register) {
+void dx_time_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     const uint64_t register_value  = (uint16_t) fr[1] << 8 | (uint32_t) fr[2] << 16
             | (uint32_t) fr[3] << 24 | (uint64_t) fr[4] << 32;
@@ -230,7 +276,7 @@ void dx_time_formater(spi_frame fr, void *format, const size_t sub_register) {
 
 }
 
-size_t dx_time_unformater(void *format, spi_frame fr, const size_t sub_register) {
+size_t dx_time_unformatter(void *format, spi_frame fr, const size_t sub_register) {
 
     double* seconds = ((double*) format);
     const uint64_t reg_value = dtr_calculate_register_val(*seconds);
@@ -244,7 +290,7 @@ size_t dx_time_unformater(void *format, spi_frame fr, const size_t sub_register)
     return 5;
 }
 
-void rx_fwto_formater(spi_frame fr, void *format, const size_t sub_register) {
+void rx_fwto_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     uint16_t register_value  = fr[0] | (uint16_t) fr[1] << 8;
 
@@ -253,7 +299,7 @@ void rx_fwto_formater(spi_frame fr, void *format, const size_t sub_register) {
 
 }
 
-size_t rx_fwto_unformater(void *format, spi_frame fr, const size_t sub_register) {
+size_t rx_fwto_unformatter(void *format, spi_frame fr, const size_t sub_register) {
 
     double* seconds = ((double*) format);
     uint16_t register_value = rfr_calculate_register_val(*seconds);
@@ -264,7 +310,7 @@ size_t rx_fwto_unformater(void *format, spi_frame fr, const size_t sub_register)
     return 2;
 }
 
-void tx_ctrl_formater(spi_frame fr, void *format, const size_t sub_register) {
+void tx_ctrl_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     sys_ctrl_format *sys_ctrl_f = ((sys_ctrl_format*) format);
 
@@ -282,7 +328,7 @@ void tx_ctrl_formater(spi_frame fr, void *format, const size_t sub_register) {
 
 }
 
-size_t tx_ctrl_unformater(void *format, spi_frame fr, const size_t sub_register) {
+size_t tx_ctrl_unformatter(void *format, spi_frame fr, const size_t sub_register) {
 
     sys_ctrl_format *sys_ctrl_f = ((sys_ctrl_format*) format);
 
@@ -303,7 +349,7 @@ size_t tx_ctrl_unformater(void *format, spi_frame fr, const size_t sub_register)
     return 4;
 }
 
-void sys_evt_msk_formater(spi_frame fr, void *format, const size_t sub_register) {
+void sys_evt_msk_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     sys_evt_msk_format *sys_evt_msk_f = ((sys_evt_msk_format*) format);
 
@@ -350,7 +396,7 @@ void sys_evt_msk_formater(spi_frame fr, void *format, const size_t sub_register)
 
 }
 
-size_t sys_evt_msk_unformater(void *format, spi_frame fr, const size_t sub_register) {
+size_t sys_evt_msk_unformatter(void *format, spi_frame fr, const size_t sub_register) {
 
     sys_evt_msk_format *sys_evt_msk_f = ((sys_evt_msk_format*) format);
 
@@ -388,7 +434,7 @@ size_t sys_evt_msk_unformater(void *format, spi_frame fr, const size_t sub_regis
     return 4;
 }
 
-void sys_evt_sts_formater(spi_frame fr, void *format, const size_t sub_register) {
+void sys_evt_sts_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     sys_evt_sts_format *sys_evt_sts_f = ((sys_evt_sts_format*) format);
 
@@ -437,7 +483,7 @@ void sys_evt_sts_formater(spi_frame fr, void *format, const size_t sub_register)
 
 }
 
-size_t sys_evt_sts_unformater(void *format, spi_frame fr, const size_t sub_register) {
+size_t sys_evt_sts_unformatter(void *format, spi_frame fr, const size_t sub_register) {
 
     sys_evt_sts_format *sys_evt_sts_f = ((sys_evt_sts_format*) format);
 
@@ -487,7 +533,7 @@ size_t sys_evt_sts_unformater(void *format, spi_frame fr, const size_t sub_regis
      return 0;
 }
 
-void rx_finfo_formater(spi_frame fr, void *format, const size_t sub_register) {
+void rx_finfo_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     rx_finfo_format *rx_finfo_f = ((rx_finfo_format*) format);
 
@@ -501,18 +547,43 @@ void rx_finfo_formater(spi_frame fr, void *format, const size_t sub_register) {
 
 }
 
-void rx_buffer_formater(spi_frame fr, void *format, const size_t sub_register) {
+void rx_buffer_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
-    uint8_t* buffer = (uint8_t*)format;
+    uwb_frame_format* uwb_frame_f = (uwb_frame_format*) format;
 
-    unsigned int i;
-    for(i = 0; i < TX_RX_BUFFER_MAX_SIZE; ++i) {
-        buffer[i] = fr[i];
+    // Control.
+    uwb_frame_f->fr_ctrl = fr[0];
+
+    // Sequence number.
+    uwb_frame_f->seq_num = fr[1];
+
+    // Device id.
+    uwb_frame_f->dev_id = fr[9];
+    uwb_frame_f->dev_id |= ((uint16_t)fr[8]) << 8;
+    uwb_frame_f->dev_id |= ((uint32_t)fr[7]) << 16;
+    uwb_frame_f->dev_id |= ((uint32_t)fr[6]) << 24;
+    uwb_frame_f->dev_id |= ((uint64_t)fr[5]) << 32;
+    uwb_frame_f->dev_id |= ((uint64_t)fr[4]) << 40;
+    uwb_frame_f->dev_id |= ((uint64_t)fr[3]) << 48;
+    uwb_frame_f->dev_id |= ((uint64_t)fr[2]) << 56;
+
+    // Payload.
+    uint8_t payload_spi_frame[TX_RX_BUFFER_MAX_SIZE-FIXED_FRAME_FIELDS_SIZE];
+    memcpy(payload_spi_frame, &fr[10], TX_RX_BUFFER_MAX_SIZE-FIXED_FRAME_FIELDS_SIZE);
+
+    if(uwb_frame_f->payload_formatter_f == NULL) {
+        uwb_frame_f->payload_formatter_f = payload_formatter_f;
     }
+
+    uwb_frame_f->payload_formatter_f(payload_spi_frame, uwb_frame_f->raw_payload);
+
+    // Check sum.
+    uwb_frame_f->check_sum = fr[TX_RX_BUFFER_MAX_SIZE-1];
+    uwb_frame_f->check_sum |= ((uint16_t)fr[TX_RX_BUFFER_MAX_SIZE-2]) << 8;
 
 }
 
-void rx_fqual_formater(spi_frame fr, void *format, const size_t sub_register) {
+void rx_fqual_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     rx_fqual_format *rx_fqual_f = ((rx_fqual_format*) format);
 
@@ -528,14 +599,14 @@ void rx_fqual_formater(spi_frame fr, void *format, const size_t sub_register) {
     }
 }
 
-void rx_ttcki_formater(spi_frame fr, void *format, const size_t sub_register) {
+void rx_ttcki_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     rx_ttcki_value* rx_ttcki = (rx_ttcki_value*) format;
     *rx_ttcki = (((uint32_t)fr[3]) << 24) | (((uint32_t)fr[2]) << 16) | (((uint32_t)fr[1]) << 8) | fr[0];
 
 }
 
-void rx_ttcko_formater(spi_frame fr, void *format, const size_t sub_register) {
+void rx_ttcko_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     rx_ttcko_format* rx_ttcko_f = (rx_ttcko_format*) format;
 
@@ -547,7 +618,7 @@ void rx_ttcko_formater(spi_frame fr, void *format, const size_t sub_register) {
     }
 }
 
-void rx_time_formater(spi_frame fr, void *format, const size_t sub_register) {
+void rx_time_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     rx_time_format* rx_time_f = (rx_time_format*) format;
 
@@ -582,7 +653,7 @@ void rx_time_formater(spi_frame fr, void *format, const size_t sub_register) {
 
 }
 
-void tx_time_formater(spi_frame fr, void *format, const size_t sub_register) {
+void tx_time_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     tx_time_format* tx_time_f = (tx_time_format*) format;
 
@@ -609,7 +680,7 @@ void tx_time_formater(spi_frame fr, void *format, const size_t sub_register) {
 
 }
 
-void tx_antd_formater(spi_frame fr, void *format, const size_t sub_register) {
+void tx_antd_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     uint16_t register_value  = ((uint16_t)fr[1]) << 8 | fr[0];
 
@@ -618,7 +689,7 @@ void tx_antd_formater(spi_frame fr, void *format, const size_t sub_register) {
 
 }
 
-size_t tx_antd_unformater(void *format, spi_frame fr, const size_t sub_register) {
+size_t tx_antd_unformatter(void *format, spi_frame fr, const size_t sub_register) {
 
     double* seconds = ((double*) format);
     const uint16_t reg_value = tx_antd_calculate_register_val(*seconds);
@@ -629,7 +700,7 @@ size_t tx_antd_unformater(void *format, spi_frame fr, const size_t sub_register)
     return 2;
 }
 
-void sys_state_formater(spi_frame fr, void *format, const size_t sub_register) {
+void sys_state_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     sys_status_format* sys_status_f = (sys_status_format*) format;
 
@@ -639,7 +710,7 @@ void sys_state_formater(spi_frame fr, void *format, const size_t sub_register) {
 
 }
 
-void ack_resp_t_formater(spi_frame fr, void *format, const size_t sub_register) {
+void ack_resp_t_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     ack_resp_t_format* ack_resp_t_f = (ack_resp_t_format*)format;
 
@@ -651,7 +722,7 @@ void ack_resp_t_formater(spi_frame fr, void *format, const size_t sub_register) 
 
 }
 
-size_t ack_resp_t_unformater(void *format, spi_frame fr, const size_t sub_register) {
+size_t ack_resp_t_unformatter(void *format, spi_frame fr, const size_t sub_register) {
 
     ack_resp_t_format* ack_resp_t_f = (ack_resp_t_format*)format;
 
@@ -666,7 +737,7 @@ size_t ack_resp_t_unformater(void *format, spi_frame fr, const size_t sub_regist
     return 4;
 }
 
-void rx_sniff_formater(spi_frame fr, void *format, const size_t sub_register) {
+void rx_sniff_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     rx_sniff_format* rx_sniff_f = (rx_sniff_format*)format;
     rx_sniff_f->sniff_offt = calculate_sniff_offt(fr[1]);
@@ -675,7 +746,7 @@ void rx_sniff_formater(spi_frame fr, void *format, const size_t sub_register) {
 
 }
 
-size_t rx_sniff_unformater(void *format, spi_frame fr, const size_t sub_register) {
+size_t rx_sniff_unformatter(void *format, spi_frame fr, const size_t sub_register) {
 
     rx_sniff_format* rx_sniff_f = (rx_sniff_format*)format;
     fr[1] = sniff_offt_calculate_register_val(rx_sniff_f->sniff_offt);
@@ -685,7 +756,7 @@ size_t rx_sniff_unformater(void *format, spi_frame fr, const size_t sub_register
     return 2;
 }
 
-void tx_power_formater(spi_frame fr, void *format, const size_t sub_register) {
+void tx_power_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     tx_power_format* tx_power_f = (tx_power_format*)format;
 
@@ -703,7 +774,7 @@ void tx_power_formater(spi_frame fr, void *format, const size_t sub_register) {
 
 }
 
-size_t tx_power_unformater(void *format, spi_frame fr, const size_t sub_register) {
+size_t tx_power_unformatter(void *format, spi_frame fr, const size_t sub_register) {
 
     tx_power_format* tx_power_f = (tx_power_format*)format;
 
@@ -722,7 +793,7 @@ size_t tx_power_unformater(void *format, spi_frame fr, const size_t sub_register
     return 4;
 }
 
-void chan_ctrl_formater(spi_frame fr, void *format, const size_t sub_register) {
+void chan_ctrl_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     chan_ctrl_format* chan_ctrl_f = (chan_ctrl_format*)format;
 
@@ -745,7 +816,7 @@ void chan_ctrl_formater(spi_frame fr, void *format, const size_t sub_register) {
 
 }
 
-size_t chan_ctrl_unformater(void *format, spi_frame fr, const size_t sub_register) {
+size_t chan_ctrl_unformatter(void *format, spi_frame fr, const size_t sub_register) {
 
     chan_ctrl_format* chan_ctrl_f = (chan_ctrl_format*)format;
 
@@ -766,7 +837,7 @@ size_t chan_ctrl_unformater(void *format, spi_frame fr, const size_t sub_registe
     return 4;
 }
 
-void usr_sfd_formater(spi_frame fr, void *format, const size_t sub_register) {
+void usr_sfd_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     usr_sfd_format* usr_sfd_f = (usr_sfd_format*) format;
 
@@ -849,7 +920,7 @@ void usr_sfd_formater(spi_frame fr, void *format, const size_t sub_register) {
 
 }
 
-size_t usr_sfd_unformater(void *format, spi_frame fr, const size_t sub_register) {
+size_t usr_sfd_unformatter(void *format, spi_frame fr, const size_t sub_register) {
 
     usr_sfd_format* usr_sfd_f = (usr_sfd_format*) format;
 
@@ -954,7 +1025,7 @@ size_t usr_sfd_unformater(void *format, spi_frame fr, const size_t sub_register)
     return 0;
 }
 
-void agc_ctrl_formater(spi_frame fr, void *format, const size_t sub_register) {
+void agc_ctrl_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     agc_ctrl_format* agc_ctrl_f = (agc_ctrl_format*) format;
 
@@ -986,7 +1057,7 @@ void agc_ctrl_formater(spi_frame fr, void *format, const size_t sub_register) {
 
 }
 
-size_t agc_ctrl_unformater(void *format, spi_frame fr, const size_t sub_register) {
+size_t agc_ctrl_unformatter(void *format, spi_frame fr, const size_t sub_register) {
 
     agc_ctrl_format* agc_ctrl_f = (agc_ctrl_format*) format;
 
@@ -1024,7 +1095,7 @@ size_t agc_ctrl_unformater(void *format, spi_frame fr, const size_t sub_register
     return 0;
 }
 
-void ext_sync_formater(spi_frame fr, void *format, const size_t sub_register) {
+void ext_sync_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     ext_sync_format* ext_sync_f = (ext_sync_format*) format;
 
@@ -1049,7 +1120,7 @@ void ext_sync_formater(spi_frame fr, void *format, const size_t sub_register) {
 
 }
 
-size_t ext_sync_unformater(void *format, spi_frame fr, const size_t sub_register) {
+size_t ext_sync_unformatter(void *format, spi_frame fr, const size_t sub_register) {
 
     ext_sync_format* ext_sync_f = (ext_sync_format*) format;
 
@@ -1067,7 +1138,7 @@ size_t ext_sync_unformater(void *format, spi_frame fr, const size_t sub_register
     return 0;
 }
 
-void acc_mem_formater(spi_frame fr, void *format, const size_t sub_register) {
+void acc_mem_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     acc_mem_field* acc_mem_f = (acc_mem_field*) format;
 
@@ -1076,7 +1147,7 @@ void acc_mem_formater(spi_frame fr, void *format, const size_t sub_register) {
 
 }
 
-void gpio_ctrl_formater(spi_frame fr, void *format, const size_t sub_register) {
+void gpio_ctrl_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     if(sub_register == GPIO_MODE) {
 
@@ -1252,7 +1323,7 @@ void gpio_ctrl_formater(spi_frame fr, void *format, const size_t sub_register) {
 
 }
 
-size_t gpio_ctrl_unformater(void *format, spi_frame fr, const size_t sub_register) {
+size_t gpio_ctrl_unformatter(void *format, spi_frame fr, const size_t sub_register) {
 
     if(sub_register == GPIO_MODE) {
 
@@ -1427,7 +1498,7 @@ size_t gpio_ctrl_unformater(void *format, spi_frame fr, const size_t sub_registe
     return 0;
 }
 
-void drx_conf_formater(spi_frame fr, void *format, const size_t sub_register) {
+void drx_conf_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     drx_conf_format* drx_conf_f = (drx_conf_format*)format;
 
@@ -1471,7 +1542,7 @@ void drx_conf_formater(spi_frame fr, void *format, const size_t sub_register) {
 
 }
 
-size_t drx_conf_unformater(void *format, spi_frame fr, const size_t sub_register) {
+size_t drx_conf_unformatter(void *format, spi_frame fr, const size_t sub_register) {
 
     drx_conf_format* drx_conf_f = (drx_conf_format*)format;
 
@@ -1546,7 +1617,7 @@ size_t drx_conf_unformater(void *format, spi_frame fr, const size_t sub_register
     return 0;
 }
 
-void rf_conf_formater(spi_frame fr, void *format, const size_t sub_register) {
+void rf_conf_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     rf_conf_format* rf_conf_f = (rf_conf_format*) format;
 
@@ -1586,7 +1657,7 @@ void rf_conf_formater(spi_frame fr, void *format, const size_t sub_register) {
 
 }
 
-size_t rf_conf_unformater(void *format, spi_frame fr, const size_t sub_register) {
+size_t rf_conf_unformatter(void *format, spi_frame fr, const size_t sub_register) {
 
     rf_conf_format* rf_conf_f = (rf_conf_format*) format;
 
@@ -1640,7 +1711,7 @@ size_t rf_conf_unformater(void *format, spi_frame fr, const size_t sub_register)
     return 0;
 }
 
-void tx_cal_formater(spi_frame fr, void *format, const size_t sub_register) {
+void tx_cal_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     tx_cal_format* tx_cal_f = (tx_cal_format*)format;
 
@@ -1678,7 +1749,7 @@ void tx_cal_formater(spi_frame fr, void *format, const size_t sub_register) {
 
 }
 
-size_t tx_cal_unformater(void *format, spi_frame fr, const size_t sub_register) {
+size_t tx_cal_unformatter(void *format, spi_frame fr, const size_t sub_register) {
 
     tx_cal_format* tx_cal_f = (tx_cal_format*)format;
 
@@ -1711,7 +1782,7 @@ size_t tx_cal_unformater(void *format, spi_frame fr, const size_t sub_register) 
     return 0;
 }
 
-void fs_ctrl_formater(spi_frame fr, void *format, const size_t sub_register) {
+void fs_ctrl_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     fs_ctrl_format* fs_ctrl_f = (fs_ctrl_format*)format;
 
@@ -1731,7 +1802,7 @@ void fs_ctrl_formater(spi_frame fr, void *format, const size_t sub_register) {
     }
 }
 
-size_t fs_ctrl_unformater(void *format, spi_frame fr, const size_t sub_register) {
+size_t fs_ctrl_unformatter(void *format, spi_frame fr, const size_t sub_register) {
 
     fs_ctrl_format* fs_ctrl_f = (fs_ctrl_format*)format;
 
@@ -1761,7 +1832,7 @@ size_t fs_ctrl_unformater(void *format, spi_frame fr, const size_t sub_register)
     return 0;
 }
 
-void aon_formater(spi_frame fr, void *format, const size_t sub_register) {
+void aon_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     aon_format* aon_f = (aon_format*)format;
 
@@ -1814,7 +1885,7 @@ void aon_formater(spi_frame fr, void *format, const size_t sub_register) {
 
 }
 
-size_t aon_unformater(void *format, spi_frame fr, const size_t sub_register) {
+size_t aon_unformatter(void *format, spi_frame fr, const size_t sub_register) {
 
     aon_format* aon_f = (aon_format*)format;
 
@@ -1884,7 +1955,7 @@ size_t aon_unformater(void *format, spi_frame fr, const size_t sub_register) {
     return 0;
 }
 
-void otp_if_formater(spi_frame fr, void *format, const size_t sub_register) {
+void otp_if_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     otp_if_format* otp_if_f = (otp_if_format*)format;
 
@@ -1931,7 +2002,7 @@ void otp_if_formater(spi_frame fr, void *format, const size_t sub_register) {
 
 }
 
-size_t otp_if_unformater(void *format, spi_frame fr, const size_t sub_register) {
+size_t otp_if_unformatter(void *format, spi_frame fr, const size_t sub_register) {
 
     otp_if_format* otp_if_f = (otp_if_format*)format;
 
@@ -1997,7 +2068,7 @@ size_t otp_if_unformater(void *format, spi_frame fr, const size_t sub_register) 
     return 0;
 }
 
-void lde_if_formater(spi_frame fr, void *format, const size_t sub_register) {
+void lde_if_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     lde_if_format* lde_if_f = (lde_if_format*)format;
 
@@ -2034,7 +2105,7 @@ void lde_if_formater(spi_frame fr, void *format, const size_t sub_register) {
 
 }
 
-size_t lde_if_unformater(void *format, spi_frame fr, const size_t sub_register) {
+size_t lde_if_unformatter(void *format, spi_frame fr, const size_t sub_register) {
 
     lde_if_format* lde_if_f = (lde_if_format*)format;
 
@@ -2071,7 +2142,7 @@ size_t lde_if_unformater(void *format, spi_frame fr, const size_t sub_register) 
     return 0;
 }
 
-void dig_diag_formater(spi_frame fr, void *format, const size_t sub_register) {
+void dig_diag_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     dig_diag_format* dig_diag_f = (dig_diag_format*)format;
 
@@ -2137,7 +2208,7 @@ void dig_diag_formater(spi_frame fr, void *format, const size_t sub_register) {
 
 }
 
-size_t dig_diag_unformater(void *format, spi_frame fr, const size_t sub_register) {
+size_t dig_diag_unformatter(void *format, spi_frame fr, const size_t sub_register) {
 
     dig_diag_format* dig_diag_f = (dig_diag_format*)format;
 
@@ -2163,7 +2234,7 @@ size_t dig_diag_unformater(void *format, spi_frame fr, const size_t sub_register
     return 0;
 }
 
-void pmsc_formater(spi_frame fr, void *format, const size_t sub_register) {
+void pmsc_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     pmsc_format* pmsc_f = (pmsc_format*)format;
 
@@ -2219,7 +2290,7 @@ void pmsc_formater(spi_frame fr, void *format, const size_t sub_register) {
 
 }
 
-size_t pmsc_unformater(void *format, spi_frame fr, const size_t sub_register) {
+size_t pmsc_unformatter(void *format, spi_frame fr, const size_t sub_register) {
 
     pmsc_format* pmsc_f = (pmsc_format*)format;
 
