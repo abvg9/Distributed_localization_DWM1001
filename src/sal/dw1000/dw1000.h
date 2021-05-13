@@ -189,16 +189,18 @@ bool dw_initialise(const int config_flags);
  *                  DWT_START_RX_DELAYED | DWT_IDLE_ON_DLY_ERR used to disable re-enabling of receiver if delayed RX failed due to "late" error.
  *                  DWT_START_RX_IMMEDIATE | DWT_NO_SYNC_PTRS used to re-enable RX without trying to sync IC and host side buffer pointers, typically when
  *                  performing manual RX re-enabling in double buffering mode.
- * param wait_timer[in]: Timer that determines the number of seconds that will be waiting for a message.
+ * @param wait_timer[in]: Timer that determines the number of seconds that will be waiting for a message.
  *                       If wait_timer < 0, it will wait until the expected message be received(infinitely).
  *                       If wait_timer < SDF_TO, it will wait until the SDF time out expires.
+ * @param dev_id[in]: Identifier of the sender. If this value is equal to zero, means that it will
+ *                    wait for any sender.
  *
  * @note: See function get_rx_buffer to understand better this function.
  *
  * @return bool: Returns true if the message was received, otherwise false.
  *
  */
-bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const double wait_timer);
+bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const double wait_timer, const uint64_t dev_id);
 
 /**
  * @brief Resets the dw1000.

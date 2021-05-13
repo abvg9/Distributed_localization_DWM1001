@@ -993,7 +993,7 @@ bool dw_send_message(uwb_frame_format* frame, uint16_t tx_buffer_offset, bool ra
     return true;
 }
 
-bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const double wait_timer) {
+bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const double wait_timer, const uint64_t dev_id) {
 
     if ((mode & DW_NO_SYNC_PTRS) == 0) {
 
@@ -1088,11 +1088,9 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const doubl
 
     sys_evt_sts_format sys_evt_sts_f = dw_wait_irq_event(sys_evt_msk_f);
 
-    if(enable_timer && !chVTIsSystemTimeWithin(start, end)) {
-        sys_evt_sts_f.rxsfdto = false;
-    }
+    RETRY_SEARCH:
 
-    while(sys_evt_sts_f.rxsfdto) {
+    while(sys_evt_sts_f.rxsfdto && enable_timer && !chVTIsSystemTimeWithin(start, end)) {
 
         sys_ctrl_f.rxenab = true;
 
@@ -1106,10 +1104,6 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const doubl
         }
 
         sys_evt_sts_f = dw_wait_irq_event(sys_evt_msk_f);
-
-        if(enable_timer && !chVTIsSystemTimeWithin(start, end)) {
-            sys_evt_sts_f.rxsfdto = false;
-        }
 
     }
 
@@ -1131,6 +1125,11 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const doubl
         sys_evt_sts_f.rxfcg = false;
         if(!set_sys_event_sts(&sys_evt_sts_f, SES_OCT_0_TO_3)) {
             return false;
+        }
+
+        if(dev_id != 0 && frame->dev_id != dev_id && wait_timer > 0) {
+            sys_evt_sts_f.rxsfdto = true;
+            goto RETRY_SEARCH;
         }
 
     } else {
@@ -1179,7 +1178,7 @@ bool dw_set_leds(const bool enable) {
 
         // Set up MFIO for LED output.
         gpio_ctrl_format.gpio_mode_ctrl_f.msgp2 = MSGP2_RXLED;
-        gpio_ctrl_format.gpio_mode_ctrl_f.msgp2 = MSGP3_TXLED;
+        gpio_ctrl_format.gpio_mode_ctrl_f.msgp3 = MSGP3_TXLED;
 
         if(!set_gpio_ctrl(&gpio_ctrl_format, GPIO_MODE)) {
             return false;
@@ -1194,9 +1193,13 @@ bool dw_set_leds(const bool enable) {
         pmsc_f.gpdce = true;
         pmsc_f.khzclken = true;
         pmsc_f.blnk_en = true;
-        pmsc_f.blink_tim = 1.0; // Blink 1 second.
+        pmsc_f.blink_tim = 0.400; // Blink 0.225 seconds.
 
         if(!set_pmsc(&pmsc_f, PMSC_CTRL0)) {
+            return false;
+        }
+
+        if(!get_pmsc(&pmsc_f, PMSC_CTRL0)) {
             return false;
         }
 
@@ -1222,7 +1225,7 @@ bool dw_set_leds(const bool enable) {
 
         // Clear the GPIO bits that are used for LED control.
         gpio_ctrl_format.gpio_mode_ctrl_f.msgp2 = MSGP2_DEFAULT_MODE;
-        gpio_ctrl_format.gpio_mode_ctrl_f.msgp2 = MSGP3_DEFAULT_MODE;
+        gpio_ctrl_format.gpio_mode_ctrl_f.msgp3 = MSGP3_DEFAULT_MODE;
 
         if(!set_gpio_ctrl(&gpio_ctrl_format, GPIO_MODE)) {
             return false;

@@ -2246,7 +2246,7 @@ typedef struct {
     unsigned int amce :1;        // Accumulator memory clock enable. (RW)
     unsigned int gpce :1;        // GPIO clock enable. (RW)
     unsigned int gprn :1;        // GPIO reset (NOT), active low. (RW)
-    unsigned int gpdce :1;       // GPIO De-bounce clock enable. (RW)
+    unsigned int gpdce :1;       // GPIO de-bounce clock enable. (RW)
     unsigned int gpdrn :1;       // GPIO de-bounce reset (NOT), active low. (RW)
     unsigned int khzclken :1;    // Kilohertz clock enable. (RW)
     unsigned int pll2_seq_en :1; // Value 0 means normal (TX sequencing control), value 1 means RX SNIFF mode control. (RW)
