@@ -1190,33 +1190,18 @@ bool dw_set_leds(const bool enable) {
             return false;
         }
 
-        pmsc_f.gpdce = true;
-        pmsc_f.khzclken = true;
-        pmsc_f.blnk_en = true;
-        pmsc_f.blink_tim = 0.400; // Blink 0.225 seconds.
-
-        if(!set_pmsc(&pmsc_f, PMSC_CTRL0)) {
-            return false;
-        }
-
-        if(!get_pmsc(&pmsc_f, PMSC_CTRL0)) {
-            return false;
-        }
-
-        // Make LEDs blink once.
         if(!get_pmsc(&pmsc_f, PMSC_LEDC)) {
             return false;
         }
 
-        pmsc_f.blnk_now = 0xF;
-
-        if(!set_pmsc(&pmsc_f, PMSC_LEDC)) {
+        pmsc_f.gpdce = true;
+        pmsc_f.khzclken = true;
+        if(!set_pmsc(&pmsc_f, PMSC_CTRL0)) {
             return false;
         }
 
-        // Clear force blink bits.
-        pmsc_f.blnk_now = 0;
-
+        pmsc_f.blnk_en = true;
+        pmsc_f.blink_tim = 0.225; // Blink 0.225 seconds.
         if(!set_pmsc(&pmsc_f, PMSC_LEDC)) {
             return false;
         }
