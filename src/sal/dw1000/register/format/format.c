@@ -250,14 +250,16 @@ size_t tx_buffer_unformatter(void *format, spi_frame fr, const size_t sub_regist
     fr[9] = uwb_frame_f->dev_id & 0x00000000000000FF;
 
     // Payload.
-    uint8_t payload_spi_frame[TX_RX_BUFFER_MAX_SIZE-FIXED_FRAME_FIELDS_SIZE];
-    memcpy(payload_spi_frame, &fr[10], TX_RX_BUFFER_MAX_SIZE-FIXED_FRAME_FIELDS_SIZE);
 
     #if defined(DEFAULT_PAYLOAD_FORMAT)
-        uwb_frame_f->payload_unformatter_f = payload_unformatter_f;
-    #endif
 
-    uwb_frame_f->payload_unformatter_f(uwb_frame_f->raw_payload, payload_spi_frame);
+        uwb_frame_f->payload_unformatter_f(uwb_frame_f->raw_payload, &fr[10]);
+
+    #else
+
+        uwb_frame_f->payload_formatter_f(payload_spi_frame, uwb_frame_f);
+
+    #endif
 
     // Check sum.
     fr[TX_RX_BUFFER_MAX_SIZE-2] = (uwb_frame_f->check_sum & 0xFF00) >> 8;
@@ -568,14 +570,11 @@ void rx_buffer_formatter(spi_frame fr, void *format, const size_t sub_register) 
     uwb_frame_f->dev_id |= ((uint64_t)fr[2]) << 56;
 
     // Payload.
-    uint8_t payload_spi_frame[TX_RX_BUFFER_MAX_SIZE-FIXED_FRAME_FIELDS_SIZE];
-    memcpy(payload_spi_frame, &fr[10], TX_RX_BUFFER_MAX_SIZE-FIXED_FRAME_FIELDS_SIZE);
-
     #if defined(DEFAULT_PAYLOAD_FORMAT)
-        uwb_frame_f->payload_unformatter_f = payload_unformatter_f;
+        payload_formatter_f(&fr[10], uwb_frame_f->raw_payload);
+    #else
+        uwb_frame_f->payload_formatter_f(payload_spi_frame, uwb_frame_f);
     #endif
-
-    uwb_frame_f->payload_formatter_f(payload_spi_frame, uwb_frame_f->raw_payload);
 
     // Check sum.
     uwb_frame_f->check_sum = fr[TX_RX_BUFFER_MAX_SIZE-1];

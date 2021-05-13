@@ -23,6 +23,7 @@
 #include <stdbool.h>
 #include "format.h"
 #include "hal.h"
+#include <string.h>
 
 // Dwm1000 registers.
 // The values of the enumerates correspond to the memory addresses of the registers.
