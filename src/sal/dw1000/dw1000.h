@@ -103,6 +103,18 @@ double calc_signal_power(const rx_time_format rx_time_f, const rx_fqual_format r
         const rx_finfo_format rx_finfo_f, const usr_sfd_format usr_sfd_f);
 
 /**
+ * @brief Calculates the distance between two dw1000 devices.
+ *
+ * @param[in] dev_id: Device identifier with which you want to calculate distance.
+ * @param[out] distance: Voltage of the dw1000.
+ * @param[in] attempts: Number of attempts to calculate distance.
+ *
+ * @return bool: Returns true if the distance can be calculated, otherwise false.
+ *
+ */
+bool dw_calculate_distance(const uint64_t dev_id, double distance, const int attempts, const int wait_timer);
+
+/**
  * @brief This function provides the main API for the configuration of the
  *        DW1000 and this low-level driver.
  *
@@ -189,9 +201,9 @@ bool dw_initialise(const int config_flags);
  *                  DWT_START_RX_DELAYED | DWT_IDLE_ON_DLY_ERR used to disable re-enabling of receiver if delayed RX failed due to "late" error.
  *                  DWT_START_RX_IMMEDIATE | DWT_NO_SYNC_PTRS used to re-enable RX without trying to sync IC and host side buffer pointers, typically when
  *                  performing manual RX re-enabling in double buffering mode.
- * @param wait_timer[in]: Timer that determines the number of seconds that will be waiting for a message.
- *                       If wait_timer < 0, it will wait until the expected message be received(infinitely).
- *                       If wait_timer < SDF_TO, it will wait until the SDF time out expires.
+ * @param wait_timer[in]: Timer that determines the number of seconds(aprox) that will be waiting for a message.
+ *                        If wait_timer < 0, it will wait until the expected message be received(infinitely).
+ *                        If wait_timer < SDF_TO, it will wait until the SDF time out expires.
  * @param dev_id[in]: Identifier of the sender. If this value is equal to zero, means that it will
  *                    wait for any sender.
  *
@@ -200,7 +212,7 @@ bool dw_initialise(const int config_flags);
  * @return bool: Returns true if the message was received, otherwise false.
  *
  */
-bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const double wait_timer, const uint64_t dev_id);
+bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int wait_timer, const uint64_t dev_id);
 
 /**
  * @brief Resets the dw1000.
@@ -218,7 +230,6 @@ void dw_reset(void);
  *
  * @param frame[in]: Message to send.
  * @param frame_size[in]: This is the length of TX message (including the 2 byte CRC) - max is 1023.
- * @param tx_buffer_offset[in]: The offset in the tx buffer to start writing the data.
  * @param ranging[in]: True if this is a ranging frame, else false.
  * @param mode[in]: DWT_START_TX_IMMEDIATE immediate TX (no response expected).
  *                  DWT_START_TX_DELAYED delayed TX (no response expected).
@@ -234,7 +245,7 @@ void dw_reset(void);
  * @return bool: Returns true if the message can be sent, otherwise false.
  *
  */
-bool dw_send_message(uwb_frame_format* frame, const uint16_t tx_buffer_offset, const bool ranging, const uint8_t mode);
+bool dw_send_message(uwb_frame_format* frame, const bool ranging, const uint8_t mode);
 
 /**
  * @brief Sets the rate SPI communication of the dwm1000(8MBPS).
@@ -264,7 +275,7 @@ void dw_set_slow_spi_rate(void);
  * @return bool: Returns true if the transceiver can turned off, otherwise false.
  *
  */
-bool turn_off_transceiver(void);
+bool dw_turn_off_transceiver(void);
 
 /**
  * @brief Waits until the pin DW_IRQ is HIGH and return which of the IRQ events is/are active.
@@ -279,18 +290,24 @@ bool turn_off_transceiver(void);
 sys_evt_sts_format dw_wait_irq_event(sys_evt_msk_format sys_evt_msk_f);
 
 /**
- * @brief Initializes the transmit/receive container.
+ * @brief Initializes the uwb_frame_format container.
  *
  * @param buffer[in]: Message to store in the container.
  * @param buffer_size[in]: Size of the message.
- * @param container[in]: Container that will store the message. This container always has
- *                       TX_RX_BUFFER_MAX_SIZE length.
+ * @param messagge_type[in]: Message type according to the IEEE 802.15.4 standard.
+ * @param addr_mod[in]: Address mode (short address or extended address).
+ * @param uwb_frame_f[out]: uwb_frame_format container initialized.
  *
  * @return bool: If the container could be initialized, otherwise false.
  *
  * @note: buffer_size must be lower or equal than TX_RX_BUFFER_MAX_SIZE.
+ * @note: This function only fill the minimum required fields. It is mandatory to externally
+ *        set other fields after calling this function, see uwb_frame_format struct definition
+ *        to better understand.
  *
  */
-bool init_buffer(uint8_t* buffer, const size_t buffer_size, uint8_t* container);
+bool init_uwb_frame_format(uint8_t* buffer, const size_t buffer_size,
+        const frame_type_value messagge_type, const dest_sour_addr_mod_value addr_mod,
+        uwb_frame_format* uwb_frame_f);
 
 #endif /* _DWM1000_H_ */

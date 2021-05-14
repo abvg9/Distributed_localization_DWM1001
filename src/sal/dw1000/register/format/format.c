@@ -207,23 +207,23 @@ size_t tx_fctrl_unformatter(void* format, spi_frame fr, const size_t sub_registe
     return 0;
 }
 
-void payload_formatter_f(spi_frame fr, void *format) {
+void payload_formatter_f(spi_frame fr, void *format, const int payload_size) {
 
     uint8_t* buffer = (uint8_t*)format;
 
-    unsigned int i;
-    for(i = 0; i < TX_RX_BUFFER_MAX_SIZE-FIXED_FRAME_FIELDS_SIZE; ++i) {
+    int i;
+    for(i = 0; i < payload_size; ++i) {
         buffer[i] = fr[i];
     }
 
 }
 
-void payload_unformatter_f(void *format, spi_frame fr) {
+void payload_unformatter_f(void *format, spi_frame fr, const int payload_size) {
 
     uint8_t* buffer = (uint8_t*) format;
 
-    unsigned int i;
-    for(i = 0; i < TX_RX_BUFFER_MAX_SIZE-FIXED_FRAME_FIELDS_SIZE; ++i) {
+    int i;
+    for(i = 0; i < payload_size; ++i) {
         fr[i] = buffer[i];
     }
 
@@ -233,33 +233,82 @@ size_t tx_buffer_unformatter(void *format, spi_frame fr, const size_t sub_regist
 
     uwb_frame_format* uwb_frame_f = (uwb_frame_format*) format;
 
-    // Control.
-    fr[0] = uwb_frame_f->fr_ctrl;
+    // Frame control.
+    fr[0] = (uint8_t)uwb_frame_f->frame_t;
+    fr[0] |= ((uint8_t)uwb_frame_f->seq_enab) << 3;
+
+    fr[0] |= ((uint8_t)uwb_frame_f->frame_pend) << 4;
+    fr[0] |= ((uint8_t)uwb_frame_f->ack_req) << 5;
+    fr[0] |= ((uint8_t)uwb_frame_f->intra_PAN) << 6;
+
+    fr[1] = ((uint8_t)uwb_frame_f->dest_addr_mod) << 2;
+    fr[1] |= ((uint8_t)uwb_frame_f->sour_addr_mod) << 6;
 
     // Sequence number.
-    fr[1] = uwb_frame_f->seq_num;
+    fr[2] = uwb_frame_f->seq_num;
 
-    // Device id.
-    fr[2] = (uwb_frame_f->dev_id & 0xFF00000000000000) >> 56;
-    fr[3] = (uwb_frame_f->dev_id & 0x00FF000000000000) >> 48;
-    fr[4] = (uwb_frame_f->dev_id & 0x0000FF0000000000) >> 40;
-    fr[5] = (uwb_frame_f->dev_id & 0x000000FF00000000) >> 32;
-    fr[6] = (uwb_frame_f->dev_id & 0x00000000FF000000) >> 24;
-    fr[7] = (uwb_frame_f->dev_id & 0x0000000000FF0000) >> 16;
-    fr[8] = (uwb_frame_f->dev_id & 0x000000000000FF00) >> 8;
-    fr[9] = uwb_frame_f->dev_id & 0x00000000000000FF;
+    int payload_size = TX_RX_BUFFER_MAX_SIZE - FIXED_FRAME_FIELDS_SIZE; // - Frame control - Sequence number.
+    int start_payload_byte = FIXED_FRAME_FIELDS_SIZE;
+
+    // Addressing fields.
+    switch(uwb_frame_f->dest_addr_mod) {
+        case SHORT_ADDRESS:
+            fr[3] = uwb_frame_f->dest_PAN_id & 0x00FF;
+            fr[4] = (uwb_frame_f->dest_PAN_id & 0xFF00) >> 8;
+            payload_size -= SHORT_ADDRESS_SIZE;
+            start_payload_byte += SHORT_ADDRESS_SIZE;
+            break;
+        case EXTENDED_ADDRESS:
+            fr[3] =  uwb_frame_f->dest_addr & 0x00000000000000FF;
+            fr[4] = (uwb_frame_f->dest_addr & 0x000000000000FF00) >> 8;
+            fr[5] = (uwb_frame_f->dest_addr & 0x0000000000FF0000) >> 16;
+            fr[6] = (uwb_frame_f->dest_addr & 0x00000000FF000000) >> 24;
+            fr[7] = (uwb_frame_f->dest_addr & 0x000000FF00000000) >> 32;
+            fr[8] = (uwb_frame_f->dest_addr & 0x0000FF0000000000) >> 40;
+            fr[9] = (uwb_frame_f->dest_addr & 0x00FF000000000000) >> 48;
+            fr[10] = (uwb_frame_f->dest_addr & 0xFF00000000000000) >> 56;
+            payload_size -= EXTENDED_ADDRESS_SIZE;
+            start_payload_byte += EXTENDED_ADDRESS_SIZE;
+            break;
+        default:
+            break;
+    }
+
+    switch(uwb_frame_f->sour_addr_mod) {
+        case SHORT_ADDRESS:
+            fr[3] = uwb_frame_f->sour_PAN_id & 0x00FF;
+            fr[4] = (uwb_frame_f->sour_PAN_id & 0xFF00) >> 8;
+            payload_size -= SHORT_ADDRESS_SIZE;
+            start_payload_byte += SHORT_ADDRESS_SIZE;
+            break;
+        case EXTENDED_ADDRESS:
+            fr[3] =  uwb_frame_f->sour_addr & 0x00000000000000FF;
+            fr[4] = (uwb_frame_f->sour_addr & 0x000000000000FF00) >> 8;
+            fr[5] = (uwb_frame_f->sour_addr & 0x0000000000FF0000) >> 16;
+            fr[6] = (uwb_frame_f->sour_addr & 0x00000000FF000000) >> 24;
+            fr[7] = (uwb_frame_f->sour_addr & 0x000000FF00000000) >> 32;
+            fr[8] = (uwb_frame_f->sour_addr & 0x0000FF0000000000) >> 40;
+            fr[9] = (uwb_frame_f->sour_addr & 0x00FF000000000000) >> 48;
+            fr[10] = (uwb_frame_f->sour_addr & 0xFF00000000000000) >> 56;
+            payload_size -= EXTENDED_ADDRESS_SIZE;
+            start_payload_byte += EXTENDED_ADDRESS_SIZE;
+            break;
+        default:
+            break;
+    }
 
     // Payload.
-
-    #if defined(DEFAULT_PAYLOAD_FORMAT)
-        payload_unformatter_f(uwb_frame_f->raw_payload, &fr[10]);
-    #else
-        uwb_frame_f->payload_formatter_f(payload_spi_frame, uwb_frame_f);
-    #endif
+    if(uwb_frame_f->frame_t != ACKNOWLEDGMENT) {
+        #if defined(DEFAULT_PAYLOAD_FORMAT)
+            payload_unformatter_f(uwb_frame_f->raw_payload, &fr[start_payload_byte], payload_size);
+        #else
+            uwb_frame_f->payload_unformatter_f(payload_spi_frame, uwb_frame_f, payload_size);
+        #endif
+    }
 
     // Check sum.
     fr[TX_RX_BUFFER_MAX_SIZE-2] = (uwb_frame_f->check_sum & 0xFF00) >> 8;
-    fr[TX_RX_BUFFER_MAX_SIZE-1] = uwb_frame_f->check_sum & 0xFF;
+    fr[TX_RX_BUFFER_MAX_SIZE-1] = uwb_frame_f->check_sum & 0x00FF;
 
     return TX_RX_BUFFER_MAX_SIZE;
 }
@@ -549,28 +598,77 @@ void rx_buffer_formatter(spi_frame fr, void *format, const size_t sub_register) 
 
     uwb_frame_format* uwb_frame_f = (uwb_frame_format*) format;
 
-    // Control.
-    uwb_frame_f->fr_ctrl = fr[0];
+    // Frame control.
+    uwb_frame_f->frame_t = fr[0] & 0b00000111;
+    uwb_frame_f->seq_enab = (fr[0] & 0b00001000) >> 3;
+    uwb_frame_f->frame_pend = (fr[0] & 0b00010000) >> 4;
+    uwb_frame_f->ack_req = (fr[0] & 0b00100000) >> 5;
+    uwb_frame_f->intra_PAN = (fr[0] & 0b01000000) >> 6;
+
+    uwb_frame_f->dest_addr_mod = (fr[1] & 0b00001100) >> 2;
+    uwb_frame_f->sour_addr_mod = (fr[1] & 0b11000000) >> 6;
 
     // Sequence number.
-    uwb_frame_f->seq_num = fr[1];
+    uwb_frame_f->seq_num = fr[2];
 
-    // Device id.
-    uwb_frame_f->dev_id = fr[9];
-    uwb_frame_f->dev_id |= ((uint16_t)fr[8]) << 8;
-    uwb_frame_f->dev_id |= ((uint32_t)fr[7]) << 16;
-    uwb_frame_f->dev_id |= ((uint32_t)fr[6]) << 24;
-    uwb_frame_f->dev_id |= ((uint64_t)fr[5]) << 32;
-    uwb_frame_f->dev_id |= ((uint64_t)fr[4]) << 40;
-    uwb_frame_f->dev_id |= ((uint64_t)fr[3]) << 48;
-    uwb_frame_f->dev_id |= ((uint64_t)fr[2]) << 56;
+    int payload_size = TX_RX_BUFFER_MAX_SIZE - FIXED_FRAME_FIELDS_SIZE; // - Frame control - Sequence number.
+    int start_payload_byte = FIXED_FRAME_FIELDS_SIZE;
+
+    // Addressing fields.
+    switch(uwb_frame_f->dest_addr_mod) {
+        case SHORT_ADDRESS:
+            uwb_frame_f->dest_PAN_id = fr[3];
+            uwb_frame_f->dest_PAN_id |= ((uint16_t)fr[3]) << 8;
+            payload_size -= SHORT_ADDRESS_SIZE;
+            start_payload_byte += SHORT_ADDRESS_SIZE;
+            break;
+        case EXTENDED_ADDRESS:
+            uwb_frame_f->dest_addr = fr[3];
+            uwb_frame_f->dest_addr |= ((uint16_t)fr[4]) << 8;
+            uwb_frame_f->dest_addr |= ((uint32_t)fr[5]) << 16;
+            uwb_frame_f->dest_addr |= ((uint32_t)fr[6]) << 24;
+            uwb_frame_f->dest_addr |= ((uint64_t)fr[7]) << 32;
+            uwb_frame_f->dest_addr |= ((uint64_t)fr[8]) << 40;
+            uwb_frame_f->dest_addr |= ((uint64_t)fr[9]) << 48;
+            uwb_frame_f->dest_addr |= ((uint64_t)fr[10]) << 56;
+            payload_size -= EXTENDED_ADDRESS_SIZE;
+            start_payload_byte += EXTENDED_ADDRESS_SIZE;
+            break;
+        default:
+            break;
+    }
+
+    switch(uwb_frame_f->sour_addr_mod) {
+        case SHORT_ADDRESS:
+            uwb_frame_f->sour_PAN_id = fr[3];
+            uwb_frame_f->sour_PAN_id |= ((uint16_t)fr[3]) << 8;
+            payload_size -= SHORT_ADDRESS_SIZE;
+            start_payload_byte += SHORT_ADDRESS_SIZE;
+            break;
+        case EXTENDED_ADDRESS:
+            uwb_frame_f->sour_addr = fr[3];
+            uwb_frame_f->sour_addr |= ((uint16_t)fr[4]) << 8;
+            uwb_frame_f->sour_addr |= ((uint32_t)fr[5]) << 16;
+            uwb_frame_f->sour_addr |= ((uint32_t)fr[6]) << 24;
+            uwb_frame_f->sour_addr |= ((uint64_t)fr[7]) << 32;
+            uwb_frame_f->sour_addr |= ((uint64_t)fr[8]) << 40;
+            uwb_frame_f->sour_addr |= ((uint64_t)fr[9]) << 48;
+            uwb_frame_f->sour_addr |= ((uint64_t)fr[10]) << 56;
+            payload_size -= EXTENDED_ADDRESS_SIZE;
+            start_payload_byte += EXTENDED_ADDRESS_SIZE;
+            break;
+        default:
+            break;
+    }
 
     // Payload.
-    #if defined(DEFAULT_PAYLOAD_FORMAT)
-        payload_formatter_f(&fr[10], uwb_frame_f->raw_payload);
-    #else
-        uwb_frame_f->payload_formatter_f(payload_spi_frame, uwb_frame_f);
-    #endif
+    if(uwb_frame_f->frame_t != ACKNOWLEDGMENT) {
+        #if defined(DEFAULT_PAYLOAD_FORMAT)
+            payload_formatter_f(uwb_frame_f->raw_payload, &fr[start_payload_byte], payload_size);
+        #else
+            uwb_frame_f->payload_formatter_f(payload_spi_frame, uwb_frame_f, payload_size);
+        #endif
+    }
 
     // Check sum.
     uwb_frame_f->check_sum = fr[TX_RX_BUFFER_MAX_SIZE-1];

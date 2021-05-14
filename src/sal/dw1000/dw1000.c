@@ -31,14 +31,14 @@ static dw_local_data_t dw_local_data;
 static dw_config_t dw_conf = {
         .chan = CH2,
         .prf = TRPR_MHZ64,
-        .tx_preamb_length = L_1024,
-        .rx_PAC = DW_PAC32,
+        .tx_preamb_length = L_128,
+        .rx_PAC = DW_PAC8,
         .tx_code = 9,
         .rx_code = 9,
-        .ns_SFD = true,
-        .data_rate = KBPS110,
+        .ns_SFD = false,
+        .data_rate = MBPS6_8,
         .phr_mode = STANDARD,
-        .sfd_TO = (1025 + 64 - 32) // SFD timeout (preamble length + 1 + SFD length - PAC size).
+        .sfd_TO = (129 + 8 - 8), // SFD timeout (preamble length + 1 + SFD length - PAC size).
 };
 
 double calc_clock_offset(const rx_ttcko_format rx_ttcko_f, const rx_ttcki_value rx_ttcki) {
@@ -102,6 +102,52 @@ double calc_signal_power(const rx_time_format rx_time_f, const rx_fqual_format r
     }
 
     return (10.0 * log10(numerator/pow(rx_finfo_f.rxpacc - usr_sfd_f.sfd_length, 2))) - substractor;
+}
+
+bool dw_calculate_distance(const uint64_t dev_id, double distance, const int attempts, const int wait_timer) {
+
+    /*
+    Apply default antenna delay value. See NOTE 2 below.
+    dwt_setrxantennadelay(RX_ANT_DLY);
+    dwt_settxantennadelay(TX_ANT_DLY);
+
+    Set expected response's delay and timeout. See NOTE 1 and 5 below.
+    As this example only handles one incoming frame with always the same delay and timeout, those values can be set here once for all.
+    dwt_setrxaftertxdelay(POLL_TX_TO_RESP_RX_DLY_UUS);
+    dwt_setrxtimeout(RESP_RX_TIMEOUT_UUS);
+
+    uwb_frame_format message;
+    init_buffer(message, sizeof(payload), (uint8_t*)&message.raw_payload);
+    message.fr_ctrl = 0XC5;
+    message.seq_num = 0;
+    message.dev_id = dev_id;
+    message.check_sum = 0;
+
+    int i = 0;
+    bool received = false;
+
+    while(i < attempts && !received) {
+
+        // Send message to calculate distance.
+        if(!dw_send_message(&message, true, DW_START_TX_IMMEDIATE | DW_RESPONSE_EXPECTED)) {
+            return false;
+        }
+
+        // Wait response.
+        received = dw_receive_message(message, DW_START_TX_IMMEDIATE, wait_timer, dev_id);
+        if(!received) {
+            i++;
+        }
+
+    }
+
+    if(received) {
+        // calculo de distancias a traves de los offsets.
+    }
+    */
+
+    return true;
+
 }
 
 bool dw_configure(void) {
@@ -899,7 +945,7 @@ bool dw_initialise(const int config_flags) {
     return true;
 }
 
-bool dw_send_message(uwb_frame_format* frame, uint16_t tx_buffer_offset, bool ranging, uint8_t mode) {
+bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode) {
 
     // Write frame data to DW1000.
     if(!set_tx_buffer(frame)){
@@ -910,7 +956,7 @@ bool dw_send_message(uwb_frame_format* frame, uint16_t tx_buffer_offset, bool ra
     tx_fctrl_format tx_fctrl_f = dw_local_data.tx_FCTRL;
 
     tx_fctrl_f.tflen = TX_RX_BUFFER_MAX_SIZE;
-    tx_fctrl_f.txboffs = tx_buffer_offset;
+    tx_fctrl_f.txboffs = 0;
     tx_fctrl_f.tr = ranging;
 
     if(!set_tx_fctrl(&tx_fctrl_f, REST)) {
@@ -993,7 +1039,7 @@ bool dw_send_message(uwb_frame_format* frame, uint16_t tx_buffer_offset, bool ra
     return true;
 }
 
-bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const double wait_timer, const uint64_t dev_id) {
+bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int wait_timer, const uint64_t dev_id) {
 
     if ((mode & DW_NO_SYNC_PTRS) == 0) {
 
@@ -1046,18 +1092,18 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const doubl
             return false;
         }
 
-        // If delay has passed do immediate RX on unless DWT_IDLE_ON_DLY_ERR is true.
+        // If delay has passed do immediate RX on unless DW_IDLE_ON_DLY_ERR is true.
         if (sys_evt_sts_f.hpdwarn) {
 
             // Turn the delayed receive off.
-            if(!turn_off_transceiver()) {
+            if(!dw_turn_off_transceiver()) {
                 return false;
             }
 
-            // If DWT_IDLE_ON_DLY_ERR not set then re-enable receiver.
+            // If DW_IDLE_ON_DLY_ERR not set then re-enable receiver.
             if((mode & DW_IDLE_ON_DLY_ERR) == 0) {
                 sys_ctrl_f.rxenab = true;
-                if(!get_sys_ctrl(&sys_ctrl_f)) {
+                if(!set_sys_ctrl(&sys_ctrl_f)) {
                     return false;
                 }
             }
@@ -1127,9 +1173,23 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const doubl
             return false;
         }
 
-        if(dev_id != 0 && frame->dev_id != dev_id && wait_timer > 0) {
-            sys_evt_sts_f.rxsfdto = true;
-            goto RETRY_SEARCH;
+        if(dev_id != 0 && wait_timer > 0) {
+
+            bool match = false;
+
+            if(frame->dest_addr_mod == SHORT_ADDRESS) {
+                match = frame->sour_PAN_id == dev_id;
+            }
+
+            if(frame->dest_addr_mod == EXTENDED_ADDRESS) {
+                match = frame->sour_PAN_id == dev_id;
+            }
+
+            if(!match) {
+                sys_evt_sts_f.rxsfdto = true;
+                goto RETRY_SEARCH;
+            }
+
         }
 
     } else {
@@ -1262,7 +1322,7 @@ bool turn_off_transceiver(void) {
     }
 
     sys_evt_sts_format sys_evt_sts_f;
-    if(!get_sys_event_sts(&sys_evt_sts_f, -1)) {
+    if(!get_sys_event_sts(&sys_evt_sts_f, SES_OCT_0_TO_3)) {
         return false;
     }
 
@@ -1287,7 +1347,7 @@ bool turn_off_transceiver(void) {
     sys_evt_sts_f.rxphd = true;
     sys_evt_sts_f.ldedone = true;
 
-    if(!set_sys_event_sts(&sys_evt_sts_f, -1)) {
+    if(!set_sys_event_sts(&sys_evt_sts_f, SES_OCT_0_TO_3)) {
         return false;
     }
 
@@ -1307,7 +1367,7 @@ bool turn_off_transceiver(void) {
         }
     }
 
-    // Set interrupt mask to what it was
+    // Set interrupt mask to what it was.
     if(!set_sys_event_msk(&mask)) {
         return false;
     }
@@ -1322,6 +1382,8 @@ bool turn_off_transceiver(void) {
 sys_evt_sts_format dw_wait_irq_event(sys_evt_msk_format sys_evt_msk_f) {
 
     palEnablePadEvent(IOPORT1, DW_IRQ, PAL_EVENT_MODE_RISING_EDGE);
+
+    chMtxLock(&IRQ_event_mtx);
 
     sys_evt_msk_format previous_mask;
     sys_evt_msk_format current_mask;
@@ -1419,24 +1481,102 @@ sys_evt_sts_format dw_wait_irq_event(sys_evt_msk_format sys_evt_msk_f) {
 
     // Clean mask.
     set_sys_event_msk(&previous_mask);
+    chMtxUnlock(&IRQ_event_mtx);
 
     return sys_evt_sts_f;
 }
 
-bool init_buffer(uint8_t* buffer, const size_t buffer_size, uint8_t* container) {
+bool _check_frame_validity(const uwb_frame_format uwb_frame_f, const size_t buffer_size) {
 
-    if(buffer_size > TX_RX_BUFFER_MAX_SIZE-FIXED_FRAME_FIELDS_SIZE) {
+    switch(uwb_frame_f.dest_addr_mod) {
+        case PAN_ID_AND_ADDRESS_ARE_NOT_PRESENT:
+            break;
+        case SHORT_ADDRESS:
+            break;
+        case EXTENDED_ADDRESS:
+            break;
+        default:
+            return false;
+    }
+
+    switch(uwb_frame_f.sour_addr_mod) {
+        case PAN_ID_AND_ADDRESS_ARE_NOT_PRESENT:
+            break;
+        case SHORT_ADDRESS:
+            break;
+        case EXTENDED_ADDRESS:
+            break;
+        default:
+            return false;
+    }
+
+    switch(uwb_frame_f.frame_t) {
+        case DATA:
+            // Short id or extended, at least one but not both.
+            if((uwb_frame_f.dest_addr_mod + uwb_frame_f.sour_addr_mod) != 4 &&
+               (uwb_frame_f.dest_addr_mod + uwb_frame_f.sour_addr_mod) != 6) {
+                return false;
+            }
+
+            int addres_mode_size;
+
+            if(uwb_frame_f.sour_addr_mod == SHORT_ADDRESS) {
+                addres_mode_size = SHORT_ADDRESS_SIZE;
+            } else {
+                addres_mode_size = EXTENDED_ADDRESS_SIZE;
+            }
+
+            if(buffer_size > TX_RX_BUFFER_MAX_SIZE - FIXED_FRAME_FIELDS_SIZE - addres_mode_size) {
+                return false;
+            }
+
+            break;
+        case ACKNOWLEDGMENT:
+            // PAN ID and address must not be present.
+            if(uwb_frame_f.dest_addr_mod != PAN_ID_AND_ADDRESS_ARE_NOT_PRESENT ||
+               uwb_frame_f.sour_addr_mod != PAN_ID_AND_ADDRESS_ARE_NOT_PRESENT) {
+                return false;
+            }
+            break;
+        default:
+            // Unexpected value.
+            return false;
+    }
+
+    return true;
+}
+
+bool init_uwb_frame_format(uint8_t* buffer, const size_t buffer_size,
+        const frame_type_value messagge_type, const dest_sour_addr_mod_value addr_mod,
+        uwb_frame_format* uwb_frame_f) {
+
+    uwb_frame_f->frame_t = messagge_type;
+    uwb_frame_f->dest_addr_mod = addr_mod;
+    uwb_frame_f->sour_addr_mod = addr_mod;
+
+    if(!_check_frame_validity(*uwb_frame_f, buffer_size)) {
         return false;
     }
 
-    unsigned int i;
-    for(i = 0; i < buffer_size; ++i) {
-        container[i] = buffer[i];
-    }
+    uwb_frame_f->seq_enab = false;
+    uwb_frame_f->frame_pend = false;
 
-    for(i = buffer_size; i < TX_RX_BUFFER_MAX_SIZE; ++i) {
-        container[i] = 0;
-    }
+    uwb_frame_f->ack_req = false;
+    uwb_frame_f->intra_PAN = false;
+
+    uwb_frame_f->seq_num = 0;
+    uwb_frame_f->check_sum = 0;
+
+    #if defined(DEFAULT_PAYLOAD_FORMAT)
+        unsigned int i;
+        for(i = 0; i < buffer_size; ++i) {
+            uwb_frame_f->raw_payload[i] = buffer[i];
+        }
+
+        for(i = buffer_size; i < TX_RX_BUFFER_MAX_SIZE; ++i) {
+            uwb_frame_f->raw_payload[i] = 0;
+        }
+    #endif
 
     return true;
 }

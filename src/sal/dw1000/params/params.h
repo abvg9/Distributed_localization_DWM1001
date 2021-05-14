@@ -152,6 +152,14 @@ extern const uint8_t chan_idx[NUM_CH_SUPPORTED];
 #define LDE_REPC_PCODE_24       0x3850
 extern const uint16_t lde_replicaCoeff[PCODES];
 
+// Multiplication factors to convert frequency offset in Hertz to PPM crystal offset
+// NB: also changes sign so a positive value means the local RX clock is running slower than the remote TX device.
+
+#define HERTZ_TO_PPM_MULTIPLIER_CHAN_1 -1.0e6/3494.4e6
+#define HERTZ_TO_PPM_MULTIPLIER_CHAN_2 -1.0e6/3993.6e6
+#define HERTZ_TO_PPM_MULTIPLIER_CHAN_3 -1.0e6/4492.8e6
+#define HERTZ_TO_PPM_MULTIPLIER_CHAN_5 -1.0e6/6489.6e6
+
 // Structure for setting device configuration.
 typedef struct {
     channel chan;                               // Channel number.
@@ -187,5 +195,3 @@ typedef struct {
 } dw_local_data_t;
 
 #endif // _PARAMS_H_
-
-

@@ -282,47 +282,89 @@ size_t tx_fctrl_unformatter(void *format, spi_frame fr, const size_t sub_registe
 
 #define DEFAULT_PAYLOAD_FORMAT // If his flag is not defined, you must provide uwb_frame_payload(fields of the payload), payload_formatter
                                // and payload_formatter_f values. Comment this line to disable default payload format.
-#define FIXED_FRAME_FIELDS_SIZE 12
+
+#define FIXED_FRAME_FIELDS_SIZE 17
 
 // Default configuration of payload field.
 #define uwb_frame_payload                                              \
     uint8_t raw_payload[TX_RX_BUFFER_MAX_SIZE-FIXED_FRAME_FIELDS_SIZE] \
 
-#define payload_formatter                                     \
-    void (*payload_formatter_f)(spi_frame f, void* structure) \
+#define payload_formatter                                                             \
+    void (*payload_formatter_f)(spi_frame f, void* structure, const int payload_size) \
 
 /**
  * @brief Default formatter payload function.
  *
  * @param[in] fr: The spi_frame to initialize the uwb_frame_payload.
  * @param[out] format: uwb_frame_payload which will contains the spi_frame formatted.
+ * @param[in] payload_size: payload length.
  *
  */
-void payload_formatter_f(spi_frame fr, void *format);
+void payload_formatter_f(spi_frame fr, void *format, const int payload_size);
 
-#define payload_unformatter                                     \
-    void (*payload_unformatter_f)(void* structure, spi_frame f) \
+#define payload_unformatter                                                             \
+    void (*payload_unformatter_f)(void* structure, spi_frame f, const int payload_size) \
 
 /**
  * @brief Default unformatter payload function.
  *
  * @param[in] format: uwb_frame_payload which contains the payload.
  * @param[out] fr: spi_frame where this function will store the uwb_frame_payload(format).
+ * @param[in] payload_size: payload length.
  *
  */
-void payload_unformatter_f(void *format, spi_frame fr);
+void payload_unformatter_f(void *format, spi_frame fr, const int payload_size);
 
-// Frame format encoded as per the ISO/IEC 24730-62:2013 standard.
+// Possibles values of the frame_t field.
+typedef enum {
+    //BEACON = 0b000, NO IMPLEMENTED.
+    DATA = 0b001,
+    ACKNOWLEDGMENT = 0b010,
+    //MAC_COMMAND = 0b011, NO IMPLEMENTED.
+    FRAME_TYPE_RESERVED = 0b100,
+    //MULTIPURPOSE = 0b101, NO IMPLEMENTED.
+    //FRAGMENT_OR_FRAK = 0b110, NO IMPLEMENTED.
+    //EXTENDED = 0b111, NO IMPLEMENTED.
+} frame_type_value;
+
+// Possibles values of the dest_addr_mod/sour_addr_mod fields.
+typedef enum {
+    PAN_ID_AND_ADDRESS_ARE_NOT_PRESENT = 0b00,
+    DEST_ADDR_MOD_RESERVED = 0b01,
+    SHORT_ADDRESS = 0b10,
+    EXTENDED_ADDRESS = 0b011,
+} dest_sour_addr_mod_value;
+
+#define SHORT_ADDRESS_SIZE 2
+#define EXTENDED_ADDRESS_SIZE 8
+
+// Frame format encoded as per the IEEE 802.15.4 standard.
+// (https://www.silabs.com/content/usergenerated/asi/cloud/attachments/siliconlabs/en/community/wireless/proprietary/forum/jcr:content/content/primary/qna/802_15_4_promiscuous-tbzR/hivukadin_vukadi-iTXQ/802.15.4-2015.pdf).
 typedef struct {
-    uint8_t fr_ctrl;     // Frame control byte.
-    uint8_t seq_num;     // Sequence number byte.
-    uint64_t dev_id;     // Device ID.
-    uint16_t check_sum;  // Frame check-sum.
-    uwb_frame_payload;   // By default, this field contains an array with the rest of the frame's bytes,
-                         // but you can define a specific format for the payload. It it mandatory that:
-                         // sizeof(uwb_frame_payload) = TX_RX_BUFFER_MAX_SIZE - fr_ctrl - sec_num - dev_id - check_sum.
-    payload_formatter;   // Pointer to the function that formats the spi_frame. (Automatic points to default payload formatter).
-    payload_unformatter; // Pointer to the function that unformats the spi_frame. (Automatic points to default payload unformatter).
+    // Frame control bytes.
+    frame_type_value frame_t;               // Frame type.
+    unsigned int seq_enab :1;               // Security enabled.
+    unsigned int frame_pend :1;             // Frame pending.
+    unsigned int ack_req :1;                // ACK Request.
+    unsigned int intra_PAN :1;              // Local PAN address.
+    dest_sour_addr_mod_value dest_addr_mod; // Destination addressing mode.
+    dest_sour_addr_mod_value sour_addr_mod; // Source addressing mode.
+
+    uint8_t seq_num;                        // Sequence number byte.
+
+    // Addressing fields.
+    uint16_t dest_PAN_id;                   // Destination PAN identifier. (pan_adr_format.pan_id)
+    uint64_t dest_addr;                     // Destination address. (eui_format)
+    uint16_t sour_PAN_id;                   // Source PAN identifier. (pan_adr_format.pan_id)
+    uint64_t sour_addr;                     // Source address. (eui_format)
+
+    uwb_frame_payload;                      // By default, this field contains an array with the rest of the frame's bytes,
+                                            // but you can define a specific format for the payload. It it mandatory that:
+                                            // sizeof(uwb_frame_payload) = TX_RX_BUFFER_MAX_SIZE - fr_ctrl - sec_num - dev_id - check_sum.
+    payload_formatter;                      // Pointer to the function that formats the spi_frame. (Automatic points to default payload formatter).
+    payload_unformatter;                    // Pointer to the function that unformats the spi_frame. (Automatic points to default payload unformatter).
+
+    uint16_t check_sum;                     // Frame check-sum.
 } uwb_frame_format;
 
 /**
@@ -716,7 +758,7 @@ typedef struct {
                        // LDE algorithm has determined to be the first path.
     uint16_t fp_ampl1; // Reporting the magnitude of the leading edge signal seen in
                        // the accumulator data memory during the LDE algorithm’s analysis.
-    double rx_rawst; // Reports the Raw time stamp for the frame.
+    double rx_rawst;   // Reports the raw time stamp for the frame.
 } rx_time_format;
 
 /**
