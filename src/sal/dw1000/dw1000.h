@@ -229,12 +229,13 @@ void dw_reset(void);
  * @brief Send a message through UWB.
  *
  * @param frame[in]: Message to send.
- * @param frame_size[in]: This is the length of TX message (including the 2 byte CRC) - max is 1023.
  * @param ranging[in]: True if this is a ranging frame, else false.
  * @param mode[in]: DWT_START_TX_IMMEDIATE immediate TX (no response expected).
  *                  DWT_START_TX_DELAYED delayed TX (no response expected).
  *                  DWT_START_TX_IMMEDIATE | DWT_RESPONSE_EXPECTED - immediate TX (response expected - so the receiver will be automatically turned on after TX is done).
  *                  DWT_START_TX_DELAYED | DWT_RESPONSE_EXPECTED - delayed TX (response expected - so the receiver will be automatically turned on after TX is done).
+ * @param dev_id[in]: Device identifier to send the message. If this value if equal to zero
+ *                    means that the if a broadcast message.
  *
  * @note: Standard PHR mode allows up to 127 bytes
  *        if > 127 is programmed, DWT_PHRMODE_EXT needs to be set in the phrMode configuration
@@ -245,7 +246,7 @@ void dw_reset(void);
  * @return bool: Returns true if the message can be sent, otherwise false.
  *
  */
-bool dw_send_message(uwb_frame_format* frame, const bool ranging, const uint8_t mode);
+bool dw_send_message(uwb_frame_format* frame, const bool ranging, const uint8_t mode, const uint64_t dev_id);
 
 /**
  * @brief Sets the rate SPI communication of the dwm1000(8MBPS).
@@ -295,7 +296,8 @@ sys_evt_sts_format dw_wait_irq_event(sys_evt_msk_format sys_evt_msk_f);
  * @param buffer[in]: Message to store in the container.
  * @param buffer_size[in]: Size of the message.
  * @param messagge_type[in]: Message type according to the IEEE 802.15.4 standard.
- * @param addr_mod[in]: Address mode (short address or extended address).
+ * @param dest_addr_mod[in]: Destination address mode (short address or extended address).
+ * @param sour_addr_mod[in]: Source address mode (short address or extended address).
  * @param uwb_frame_f[out]: uwb_frame_format container initialized.
  *
  * @return bool: If the container could be initialized, otherwise false.
@@ -307,7 +309,7 @@ sys_evt_sts_format dw_wait_irq_event(sys_evt_msk_format sys_evt_msk_f);
  *
  */
 bool init_uwb_frame_format(uint8_t* buffer, const size_t buffer_size,
-        const frame_type_value messagge_type, const dest_sour_addr_mod_value addr_mod,
-        uwb_frame_format* uwb_frame_f);
+        const frame_type_value messagge_type, const dest_sour_addr_mod_value dest_addr_mod,
+        const dest_sour_addr_mod_value sour_addr_mod, uwb_frame_format* uwb_frame_f);
 
 #endif /* _DWM1000_H_ */

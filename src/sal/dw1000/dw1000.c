@@ -945,7 +945,43 @@ bool dw_initialise(const int config_flags) {
     return true;
 }
 
-bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode) {
+bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const uint64_t dev_id) {
+
+    switch(frame->sour_addr_mod) {
+        case PAN_ID_AND_ADDRESS_ARE_NOT_PRESENT:
+            break;
+        case SHORT_ADDRESS: {
+            pan_adr_format pan_adr_f;
+            if(!get_pan_adr(&pan_adr_f)) {
+                return false;
+            }
+            frame->sour_PAN_id = pan_adr_f.pan_id;
+            break;
+        }
+        case EXTENDED_ADDRESS: {
+            eui_format eui_f;
+            if(!get_eui(&eui_f)) {
+                return false;
+            }
+            frame->sour_addr = (eui_f.ext_ID << 24) | eui_f.mc_ID;
+            break;
+        }
+        default:
+            return false;
+    }
+
+    switch(frame->dest_addr_mod) {
+        case PAN_ID_AND_ADDRESS_ARE_NOT_PRESENT:
+            break;
+        case SHORT_ADDRESS:
+            frame->dest_PAN_id = dev_id;
+            break;
+        case EXTENDED_ADDRESS:
+            frame->dest_addr = dev_id;
+            break;
+        default:
+            return false;
+    }
 
     // Write frame data to DW1000.
     if(!set_tx_buffer(frame)){
@@ -1173,16 +1209,59 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
             return false;
         }
 
+        bool match = false;
+
+        // Check if the message was addressed to him.
+        // If the message is not broadcast.
+        switch(frame->dest_addr_mod) {
+
+            case PAN_ID_AND_ADDRESS_ARE_NOT_PRESENT:
+                match = true;
+                break;
+
+            case SHORT_ADDRESS: {
+                pan_adr_format pan_adr_f;
+                if(!get_pan_adr(&pan_adr_f)) {
+                    return false;
+                }
+
+                match = frame->sour_PAN_id == pan_adr_f.pan_id;
+                break;
+            }
+
+            case EXTENDED_ADDRESS: {
+                eui_format eui_f;
+                if(!get_eui(&eui_f)) {
+                    return false;
+                }
+
+                match = (frame->sour_addr == ((eui_f.ext_ID << 24) | eui_f.mc_ID));
+                break;
+            }
+
+            case DEST_ADDR_MOD_RESERVED:
+                match = false;
+                break;
+
+            default:
+                match = false;
+                break;
+        }
+
+        if(!match) {
+            return false;
+        }
+
+        // Check if the message was from the expected sender.
+        // If dev_id is zero, it means that it expects messages from any device.
         if(dev_id != 0 && wait_timer > 0) {
 
-            bool match = false;
-
-            if(frame->dest_addr_mod == SHORT_ADDRESS) {
+            if(frame->sour_addr_mod == SHORT_ADDRESS) {
                 match = frame->sour_PAN_id == dev_id;
             }
 
-            if(frame->dest_addr_mod == EXTENDED_ADDRESS) {
-                match = frame->sour_PAN_id == dev_id;
+            if(frame->sour_addr_mod == EXTENDED_ADDRESS) {
+                match = frame->sour_addr == dev_id;
             }
 
             if(!match) {
@@ -1511,12 +1590,7 @@ bool _check_frame_validity(const uwb_frame_format uwb_frame_f, const size_t buff
     }
 
     switch(uwb_frame_f.frame_t) {
-        case DATA:
-            // Short id or extended, at least one but not both.
-            if((uwb_frame_f.dest_addr_mod + uwb_frame_f.sour_addr_mod) != 4 &&
-               (uwb_frame_f.dest_addr_mod + uwb_frame_f.sour_addr_mod) != 6) {
-                return false;
-            }
+        case DATA: {
 
             int addres_mode_size;
 
@@ -1531,6 +1605,7 @@ bool _check_frame_validity(const uwb_frame_format uwb_frame_f, const size_t buff
             }
 
             break;
+        }
         case ACKNOWLEDGMENT:
             // PAN ID and address must not be present.
             if(uwb_frame_f.dest_addr_mod != PAN_ID_AND_ADDRESS_ARE_NOT_PRESENT ||
@@ -1547,12 +1622,12 @@ bool _check_frame_validity(const uwb_frame_format uwb_frame_f, const size_t buff
 }
 
 bool init_uwb_frame_format(uint8_t* buffer, const size_t buffer_size,
-        const frame_type_value messagge_type, const dest_sour_addr_mod_value addr_mod,
-        uwb_frame_format* uwb_frame_f) {
+        const frame_type_value messagge_type, const dest_sour_addr_mod_value dest_addr_mod,
+        const dest_sour_addr_mod_value sour_addr_mod, uwb_frame_format* uwb_frame_f) {
 
     uwb_frame_f->frame_t = messagge_type;
-    uwb_frame_f->dest_addr_mod = addr_mod;
-    uwb_frame_f->sour_addr_mod = addr_mod;
+    uwb_frame_f->dest_addr_mod = dest_addr_mod;
+    uwb_frame_f->sour_addr_mod = sour_addr_mod;
 
     if(!_check_frame_validity(*uwb_frame_f, buffer_size)) {
         return false;
