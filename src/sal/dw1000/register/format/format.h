@@ -283,7 +283,7 @@ size_t tx_fctrl_unformatter(void *format, spi_frame fr, const size_t sub_registe
 #define DEFAULT_PAYLOAD_FORMAT // If his flag is not defined, you must provide uwb_frame_payload(fields of the payload), payload_formatter
                                // and payload_formatter_f values. Comment this line to disable default payload format.
 
-#define FIXED_FRAME_FIELDS_SIZE 17
+#define FIXED_FRAME_FIELDS_SIZE 3
 
 // Default configuration of payload field.
 #define uwb_frame_payload                                              \

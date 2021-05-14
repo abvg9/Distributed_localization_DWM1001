@@ -949,6 +949,8 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
 
     switch(frame->sour_addr_mod) {
         case PAN_ID_AND_ADDRESS_ARE_NOT_PRESENT:
+            frame->sour_addr = 0;
+            frame->sour_PAN_id = 0;
             break;
         case SHORT_ADDRESS: {
             pan_adr_format pan_adr_f;
@@ -956,6 +958,7 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
                 return false;
             }
             frame->sour_PAN_id = pan_adr_f.pan_id;
+            frame->sour_addr = 0;
             break;
         }
         case EXTENDED_ADDRESS: {
@@ -964,6 +967,7 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
                 return false;
             }
             frame->sour_addr = (eui_f.ext_ID << 24) | eui_f.mc_ID;
+            frame->sour_PAN_id = 0;
             break;
         }
         default:
@@ -972,6 +976,8 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
 
     switch(frame->dest_addr_mod) {
         case PAN_ID_AND_ADDRESS_ARE_NOT_PRESENT:
+            frame->dest_PAN_id = 0;
+            frame->dest_addr = 0;
             break;
         case SHORT_ADDRESS:
             frame->dest_PAN_id = dev_id;
@@ -1368,7 +1374,7 @@ void dw_set_slow_spi_rate(void) {
     }
 }
 
-bool turn_off_transceiver(void) {
+bool dw_turn_off_transceiver(void) {
 
     // Read set interrupt mask.
     sys_evt_msk_format mask;
@@ -1592,6 +1598,11 @@ bool _check_frame_validity(const uwb_frame_format uwb_frame_f, const size_t buff
     switch(uwb_frame_f.frame_t) {
         case DATA: {
 
+            // Not allowed to send data without specifying the source.
+            if(uwb_frame_f.sour_addr_mod == PAN_ID_AND_ADDRESS_ARE_NOT_PRESENT) {
+                return false;
+            }
+
             int addres_mode_size;
 
             if(uwb_frame_f.sour_addr_mod == SHORT_ADDRESS) {
@@ -1607,11 +1618,19 @@ bool _check_frame_validity(const uwb_frame_format uwb_frame_f, const size_t buff
             break;
         }
         case ACKNOWLEDGMENT:
+
             // PAN ID and address must not be present.
             if(uwb_frame_f.dest_addr_mod != PAN_ID_AND_ADDRESS_ARE_NOT_PRESENT ||
                uwb_frame_f.sour_addr_mod != PAN_ID_AND_ADDRESS_ARE_NOT_PRESENT) {
                 return false;
             }
+
+            // ACKNOWLEDGMENT messages does not have payload.
+            if(buffer_size > 0) {
+                return false;
+            }
+
+
             break;
         default:
             // Unexpected value.
