@@ -235,7 +235,9 @@ void dw_reset(void);
  *                  DWT_START_TX_IMMEDIATE | DWT_RESPONSE_EXPECTED - immediate TX (response expected - so the receiver will be automatically turned on after TX is done).
  *                  DWT_START_TX_DELAYED | DWT_RESPONSE_EXPECTED - delayed TX (response expected - so the receiver will be automatically turned on after TX is done).
  * @param dev_id[in]: Device identifier to send the message. If this value if equal to zero
- *                    means that the if a broadcast message.
+ *                    means is a broadcast message.
+ * @param pan_id[in]: Network identifier where the receiver is located. If frame.intra_PAN == true,
+ *                    this parameter will be ignored.
  *
  * @note: Standard PHR mode allows up to 127 bytes
  *        if > 127 is programmed, DWT_PHRMODE_EXT needs to be set in the phrMode configuration
@@ -246,7 +248,7 @@ void dw_reset(void);
  * @return bool: Returns true if the message can be sent, otherwise false.
  *
  */
-bool dw_send_message(uwb_frame_format* frame, const bool ranging, const uint8_t mode, const uint64_t dev_id);
+bool dw_send_message(uwb_frame_format* frame, const bool ranging, const uint8_t mode, const uint64_t dev_id, const uint16_t pan_id);
 
 /**
  * @brief Sets the rate SPI communication of the dwm1000(8MBPS).

@@ -945,12 +945,10 @@ bool dw_initialise(const int config_flags) {
     return true;
 }
 
-bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const uint64_t dev_id) {
+bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const uint64_t dev_id, const uint16_t pan_id) {
 
     switch(frame->sour_addr_mod) {
         case PAN_ID_AND_ADDRESS_ARE_NOT_PRESENT:
-            frame->sour_addr = 0;
-            frame->sour_PAN_id = 0;
             break;
         case SHORT_ADDRESS: {
             pan_adr_format pan_adr_f;
@@ -958,16 +956,23 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
                 return false;
             }
             frame->sour_PAN_id = pan_adr_f.pan_id;
-            frame->sour_addr = 0;
+            frame->sour_addr = pan_adr_f.short_addr;
             break;
         }
         case EXTENDED_ADDRESS: {
+
             eui_format eui_f;
             if(!get_eui(&eui_f)) {
                 return false;
             }
+
+            pan_adr_format pan_adr_f;
+            if(!get_pan_adr(&pan_adr_f)) {
+                return false;
+            }
+
+            frame->sour_PAN_id = pan_adr_f.pan_id;
             frame->sour_addr = (eui_f.ext_ID << 24) | eui_f.mc_ID;
-            frame->sour_PAN_id = 0;
             break;
         }
         default:
@@ -976,15 +981,43 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
 
     switch(frame->dest_addr_mod) {
         case PAN_ID_AND_ADDRESS_ARE_NOT_PRESENT:
-            frame->dest_PAN_id = 0;
-            frame->dest_addr = 0;
             break;
-        case SHORT_ADDRESS:
-            frame->dest_PAN_id = dev_id;
-            break;
-        case EXTENDED_ADDRESS:
+        case SHORT_ADDRESS: {
+
+            pan_adr_format pan_adr_f;
+            if(!get_pan_adr(&pan_adr_f)) {
+                return false;
+            }
+
+            frame->intra_PAN = frame->dest_PAN_id == pan_adr_f.pan_id;
+
+            if(frame->intra_PAN) {
+                frame->dest_PAN_id = pan_adr_f.pan_id;
+            } else {
+                frame->dest_PAN_id = pan_id;
+            }
+
             frame->dest_addr = dev_id;
             break;
+        }
+        case EXTENDED_ADDRESS: {
+
+            pan_adr_format pan_adr_f;
+            if(!get_pan_adr(&pan_adr_f)) {
+                return false;
+            }
+
+            frame->intra_PAN = frame->dest_PAN_id == pan_adr_f.pan_id;
+
+            if(frame->intra_PAN) {
+                frame->dest_PAN_id = pan_adr_f.pan_id;
+            } else {
+                frame->dest_PAN_id = pan_id;
+            }
+
+            frame->dest_addr = dev_id;
+            break;
+        }
         default:
             return false;
     }
@@ -1037,13 +1070,12 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
         if (sys_evt_sts_f.txpute != 0 || sys_evt_sts_f.hpdwarn != 0) {
 
             // If HPDWARN or TXPUTE are set this indicates that the TXDLYS was set too late for the specified DX_TIME.
-            // remedial action is to cancel delayed send and report error.
+            // Corrective action is to cancel delayed send and report error.
             sys_ctrl_f.trxoff = true;
             if(!(set_sys_ctrl(&sys_ctrl_f))) {
                 return false;
             }
 
-            // Failed !
             return false;
         }
 
@@ -1231,7 +1263,9 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
                     return false;
                 }
 
-                match = frame->sour_PAN_id == pan_adr_f.pan_id;
+                match = frame->dest_PAN_id == pan_adr_f.pan_id;
+                match &= frame->dest_addr == pan_adr_f.short_addr;
+
                 break;
             }
 
@@ -1241,7 +1275,7 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
                     return false;
                 }
 
-                match = (frame->sour_addr == ((eui_f.ext_ID << 24) | eui_f.mc_ID));
+                match = (frame->dest_addr == ((eui_f.ext_ID << 24) | eui_f.mc_ID));
                 break;
             }
 
