@@ -302,7 +302,7 @@ size_t tx_buffer_unformatter(void *format, spi_frame fr, const size_t sub_regist
         #if defined(DEFAULT_PAYLOAD_FORMAT)
             payload_unformatter_f(uwb_frame_f->raw_payload, &fr[start_payload_byte], payload_size);
         #else
-            uwb_frame_f->payload_unformatter_f(payload_spi_frame, uwb_frame_f, payload_size);
+            uwb_frame_f->payload_unformatter_f(uwb_frame_f, &fr[start_payload_byte], payload_size);
         #endif
     }
 
@@ -621,6 +621,8 @@ void rx_buffer_formatter(spi_frame fr, void *format, const size_t sub_register) 
             uwb_frame_f->dest_PAN_id |= ((uint16_t)fr[4]) << 8;
             payload_size -= SHORT_ADDRESS_SIZE;
             start_payload_byte += SHORT_ADDRESS_SIZE;
+
+            uwb_frame_f->dest_addr = 0;
             break;
         case EXTENDED_ADDRESS:
             uwb_frame_f->dest_addr = fr[3];
@@ -633,8 +635,12 @@ void rx_buffer_formatter(spi_frame fr, void *format, const size_t sub_register) 
             uwb_frame_f->dest_addr |= ((uint64_t)fr[10]) << 56;
             payload_size -= EXTENDED_ADDRESS_SIZE;
             start_payload_byte += EXTENDED_ADDRESS_SIZE;
+
+            uwb_frame_f->dest_PAN_id = 0;
             break;
         default:
+            uwb_frame_f->dest_PAN_id = 0;
+            uwb_frame_f->dest_addr = 0;
             break;
     }
 
@@ -644,6 +650,8 @@ void rx_buffer_formatter(spi_frame fr, void *format, const size_t sub_register) 
             start_payload_byte += 1;
             uwb_frame_f->sour_PAN_id |= ((uint16_t)fr[start_payload_byte++] & 0x00FF) << 8;
             payload_size -= SHORT_ADDRESS_SIZE;
+
+            uwb_frame_f->sour_addr = 0;
             break;
         case EXTENDED_ADDRESS:
             uwb_frame_f->sour_addr = fr[payload_size];
@@ -656,17 +664,21 @@ void rx_buffer_formatter(spi_frame fr, void *format, const size_t sub_register) 
             uwb_frame_f->sour_addr |= ((uint64_t)fr[start_payload_byte++]) << 48;
             uwb_frame_f->sour_addr |= ((uint64_t)fr[start_payload_byte++]) << 56;
             payload_size -= EXTENDED_ADDRESS_SIZE;
+
+            uwb_frame_f->sour_PAN_id = 0;
             break;
         default:
+            uwb_frame_f->sour_PAN_id = 0;
+            uwb_frame_f->sour_addr = 0;
             break;
     }
 
     // Payload.
     if(uwb_frame_f->frame_t != ACKNOWLEDGMENT) {
         #if defined(DEFAULT_PAYLOAD_FORMAT)
-            payload_formatter_f(uwb_frame_f->raw_payload, &fr[start_payload_byte], payload_size);
+            payload_formatter_f(&fr[start_payload_byte], uwb_frame_f->raw_payload, payload_size);
         #else
-            uwb_frame_f->payload_formatter_f(payload_spi_frame, uwb_frame_f, payload_size);
+            uwb_frame_f->payload_formatter_f(&fr[start_payload_byte], uwb_frame_f, payload_size);
         #endif
     }
 
