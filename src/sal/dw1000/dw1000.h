@@ -206,13 +206,15 @@ bool dw_initialise(const int config_flags);
  *                        If wait_timer < SDF_TO, it will wait until the SDF time out expires.
  * @param dev_id[in]: Identifier of the sender. If this value is equal to zero, means that it will
  *                    wait for any sender.
+ * @param pan_id[in]: PAN id of the sender.
  *
  * @note: See function get_rx_buffer to understand better this function.
  *
  * @return bool: Returns true if the message was received, otherwise false.
  *
  */
-bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int wait_timer, const uint64_t dev_id);
+bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int wait_timer,
+        const uint64_t dev_id, const uint16_t pan_id);
 
 /**
  * @brief Resets the dw1000.

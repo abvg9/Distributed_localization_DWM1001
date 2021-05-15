@@ -1113,7 +1113,8 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
     return true;
 }
 
-bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int wait_timer, const uint64_t dev_id) {
+bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int wait_timer,
+        const uint64_t dev_id, const uint16_t pan_id) {
 
     if ((mode & DW_NO_SYNC_PTRS) == 0) {
 
@@ -1294,14 +1295,14 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
 
         // Check if the message was from the expected sender.
         // If dev_id is zero, it means that it expects messages from any device.
-        if(dev_id != 0 && wait_timer > 0) {
+        if((dev_id != 0 || pan_id != 0) && wait_timer > 0) {
 
-            if(frame->sour_addr_mod == SHORT_ADDRESS) {
-                match = frame->sour_PAN_id == dev_id;
+            if(pan_id != 0) {
+                match = frame->sour_PAN_id == pan_id;
             }
 
-            if(frame->sour_addr_mod == EXTENDED_ADDRESS) {
-                match = frame->sour_addr == dev_id;
+            if(dev_id != 0) {
+                match &= frame->sour_addr == dev_id;
             }
 
             if(!match) {
