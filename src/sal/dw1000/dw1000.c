@@ -1305,11 +1305,15 @@ void dw_reset(void) {
 
 void dw_set_fast_spi_rate(void) {
 
+    chMtxLock(&SPI_clock_freq_mtx);
+
     if(!fast_SPI) {
         spi_cfg.freq = NRF5_SPI_FREQ_8MBPS;
         spiStart(&SPID1, &spi_cfg);
         fast_SPI = true;
     }
+
+    chMtxUnlock(&SPI_clock_freq_mtx);
 }
 
 bool dw_set_leds(const bool enable) {
@@ -1367,11 +1371,15 @@ bool dw_set_leds(const bool enable) {
 
 void dw_set_slow_spi_rate(void) {
 
+    chMtxLock(&SPI_clock_freq_mtx);
+
     if(fast_SPI) {
         spi_cfg.freq = NRF5_SPI_FREQ_2MBPS;
         spiStart(&SPID1, &spi_cfg);
         fast_SPI = false;
     }
+
+    chMtxUnlock(&SPI_clock_freq_mtx);
 }
 
 bool dw_turn_off_transceiver(void) {

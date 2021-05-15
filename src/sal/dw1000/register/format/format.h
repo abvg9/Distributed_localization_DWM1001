@@ -358,6 +358,7 @@ typedef struct {
     uint16_t sour_PAN_id;                   // Source PAN identifier. (pan_adr_format.pan_id)
     uint64_t sour_addr;                     // Source address. (eui_format)
 
+    // Payload fields.
     uwb_frame_payload;                      // By default, this field contains an array with the rest of the frame's bytes,
                                             // but you can define a specific format for the payload. It it mandatory that:
                                             // sizeof(uwb_frame_payload) = TX_RX_BUFFER_MAX_SIZE - fr_ctrl - sec_num - dev_id - check_sum.

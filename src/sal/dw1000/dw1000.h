@@ -300,12 +300,13 @@ sys_evt_sts_format dw_wait_irq_event(sys_evt_msk_format sys_evt_msk_f);
  * @param sour_addr_mod[in]: Source address mode (short address or extended address).
  * @param uwb_frame_f[out]: uwb_frame_format container initialized.
  *
- * @return bool: If the container could be initialized, otherwise false.
+ * @return bool: If the container could be initialized returns true, otherwise false.
  *
- * @note: buffer_size must be lower or equal than TX_RX_BUFFER_MAX_SIZE.
+ * @note: buffer_size must be lower than TX_RX_BUFFER_MAX_SIZE.
  * @note: This function only fill the minimum required fields. It is mandatory to externally
- *        set other fields after calling this function, see uwb_frame_format struct definition
+ *        set other fields after calling this function, see uwb_frame_format structure definition
  *        to better understand.
+ * @note: It is mandatory to call this function to initialize all the uwb_frame_format structures.
  *
  */
 bool init_uwb_frame_format(uint8_t* buffer, const size_t buffer_size,
