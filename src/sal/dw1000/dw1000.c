@@ -38,7 +38,7 @@ static dw_config_t dw_conf = {
         .ns_SFD = false,
         .data_rate = MBPS6_8,
         .phr_mode = STANDARD,
-        .sfd_TO = (129 + 8 - 8), // SFD timeout (preamble length + 1 + SFD length - PAC size).
+        .sfd_TO = (128 + 8 - 8), // SFD timeout (preamble length + 1 + SFD length - PAC size).
 };
 
 double calc_clock_offset(const rx_ttcko_format rx_ttcko_f, const rx_ttcki_value rx_ttcki) {
@@ -1189,11 +1189,11 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
 
     systime_t start;
     sysinterval_t end;
-    const bool enable_timer = wait_timer > 0.0;
+    const bool enabled_timer = wait_timer > 0.0;
 
-    if(enable_timer) {
+    if(enabled_timer) {
         start = chVTGetSystemTime();
-        end = chTimeAddX(start, TIME_S2I(wait_timer));
+        end = chTimeAddX(start, TIME_MS2I(wait_timer));
     }
 
     // Set masks of the events related to the receiving of messages.
@@ -1207,13 +1207,13 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
     sys_evt_msk_f.maffrej = true;
     sys_evt_msk_f.mldeerr = true;
 
-    sys_evt_sts_format sys_evt_sts_f ;
+    sys_evt_sts_format sys_evt_sts_f;
 
     RETRY_SEARCH:
 
     sys_evt_sts_f = dw_wait_irq_event(sys_evt_msk_f);
 
-    while(sys_evt_sts_f.rxsfdto && enable_timer && !chVTIsSystemTimeWithin(start, end)) {
+    while(sys_evt_sts_f.rxsfdto && enabled_timer && chVTIsSystemTimeWithin(start, end)) {
 
         sys_ctrl_f.rxenab = true;
 
@@ -1298,14 +1298,20 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
                 break;
         }
 
-        if(!match) {
-            sys_evt_sts_f.rxfcg = false;
+        if(!match && enabled_timer && chVTIsSystemTimeWithin(start, end)) {
+            sys_ctrl_f.rxenab = true;
+
+            if(!set_sys_ctrl(&sys_ctrl_f)) {
+                return false;
+            }
             goto RETRY_SEARCH;
+        } else {
+            return false;
         }
 
         // Check if the message was from the expected sender.
         // If dev_id is zero, it means that it expects messages from any device.
-        if((dev_id != 0 || pan_id != 0) && wait_timer > 0) {
+        if((dev_id != 0 || pan_id != 0)) {
 
             if(pan_id != 0) {
                 match = frame->sour_PAN_id == pan_id;
@@ -1315,11 +1321,26 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
                 match &= frame->sour_addr == dev_id;
             }
 
-            if(!match) {
-                sys_evt_sts_f.rxfcg = false;
+            if(!match  && enabled_timer && chVTIsSystemTimeWithin(start, end)) {
+                sys_ctrl_f.rxenab = false;
+
+                if(!set_sys_ctrl(&sys_ctrl_f)) {
+                    return false;
+                }
+
+                sys_ctrl_f.rxenab = true;
+
+                if(!set_sys_ctrl(&sys_ctrl_f)) {
+                    return false;
+                }
+
                 goto RETRY_SEARCH;
+            } else {
+                return false;
             }
 
+        } else {
+            return false;
         }
 
     } else {
