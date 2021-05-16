@@ -1299,7 +1299,6 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
         }
 
         if(!match) {
-            sys_evt_sts_f.rxsfdto = true;
             goto RETRY_SEARCH;
         }
 
@@ -1316,7 +1315,6 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
             }
 
             if(!match) {
-                sys_evt_sts_f.rxsfdto = true;
                 goto RETRY_SEARCH;
             }
 
