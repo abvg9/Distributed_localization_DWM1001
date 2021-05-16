@@ -1207,9 +1207,11 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
     sys_evt_msk_f.maffrej = true;
     sys_evt_msk_f.mldeerr = true;
 
-    sys_evt_sts_format sys_evt_sts_f = dw_wait_irq_event(sys_evt_msk_f);
+    sys_evt_sts_format sys_evt_sts_f ;
 
     RETRY_SEARCH:
+
+    sys_evt_sts_f = dw_wait_irq_event(sys_evt_msk_f);
 
     while(sys_evt_sts_f.rxsfdto && enable_timer && !chVTIsSystemTimeWithin(start, end)) {
 
@@ -1271,12 +1273,19 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
             }
 
             case EXTENDED_ADDRESS: {
+
                 eui_format eui_f;
                 if(!get_eui(&eui_f)) {
                     return false;
                 }
 
-                match = (frame->dest_addr == ((eui_f.ext_ID << 24) | eui_f.mc_ID));
+                pan_adr_format pan_adr_f;
+                if(!get_pan_adr(&pan_adr_f)) {
+                    return false;
+                }
+
+                match = frame->dest_PAN_id == pan_adr_f.pan_id;
+                match &= (frame->dest_addr == ((eui_f.ext_ID << 24) | eui_f.mc_ID));
                 break;
             }
 
