@@ -1290,7 +1290,8 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
         }
 
         if(!match) {
-            return false;
+            sys_evt_sts_f.rxsfdto = true;
+            goto RETRY_SEARCH;
         }
 
         // Check if the message was from the expected sender.
@@ -1614,6 +1615,19 @@ sys_evt_sts_format dw_wait_irq_event(sys_evt_msk_format sys_evt_msk_f) {
     return sys_evt_sts_f;
 }
 
+/**
+ * @brief Checks if a given uwb_frame_format does not meet the IEEE 802.15.4 standard.
+ *
+ * @param uwb_frame_f[in]: Structure that contains the frame to be send/received.
+ * @param buffer_size[in]: Size of the payload. If the frame type does not support payload, this value must be zero,
+ *                         for example uwb_frame_f.frame_t == ACKNOWLEDGMENT.
+ *
+ * @note: ACKNOWLEDGMENT => source and destination must be equal to PAN_ID_AND_ADDRESS_ARE_NOT_PRESENT.
+ *        DATA           => source must be SHORT_ADDRESS or EXTENDED_ADDRESS.
+ *
+ * @return bool: Returns true if the uwb_frame_format has a good format, otherwise false.
+ *
+ */
 bool _check_frame_validity(const uwb_frame_format uwb_frame_f, const size_t buffer_size) {
 
     switch(uwb_frame_f.dest_addr_mod) {
@@ -1654,9 +1668,11 @@ bool _check_frame_validity(const uwb_frame_format uwb_frame_f, const size_t buff
                 addres_mode_size = EXTENDED_ADDRESS_SIZE;
             }
 
-            if(buffer_size > TX_RX_BUFFER_MAX_SIZE - FIXED_FRAME_FIELDS_SIZE - addres_mode_size) {
-                return false;
-            }
+            #if defined(DEFAULT_PAYLOAD_FORMAT)
+                if(buffer_size > TX_RX_BUFFER_MAX_SIZE - FIXED_FRAME_FIELDS_SIZE - addres_mode_size) {
+                    return false;
+                }
+            #endif
 
             break;
         }
@@ -1669,10 +1685,11 @@ bool _check_frame_validity(const uwb_frame_format uwb_frame_f, const size_t buff
             }
 
             // ACKNOWLEDGMENT messages does not have payload.
-            if(buffer_size > 0) {
-                return false;
-            }
-
+            #if defined(DEFAULT_PAYLOAD_FORMAT)
+                if(buffer_size > 0) {
+                    return false;
+                }
+            #endif
 
             break;
         default:

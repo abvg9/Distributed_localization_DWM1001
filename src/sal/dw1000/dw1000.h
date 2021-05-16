@@ -311,6 +311,8 @@ sys_evt_sts_format dw_wait_irq_event(sys_evt_msk_format sys_evt_msk_f);
  *        set other fields after calling this function, see uwb_frame_format structure definition
  *        to better understand.
  * @note: It is mandatory to call this function to initialize all the uwb_frame_format structures.
+ * @note: If the structure you want to initialize is to receive a dest_addr_mod message, sour_addr_mod does not have any importance,
+ *        simply pass values ​​according to the type of packet the IEEE 802.15.4 standard
  *
  */
 bool init_uwb_frame_format(uint8_t* buffer, const size_t buffer_size,

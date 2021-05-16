@@ -641,8 +641,8 @@ void rx_buffer_formatter(spi_frame fr, void *format, const size_t sub_register) 
             payload_size -= SHORT_ADDRESS_SIZE;
             start_payload_byte += SHORT_ADDRESS_SIZE;
 
-            uwb_frame_f->dest_addr = fr[4];
-            uwb_frame_f->dest_addr |= ((uint16_t)fr[5]) << 8;
+            uwb_frame_f->dest_addr = fr[5];
+            uwb_frame_f->dest_addr |= ((uint16_t)fr[6]) << 8;
             payload_size -= SHORT_ADDRESS_SIZE;
             start_payload_byte += SHORT_ADDRESS_SIZE;
             break;
