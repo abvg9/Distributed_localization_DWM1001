@@ -36,8 +36,6 @@
 #define DW_PAC32       2   // PAC 32 (recommended for RX of preamble length 512.
 #define DW_PAC64       3   // PAC 64 (recommended for RX of preamble length 1024 and up.
 
-#define DEFAULT_EXPECTED_RX_TX_DIFFERENCE_TIMES 0.01
-
 typedef struct {
     uint32_t lo32;
     uint16_t target[NUM_PRF];
