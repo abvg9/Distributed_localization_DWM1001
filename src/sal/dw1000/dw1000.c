@@ -436,19 +436,19 @@ bool dw_eneable(const int config_flags) {
 
     switch(dw_conf.data_rate) {
         case KBPS110:
-            ack_resp_t_f.ack_tim = 0;
-            break;
-        case KBPS850:
             ack_resp_t_f.ack_tim = 2;
             break;
+        case KBPS850:
+            ack_resp_t_f.ack_tim = 4;
+            break;
         case MBPS6_8:
-            ack_resp_t_f.ack_tim = 3;
+            ack_resp_t_f.ack_tim = 6;
             break;
         default:
             return false;
     }
 
-    ack_resp_t_f.w4r_tim = DEFAULT_W4R_TIM;
+    ack_resp_t_f.w4r_tim = 0.0;
 
     if(!set_ack_resp_t(&ack_resp_t_f)) {
         return false;
@@ -1230,7 +1230,50 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
     }
 
     if(frame->ack_req) {
-        return dw_receive_message(frame, DW_START_RX_IMMEDIATE, -1, 0, 0);
+
+        sys_ctrl_f.rxenab = false;
+        if(!set_sys_ctrl(&sys_ctrl_f)) {
+            return false;
+        }
+
+        rx_finfo_format rx_finfo_f;
+        if(!get_rx_finfo(&rx_finfo_f)) {
+            return false;
+        }
+
+        if (rx_finfo_f.rxflen <= TX_RX_BUFFER_MAX_SIZE) {
+            if(!get_rx_buffer(frame)) {
+                return false;
+            }
+        }
+
+        // Clear good RX frame event in the DW1000 status register.
+        sys_evt_sts_f.rxfcg = false;
+        if(!set_sys_event_sts(&sys_evt_sts_f, SES_OCT_0_TO_3)) {
+            return false;
+        }
+
+        // Check if the last received message was an ACKNOWLEDGMENT message.
+        if(frame->frame_t == ACKNOWLEDGMENT) {
+
+            rx_time_format rx_time_f;
+            if(!get_rx_time(&rx_time_f, RX_TIME_OCT_0_TO_3)) {
+                return false;
+            }
+
+            tx_time_format tx_time_f;
+            if(!get_tx_time(&tx_time_f, TX_TIME_OCT_0_TO_3)) {
+                return false;
+            }
+
+            // Check if the difference between the sending and receiving time stamp match.
+            if((tx_time_f.tx_stamp - rx_time_f.rx_stamp) < DEFAULT_EXPECTED_RX_TX_DIFFERENCE_TIMES) {
+                return true;
+            }
+
+        }
+
+        return false;
     }
 
     return true;

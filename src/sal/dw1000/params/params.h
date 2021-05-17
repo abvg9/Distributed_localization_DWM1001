@@ -30,13 +30,13 @@
 #define NUM_CH_SUPPORTED 8  // Supported channels are '0', 1, 2, 3, 4, 5, '6', 7.
 #define PCODES 25           // Supported preamble codes.
 
-#define DEFAULT_W4R_TIM 0.5 // (seconds)
-
 // Constants for specifying preamble acquisition chunk (PAC). Size in symbols.
 #define DW_PAC8        0   // PAC 8 (recommended for RX of preamble length 128 and below.
 #define DW_PAC16       1   // PAC 16 (recommended for RX of preamble length 256.
 #define DW_PAC32       2   // PAC 32 (recommended for RX of preamble length 512.
 #define DW_PAC64       3   // PAC 64 (recommended for RX of preamble length 1024 and up.
+
+#define DEFAULT_EXPECTED_RX_TX_DIFFERENCE_TIMES 0.01
 
 typedef struct {
     uint32_t lo32;
