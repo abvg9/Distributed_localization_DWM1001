@@ -140,6 +140,35 @@ void dw_disable(void);
  */
 bool dw_eneable(const int config_flags);
 
+// Bitmask for dw_enable_frame_filter function.
+#define DW_FF_NOTYPE_EN 0x0   // No frame types allowed.
+#define DW_FF_COORD_EN 0x1    // Behave as coordinator (can receive frames with no destination address (PAN ID has to match)).
+#define DW_FF_BEACON_EN 0x2   // Beacon frames allowed.
+#define DW_FF_DATA_EN 0x4     // Data frames allowed.
+#define DW_FF_ACK_EN 0x8      // Ack frames allowed.
+#define DW_FF_MAC_EN 0x10     // Mac control frames allowed.
+#define DW_FF_RSVD_EN 0x20    // Reserved frame types allowed.
+#define DW_AUTO_ACK 0X40      // Automatic acknowledgment enable.
+#define DW_AUTO_ACK_PEND 0X80 // Automatic fill acknowledgment pending bit control.
+/**
+ * @brief This is used to enable the frame filtering. The default option is to
+ *        accept any data and ACK frames with correct destination address.
+ *
+ * @param mode[in]: Bitmask. Enables/disables the frame filtering options according to
+ *                  DW_FF_NOTYPE_EN - No frame types allowed.
+ *                  DW_FF_COORD_EN - Behave as coordinator (can receive frames with no destination address (PAN ID has to match)).
+ *                  DW_FF_BEACON_EN - Beacon frames allowed.
+ *                  DW_FF_DATA_EN - Data frames allowed.
+ *                  DW_FF_ACK_EN - Ack frames allowed.
+ *                  DW_FF_MAC_EN - Mac control frames allowed.
+ *                  DW_FF_RSVD_EN - Reserved frame types allowed.
+ *                  DW_AUTO_ACK - Automatic acknowledgment enable.
+ *                  DW_AUTO_ACK_PEND - Automatic fill acknowledgment pending bit control.
+ *
+ * @return bool: True if the frame filter mode can be enabled, otherwise false.
+ */
+bool dw_enable_frame_filter(const uint16_t mode);
+
 /**
  * @brief This is used to read the OTP data from given address.
  *

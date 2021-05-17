@@ -424,7 +424,91 @@ bool dw_eneable(const int config_flags) {
     // Configure leds.
     ret &= dw_set_leds(true);
 
+    // Configure frame filter.
+    ret &= dw_enable_frame_filter(DW_FF_COORD_EN | DW_FF_BEACON_EN | DW_FF_DATA_EN | DW_FF_ACK_EN |
+            DW_FF_MAC_EN | DW_FF_RSVD_EN | DW_AUTO_ACK | DW_AUTO_ACK_PEND);
+
     return ret;
+}
+
+bool dw_enable_frame_filter(const uint16_t mode) {
+
+    sys_cfg_format sys_cfg_f;
+    if(!get_sys_cfg(&sys_cfg_f)) {
+        return false;
+    }
+
+    if(mode) {
+
+        if(mode & DW_FF_COORD_EN) {
+            sys_cfg_f.ffbc = true;
+        } else {
+            sys_cfg_f.ffbc = false;
+        }
+
+        if(mode & DW_FF_BEACON_EN) {
+            sys_cfg_f.ffab = true;
+        } else {
+            sys_cfg_f.ffab = false;
+        }
+
+        if(mode & DW_FF_DATA_EN) {
+            sys_cfg_f.ffad = true;
+        } else {
+            sys_cfg_f.ffad = false;
+        }
+
+        if(mode & DW_FF_ACK_EN) {
+            sys_cfg_f.ffaa = true;
+        } else {
+            sys_cfg_f.ffaa = false;
+        }
+
+        if(mode & DW_FF_MAC_EN) {
+            sys_cfg_f.ffam = true;
+        } else {
+            sys_cfg_f.ffam = false;
+        }
+
+        if(mode & DW_FF_RSVD_EN) {
+            sys_cfg_f.ffar = true;
+        } else {
+            sys_cfg_f.ffar = false;
+        }
+
+        if(mode & DW_AUTO_ACK) {
+            sys_cfg_f.autoack = true;
+        } else {
+            sys_cfg_f.autoack = false;
+        }
+
+        if(mode & DW_AUTO_ACK_PEND) {
+            sys_cfg_f.aackpend = true;
+        } else {
+            sys_cfg_f.aackpend = false;
+        }
+
+        sys_cfg_f.ffen = true;
+
+    } else {
+        sys_cfg_f.ffbc = false;
+        sys_cfg_f.ffab = false;
+        sys_cfg_f.ffad = false;
+        sys_cfg_f.ffaa = false;
+        sys_cfg_f.ffam = false;
+        sys_cfg_f.ffar = false;
+        sys_cfg_f.autoack = false;
+        sys_cfg_f.aackpend = false;
+        sys_cfg_f.ffen = false;
+    }
+
+    dw_local_data.sys_CFG_reg = sys_cfg_f;
+
+    if(!set_sys_cfg(&dw_local_data.sys_CFG_reg)) {
+        return false;
+    }
+
+    return true;
 }
 
 bool dw_get_otp_value(const otp_memory_direction mem_dir, uint32_t* read_value) {
@@ -1110,6 +1194,10 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
         return false;
     }
 
+    if(frame->ack_req) {
+        return dw_receive_message(frame, DW_START_RX_IMMEDIATE, -1, 0, 0);
+    }
+
     return true;
 }
 
@@ -1189,11 +1277,23 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
 
     systime_t start;
     sysinterval_t end;
-    const bool enabled_timer = wait_timer > 0.0;
+    const bool enabled_timer = wait_timer > 0;
+    const bool enabled_infinite_wait = wait_timer < 0;
+
+    sys_cfg_format sys_cfg_f;
+    if(!get_sys_cfg(&sys_cfg_f)) {
+        return false;
+    }
 
     if(enabled_timer) {
         start = chVTGetSystemTime();
         end = chTimeAddX(start, TIME_MS2I(wait_timer));
+
+        sys_cfg_f.rxautr = true;
+        if(!set_sys_cfg(&sys_cfg_f)) {
+            return false;
+        }
+
     }
 
     // Set masks of the events related to the receiving of messages.
@@ -1213,13 +1313,7 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
 
     sys_evt_sts_f = dw_wait_irq_event(sys_evt_msk_f);
 
-    while(sys_evt_sts_f.rxsfdto && enabled_timer && chVTIsSystemTimeWithin(start, end)) {
-
-        sys_ctrl_f.rxenab = true;
-
-        if(!set_sys_ctrl(&sys_ctrl_f)) {
-            return false;
-        }
+    while(sys_evt_sts_f.rxsfdto && ((enabled_timer && chVTIsSystemTimeWithin(start, end)) || enabled_infinite_wait)) {
 
         sys_evt_sts_f.rxsfdto = false;
         if(!set_sys_event_sts(&sys_evt_sts_f, SES_OCT_0_TO_3)) {
@@ -1298,14 +1392,13 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
                 break;
         }
 
-        if(!match && enabled_timer && chVTIsSystemTimeWithin(start, end)) {
-            sys_ctrl_f.rxenab = true;
-
-            if(!set_sys_ctrl(&sys_ctrl_f)) {
-                return false;
-            }
+        if(!match && ((enabled_timer && chVTIsSystemTimeWithin(start, end)) || enabled_infinite_wait)) {
             goto RETRY_SEARCH;
         } else {
+            sys_cfg_f.rxautr = false;
+            if(!set_sys_cfg(&sys_cfg_f)) {
+                return false;
+            }
             return false;
         }
 
@@ -1321,25 +1414,21 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
                 match &= frame->sour_addr == dev_id;
             }
 
-            if(!match  && enabled_timer && chVTIsSystemTimeWithin(start, end)) {
-                sys_ctrl_f.rxenab = false;
-
-                if(!set_sys_ctrl(&sys_ctrl_f)) {
-                    return false;
-                }
-
-                sys_ctrl_f.rxenab = true;
-
-                if(!set_sys_ctrl(&sys_ctrl_f)) {
-                    return false;
-                }
-
+            if(!match && ((enabled_timer && chVTIsSystemTimeWithin(start, end)) || enabled_infinite_wait)) {
                 goto RETRY_SEARCH;
             } else {
+                sys_cfg_f.rxautr = false;
+                if(!set_sys_cfg(&sys_cfg_f)) {
+                    return false;
+                }
                 return false;
             }
 
         } else {
+            sys_cfg_f.rxautr = false;
+            if(!set_sys_cfg(&sys_cfg_f)) {
+                return false;
+            }
             return false;
         }
 
@@ -1357,6 +1446,16 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
             return false;
         }
 
+        sys_cfg_f.rxautr = false;
+        if(!set_sys_cfg(&sys_cfg_f)) {
+            return false;
+        }
+
+        return false;
+    }
+
+    sys_cfg_f.rxautr = false;
+    if(!set_sys_cfg(&sys_cfg_f)) {
         return false;
     }
 
