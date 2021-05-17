@@ -428,6 +428,32 @@ bool dw_eneable(const int config_flags) {
     ret &= dw_enable_frame_filter(DW_FF_COORD_EN | DW_FF_BEACON_EN | DW_FF_DATA_EN | DW_FF_ACK_EN |
             DW_FF_MAC_EN | DW_FF_RSVD_EN | DW_AUTO_ACK | DW_AUTO_ACK_PEND);
 
+    // Configure acknowledgment time and response time.
+    ack_resp_t_format ack_resp_t_f;
+    if(!get_ack_resp_t(&ack_resp_t_f)) {
+        return false;
+    }
+
+    switch(dw_conf.data_rate) {
+        case KBPS110:
+            ack_resp_t_f.ack_tim = 0;
+            break;
+        case KBPS850:
+            ack_resp_t_f.ack_tim = 2;
+            break;
+        case MBPS6_8:
+            ack_resp_t_f.ack_tim = 3;
+            break;
+        default:
+            return false;
+    }
+
+    ack_resp_t_f.w4r_tim = DEFAULT_W4R_TIM;
+
+    if(!set_ack_resp_t(&ack_resp_t_f)) {
+        return false;
+    }
+
     return ret;
 }
 
@@ -1123,7 +1149,6 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
     }
 
     // Start transmission.
-
     sys_ctrl_format sys_ctrl_f;
     if(!get_sys_ctrl(&sys_ctrl_f)) {
         return false;
@@ -1185,12 +1210,22 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
         sys_evt_sts_f.txberr = false;
         set_sys_event_sts(&sys_evt_sts_f, SES_OCT_0_TO_3);
 
+        sys_ctrl_f.txstrt = false;
+        if(!set_sys_ctrl(&sys_ctrl_f)) {
+            return false;
+        }
+
         return false;
     }
 
     // Clear TX frame sent event.
     sys_evt_sts_f.txfrs = false;
     if(!set_sys_event_sts(&sys_evt_sts_f, SES_OCT_0_TO_3)) {
+        return false;
+    }
+
+    sys_ctrl_f.txstrt = false;
+    if(!set_sys_ctrl(&sys_ctrl_f)) {
         return false;
     }
 

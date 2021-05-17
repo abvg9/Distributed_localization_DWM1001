@@ -30,6 +30,8 @@
 #define NUM_CH_SUPPORTED 8  // Supported channels are '0', 1, 2, 3, 4, 5, '6', 7.
 #define PCODES 25           // Supported preamble codes.
 
+#define DEFAULT_W4R_TIM 0.5 // (seconds)
+
 // Constants for specifying preamble acquisition chunk (PAC). Size in symbols.
 #define DW_PAC8        0   // PAC 8 (recommended for RX of preamble length 128 and below.
 #define DW_PAC16       1   // PAC 16 (recommended for RX of preamble length 256.
