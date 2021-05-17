@@ -448,7 +448,7 @@ bool dw_eneable(const int config_flags) {
             return false;
     }
 
-    ack_resp_t_f.w4r_tim = 0;
+    ack_resp_t_f.w4r_tim = 0.0;
 
     if(!set_ack_resp_t(&ack_resp_t_f)) {
         return false;
@@ -1202,6 +1202,8 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
             0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0};
     sys_evt_msk_f.mtxfrs = true;
 
+    get_sys_event_sts(&sys_evt_sts_f, -1);
+
     sys_evt_sts_f = dw_wait_irq_event(sys_evt_msk_f);
 
     if(!sys_evt_sts_f.txfrs) {
@@ -1227,8 +1229,15 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
         return false;
     }
 
+    // To disable wait4resp it is mandatory to turn on and off rxenab.
+    sys_ctrl_f.rxenab = true;
     sys_ctrl_f.wait4resp = false;
     sys_ctrl_f.txstrt = false;
+    if(!set_sys_ctrl(&sys_ctrl_f)) {
+        return false;
+    }
+
+    sys_ctrl_f.rxenab = false;
     if(!set_sys_ctrl(&sys_ctrl_f)) {
         return false;
     }
@@ -1236,6 +1245,10 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
     if(frame->ack_req) {
 
         bool received_ack = false;
+        uwb_frame_format rx_frame;
+        init_uwb_frame_format(NULL, 0, DATA, PAN_ID_AND_ADDRESS_ARE_NOT_PRESENT,
+                SHORT_ADDRESS, &rx_frame);
+
 
         rx_finfo_format rx_finfo_f;
         if(!get_rx_finfo(&rx_finfo_f)) {
@@ -1253,24 +1266,35 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
         }
 
         // Check if the last received message was an ACKNOWLEDGMENT message.
-        if(frame->frame_t == ACKNOWLEDGMENT && sys_evt_sts_f.rxfcg) {
+        if(frame->frame_t == ACKNOWLEDGMENT && sys_evt_sts_f.rxfcg &&
+                frame->seq_num == rx_frame.seq_num) {
             received_ack = true;
         }
 
         // Clear good RX frame event in the DW1000 status register.
-        sys_evt_sts_f.rxfcg = false;
+        sys_evt_sts_f.rxfcg = true;
         if(!set_sys_event_sts(&sys_evt_sts_f, SES_OCT_0_TO_3)) {
             return false;
         }
 
+        if(!get_sys_ctrl(&sys_ctrl_f)) {
+            return false;
+        }
+
+        if(received_ack) {
+            frame->seq_num++;
+        }
         return received_ack;
     }
 
+    frame->seq_num++;
     return true;
 }
 
 bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int wait_timer,
         const uint64_t dev_id, const uint16_t pan_id) {
+
+    frame_type_value expected_type = frame->frame_t;
 
     if ((mode & DW_NO_SYNC_PTRS) == 0) {
 
@@ -1414,7 +1438,7 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
         }
 
         // Clear good RX frame event in the DW1000 status register.
-        sys_evt_sts_f.rxfcg = false;
+        sys_evt_sts_f.rxfcg = true;
         if(!set_sys_event_sts(&sys_evt_sts_f, SES_OCT_0_TO_3)) {
             return false;
         }
@@ -1422,7 +1446,6 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
         bool match = false;
 
         // Check if the message was addressed to him.
-        // If the message is not broadcast.
         switch(frame->dest_addr_mod) {
 
             case PAN_ID_AND_ADDRESS_ARE_NOT_PRESENT:
@@ -1487,6 +1510,11 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
                 goto RETRY_SEARCH;
             }
 
+        }
+
+        // Check if the message type is the expected.
+        if(frame->frame_t != expected_type) {
+            goto RETRY_SEARCH;
         }
 
     } else {
