@@ -1296,6 +1296,13 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
 
     }
 
+    if(enabled_infinite_wait) {
+        sys_cfg_f.rxautr = true;
+        if(!set_sys_cfg(&sys_cfg_f)) {
+            return false;
+        }
+    }
+
     // Set masks of the events related to the receiving of messages.
     sys_evt_msk_format sys_evt_msk_f= {0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0,
             0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0};
