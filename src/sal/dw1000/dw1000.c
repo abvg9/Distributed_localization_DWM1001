@@ -1401,12 +1401,6 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
 
         if(!match && ((enabled_timer && chVTIsSystemTimeWithin(start, end)) || enabled_infinite_wait)) {
             goto RETRY_SEARCH;
-        } else {
-            sys_cfg_f.rxautr = false;
-            if(!set_sys_cfg(&sys_cfg_f)) {
-                return false;
-            }
-            return false;
         }
 
         // Check if the message was from the expected sender.
@@ -1423,20 +1417,8 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
 
             if(!match && ((enabled_timer && chVTIsSystemTimeWithin(start, end)) || enabled_infinite_wait)) {
                 goto RETRY_SEARCH;
-            } else {
-                sys_cfg_f.rxautr = false;
-                if(!set_sys_cfg(&sys_cfg_f)) {
-                    return false;
-                }
-                return false;
             }
 
-        } else {
-            sys_cfg_f.rxautr = false;
-            if(!set_sys_cfg(&sys_cfg_f)) {
-                return false;
-            }
-            return false;
         }
 
     } else {
