@@ -209,22 +209,79 @@ size_t tx_fctrl_unformatter(void* format, spi_frame fr, const size_t sub_registe
 
 void payload_formatter_f(spi_frame fr, void *format, const int payload_size) {
 
-    uint8_t* buffer = (uint8_t*)format;
+    uwb_frame_format* frame = (uwb_frame_format*)format;
 
+    // API flags.
+    frame->api_message_t = fr[0];
+
+    int start_payload_index = 0;
+
+    switch(frame->api_message_t) {
+        case CALC_DISTANCE:
+            break;
+        case CALC_DISTANCE_RESP: {
+
+            uint64_t rx_stamp = fr[1];
+            rx_stamp |= ((uint16_t)fr[2]) << 8;
+            rx_stamp |= ((uint32_t)fr[3]) << 16;
+            rx_stamp |= ((uint32_t)fr[4]) << 24;
+            rx_stamp |= ((uint64_t)fr[5]) << 32;
+            rx_stamp |= ((uint64_t)fr[6]) << 40;
+            rx_stamp |= ((uint64_t)fr[7]) << 48;
+            rx_stamp |= ((uint64_t)fr[8]) << 56;
+
+            frame->rx_stamp = (double) rx_stamp;
+
+            start_payload_index = 17;
+            break;
+        }
+        default:
+            break;
+    }
+
+    // Payload.
     int i;
-    for(i = 0; i < payload_size; ++i) {
-        buffer[i] = fr[i];
+    for(i = start_payload_index; i < payload_size; ++i) {
+        frame->raw_payload[i] = fr[i];
     }
 
 }
 
 void payload_unformatter_f(void *format, spi_frame fr, const int payload_size) {
 
-    uint8_t* buffer = (uint8_t*) format;
+    uwb_frame_format* frame = (uwb_frame_format*)format;
 
+    // API flags.
+    fr[0] = frame->api_message_t;
+
+    int start_payload_index = 0;
+
+    switch(frame->api_message_t) {
+        case CALC_DISTANCE:
+            break;
+        case CALC_DISTANCE_RESP: {
+
+            uint64_t rx_stamp = (uint64_t) frame->rx_stamp;
+            fr[1] = rx_stamp & 0x00000000000000FF;
+            fr[2] = (rx_stamp & 0x000000000000FF00) >> 8;
+            fr[3] = (rx_stamp & 0x0000000000FF0000) >> 16;
+            fr[4] = (rx_stamp & 0x00000000FF000000) >> 24;
+            fr[5] = (rx_stamp & 0x000000FF00000000) >> 32;
+            fr[6] = (rx_stamp & 0x0000FF0000000000) >> 40;
+            fr[7] = (rx_stamp & 0x00FF000000000000) >> 48;
+            fr[8] = (rx_stamp & 0xFF00000000000000) >> 56;
+
+            start_payload_index = 9;
+            break;
+        }
+        default:
+            break;
+    }
+
+    // Payload.
     int i;
-    for(i = 0; i < payload_size; ++i) {
-        fr[i] = buffer[i];
+    for(i = start_payload_index; i < payload_size; ++i) {
+        fr[i] = frame->raw_payload[i];
     }
 
 }
@@ -319,7 +376,7 @@ size_t tx_buffer_unformatter(void *format, spi_frame fr, const size_t sub_regist
     // Payload.
     if(uwb_frame_f->frame_t != ACKNOWLEDGMENT) {
         #if defined(DEFAULT_PAYLOAD_FORMAT)
-            payload_unformatter_f(uwb_frame_f->raw_payload, &fr[start_payload_byte], payload_size);
+            payload_unformatter_f(uwb_frame_f, &fr[start_payload_byte], payload_size);
         #else
             uwb_frame_f->payload_unformatter_f(uwb_frame_f, &fr[start_payload_byte], payload_size);
         #endif
@@ -691,7 +748,7 @@ void rx_buffer_formatter(spi_frame fr, void *format, const size_t sub_register) 
             uwb_frame_f->sour_PAN_id |= ((uint16_t)fr[start_payload_byte++] & 0x00FF) << 8;
             payload_size -= SHORT_ADDRESS_SIZE;
 
-            uwb_frame_f->sour_addr = fr[payload_size++];
+            uwb_frame_f->sour_addr = fr[start_payload_byte++];
             uwb_frame_f->sour_addr |= ((uint16_t)fr[start_payload_byte++]) << 8;
             uwb_frame_f->sour_addr |= ((uint32_t)fr[start_payload_byte++]) << 16;
             uwb_frame_f->sour_addr |= ((uint32_t)fr[start_payload_byte++]) << 24;
@@ -712,7 +769,7 @@ void rx_buffer_formatter(spi_frame fr, void *format, const size_t sub_register) 
     // Payload.
     if(uwb_frame_f->frame_t != ACKNOWLEDGMENT) {
         #if defined(DEFAULT_PAYLOAD_FORMAT)
-            payload_formatter_f(&fr[start_payload_byte], uwb_frame_f->raw_payload, payload_size);
+            payload_formatter_f(&fr[start_payload_byte], uwb_frame_f, payload_size);
         #else
             uwb_frame_f->payload_formatter_f(&fr[start_payload_byte], uwb_frame_f, payload_size);
         #endif

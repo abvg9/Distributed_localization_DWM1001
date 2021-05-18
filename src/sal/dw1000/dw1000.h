@@ -26,17 +26,6 @@
 #define dw_power_off palClearPad(IOPORT1, DW_RST)
 
 /**
- * @brief Calculates the clock offset between two dw1000 devices.
- *
- * @param[in] rx_ttcko_f: Structure which contains the receiver time tracking offset.
- * @param[in] rx_ttcki: Value that contains the receiver time tracking interval.
- *
- * @return double: Clock offset in ppm units.
- *
- */
-double calc_clock_offset(const rx_ttcko_format rx_ttcko_f, const rx_ttcki_value rx_ttcki);
-
-/**
  * @brief Calculates the estimated signal power of a received message.
  *
  * @param[in] rx_fqual_f: Structure which contains the fp_ampl2 and fp_ampl3 values.
@@ -105,14 +94,17 @@ double calc_signal_power(const rx_time_format rx_time_f, const rx_fqual_format r
 /**
  * @brief Calculates the distance between two dw1000 devices.
  *
- * @param[in] dev_id: Device identifier with which you want to calculate distance.
- * @param[out] distance: Voltage of the dw1000.
- * @param[in] attempts: Number of attempts to calculate distance.
+ * @param dev_id[in]: Identifier of the device with which you want to calculate distance.
+ * @param pan_id[in]: Network identifier of the device with which you want to calculate distance.
+ * @param distance[out]: Distance calculated.
+ * @param wait_timer[in]: Timer that determines the number of ms(aprox) that will be waiting for a message.
+ *                        If wait_timer < 0, it will wait until the expected message be received(infinitely).
+ *                        If wait_timer < SDF_TO, it will wait until the SDF time out expires.
  *
  * @return bool: Returns true if the distance can be calculated, otherwise false.
  *
  */
-bool dw_calculate_distance(const uint64_t dev_id, double distance, const int attempts, const int wait_timer);
+bool dw_calculate_distance(const uint64_t dev_id, const uint16_t pan_id, double* distance, const int wait_timer);
 
 /**
  * @brief This function provides the main API for the configuration of the
@@ -150,6 +142,7 @@ bool dw_eneable(const int config_flags);
 #define DW_FF_RSVD_EN 0x20    // Reserved frame types allowed.
 #define DW_AUTO_ACK 0X40      // Automatic acknowledgment enable.
 #define DW_AUTO_ACK_PEND 0X80 // Automatic fill acknowledgment pending bit control.
+
 /**
  * @brief This is used to enable the frame filtering. The default option is to
  *        accept any data and ACK frames with correct destination address.

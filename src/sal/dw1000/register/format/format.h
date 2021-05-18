@@ -280,7 +280,7 @@ size_t tx_fctrl_unformatter(void *format, spi_frame fr, const size_t sub_registe
 
 /******* TX_BUFFER *******/
 
-#define DEFAULT_PAYLOAD_FORMAT // If his flag is not defined, you must provide uwb_frame_payload(fields of the payload), payload_formatter
+#define DEFAULT_PAYLOAD_FORMAT // If this flag is not defined, you must provide uwb_frame_payload(fields of the payload), payload_formatter
                                // and payload_formatter_f values. Comment this line to disable default payload format.
 
 #define FIXED_FRAME_FIELDS_SIZE 3
@@ -338,6 +338,12 @@ typedef enum {
 #define SHORT_ADDRESS_SIZE 2
 #define EXTENDED_ADDRESS_SIZE 8
 
+// Possibles values of api_message_t field.
+typedef enum {
+    CALC_DISTANCE,      // Device wants to calculate distance with the receiver.
+    CALC_DISTANCE_RESP, // Answer to calculate distance message.
+} api_flag_value;
+
 // Frame format encoded as per the IEEE 802.15.4 standard.
 // (https://www.silabs.com/content/usergenerated/asi/cloud/attachments/siliconlabs/en/community/wireless/proprietary/forum/jcr:content/content/primary/qna/802_15_4_promiscuous-tbzR/hivukadin_vukadi-iTXQ/802.15.4-2015.pdf).
 typedef struct {
@@ -357,6 +363,15 @@ typedef struct {
     uint64_t dest_addr;                     // Destination address. (eui_format)
     uint16_t sour_PAN_id;                   // Source PAN identifier. (pan_adr_format.pan_id)
     uint64_t sour_addr;                     // Source address. (eui_format)
+
+    #ifdef DEFAULT_PAYLOAD_FORMAT
+    // Internal API flags.
+    api_flag_value api_message_t;           // Message types of the API.
+
+    // CALC_DISTANCE_RESP.
+    double rx_stamp;
+
+    #endif
 
     // Payload fields.
     uwb_frame_payload;                      // By default, this field contains an array with the rest of the frame's bytes,

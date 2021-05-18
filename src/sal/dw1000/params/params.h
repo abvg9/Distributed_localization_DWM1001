@@ -36,6 +36,10 @@
 #define DW_PAC32       2   // PAC 32 (recommended for RX of preamble length 512.
 #define DW_PAC64       3   // PAC 64 (recommended for RX of preamble length 1024 and up.
 
+#define SPEED_OF_LIGHT 299702547 // Speed of light in air, in meters per second.
+#define B20_SIGN_EXTEND_TEST (0x00100000UL)
+#define B20_SIGN_EXTEND_MASK (0xFFF00000UL)
+
 typedef struct {
     uint32_t lo32;
     uint16_t target[NUM_PRF];
@@ -154,11 +158,14 @@ extern const uint16_t lde_replicaCoeff[PCODES];
 
 // Multiplication factors to convert frequency offset in Hertz to PPM crystal offset
 // NB: also changes sign so a positive value means the local RX clock is running slower than the remote TX device.
-
 #define HERTZ_TO_PPM_MULTIPLIER_CHAN_1 -1.0e6/3494.4e6
 #define HERTZ_TO_PPM_MULTIPLIER_CHAN_2 -1.0e6/3993.6e6
 #define HERTZ_TO_PPM_MULTIPLIER_CHAN_3 -1.0e6/4492.8e6
 #define HERTZ_TO_PPM_MULTIPLIER_CHAN_5 -1.0e6/6489.6e6
+
+// Multiplication factors to convert carrier integrator value to a frequency offset in hertz.
+#define FREQ_OFFSET_MULTIPLIER          (998.4e6/2.0/1024.0/131072.0)
+#define FREQ_OFFSET_MULTIPLIER_110KB    (998.4e6/2.0/8192.0/131072.0)
 
 // Structure for setting device configuration.
 typedef struct {

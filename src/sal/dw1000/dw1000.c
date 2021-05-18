@@ -41,10 +41,6 @@ static dw_config_t dw_conf = {
         .sfd_TO = (128 + 8 - 8), // SFD timeout (preamble length + 1 + SFD length - PAC size).
 };
 
-double calc_clock_offset(const rx_ttcko_format rx_ttcko_f, const rx_ttcki_value rx_ttcki) {
-    return rx_ttcko_f.rxtofs/rx_ttcki;
-}
-
 double calc_estimated_signal_power(const rx_fqual_format rx_fqual_f,
         const rx_finfo_format rx_finfo_f, const usr_sfd_format usr_sfd_f) {
 
@@ -104,11 +100,11 @@ double calc_signal_power(const rx_time_format rx_time_f, const rx_fqual_format r
     return (10.0 * log10(numerator/pow(rx_finfo_f.rxpacc - usr_sfd_f.sfd_length, 2))) - substractor;
 }
 
-bool dw_calculate_distance(const uint64_t dev_id, double distance, const int attempts, const int wait_timer) {
+bool dw_calculate_distance(const uint64_t dev_id, const uint16_t pan_id, double* distance, const int wait_timer) {
 
     /*
     Apply default antenna delay value. See NOTE 2 below.
-    dwt_setrxantennadelay(RX_ANT_DLY);
+    dwt_setrxantennadelay(RX_ANT_DLY); // ESTO HAY QUE HACERLO EN ENABLE!!!
     dwt_settxantennadelay(TX_ANT_DLY);
 
     Set expected response's delay and timeout. See NOTE 1 and 5 below.
@@ -116,37 +112,104 @@ bool dw_calculate_distance(const uint64_t dev_id, double distance, const int att
     dwt_setrxaftertxdelay(POLL_TX_TO_RESP_RX_DLY_UUS);
     dwt_setrxtimeout(RESP_RX_TIMEOUT_UUS);
 
-    uwb_frame_format message;
-    init_buffer(message, sizeof(payload), (uint8_t*)&message.raw_payload);
-    message.fr_ctrl = 0XC5;
-    message.seq_num = 0;
-    message.dev_id = dev_id;
-    message.check_sum = 0;
+    // send a message.
 
-    int i = 0;
-    bool received = false;
+    */
+    uwb_frame_format tx_msg;
 
-    while(i < attempts && !received) {
+    if(!init_uwb_frame_format(NULL, 0, DATA, SHORT_ADDRESS, SHORT_ADDRESS, &tx_msg)) {
+        return false;
+    }
+    tx_msg.ack_req = true;
+    tx_msg.api_message_t = CALC_DISTANCE;
 
-        // Send message to calculate distance.
-        if(!dw_send_message(&message, true, DW_START_TX_IMMEDIATE | DW_RESPONSE_EXPECTED)) {
+    if(dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE | DW_RESPONSE_EXPECTED, dev_id, pan_id)) {
+
+        uwb_frame_format rx_msg;
+
+        if(!init_uwb_frame_format(NULL, 0, DATA, SHORT_ADDRESS, SHORT_ADDRESS, &rx_msg)) {
             return false;
         }
 
-        // Wait response.
-        received = dw_receive_message(message, DW_START_TX_IMMEDIATE, wait_timer, dev_id);
-        if(!received) {
-            i++;
+        if(dw_receive_message(&rx_msg, DW_START_RX_IMMEDIATE, wait_timer, dev_id, pan_id)) {
+
+            // Calculate distance.
+
+            // Get tx stamp.
+            tx_time_format tx_time_f;
+            if(!get_tx_time(&tx_time_f, TX_TIME_OCT_0_TO_3)) {
+                return false;
+            }
+
+            // Get rx stamp.
+            rx_time_format rx_time_f;
+            if(!get_rx_time(&rx_time_f, RX_TIME_OCT_0_TO_3)) {
+                return false;
+            }
+
+            // Get carrier integrator.
+            drx_conf_format drx_conf_f;
+            if(!get_drx_conf(&drx_conf_f, DRX_CAR_INT)) {
+                return false;
+            }
+
+            uint32_t carrier_integrator;
+
+            if(drx_conf_f.drx_car_int & B20_SIGN_EXTEND_TEST) {
+                carrier_integrator = drx_conf_f.drx_car_int | B20_SIGN_EXTEND_MASK;
+            } else {
+                carrier_integrator = drx_conf_f.drx_car_int & B20_SIGN_EXTEND_MASK;
+            }
+
+            double hertz_to_ppm_multiplier_chan;
+
+            switch(dw_conf.chan) {
+                case CH1:
+                    hertz_to_ppm_multiplier_chan = HERTZ_TO_PPM_MULTIPLIER_CHAN_1;
+                    break;
+                case CH2:
+                    hertz_to_ppm_multiplier_chan = HERTZ_TO_PPM_MULTIPLIER_CHAN_2;
+                    break;
+                case CH3:
+                    hertz_to_ppm_multiplier_chan = HERTZ_TO_PPM_MULTIPLIER_CHAN_3;
+                    break;
+                case CH5:
+                    hertz_to_ppm_multiplier_chan = HERTZ_TO_PPM_MULTIPLIER_CHAN_5;
+                    break;
+                default:
+                    hertz_to_ppm_multiplier_chan = HERTZ_TO_PPM_MULTIPLIER_CHAN_5;
+                    break;
+            }
+
+            double freq_offset_multiplier;
+
+            switch(dw_conf.data_rate) {
+                case KBPS110:
+                    freq_offset_multiplier = FREQ_OFFSET_MULTIPLIER_110KB;
+                    break;
+                default:
+                    freq_offset_multiplier = FREQ_OFFSET_MULTIPLIER;
+                    break;
+            }
+
+            const float clock_offset = carrier_integrator * (freq_offset_multiplier * hertz_to_ppm_multiplier_chan / 1.0e6);
+
+            // Compute time of flight and distance, using clock offset ratio to correct for differing local and remote clock rates.
+
+            // Number of seconds that the message use in go to the receiver.
+            const double go = rx_msg.rx_stamp - tx_time_f.tx_stamp;
+
+            // Number of seconds that the message use in return to the sender.
+            const double ret = rx_time_f.rx_stamp - rx_msg.rx_stamp;
+
+            const double time_of_flight = ((go + ret * (1 - clock_offset)) / 2.0);
+
+            *distance = time_of_flight * SPEED_OF_LIGHT;
+            return true;
         }
-
     }
 
-    if(received) {
-        // calculo de distancias a traves de los offsets.
-    }
-    */
-
-    return true;
+    return false;
 
 }
 
@@ -442,7 +505,7 @@ bool dw_eneable(const int config_flags) {
             ack_resp_t_f.ack_tim = 2;
             break;
         case MBPS6_8:
-            ack_resp_t_f.ack_tim = 3;
+            ack_resp_t_f.ack_tim = 255;
             break;
         default:
             return false;
@@ -1215,7 +1278,6 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
         }
 
         sys_ctrl_f.txstrt = false;
-        sys_ctrl_f.wait4resp = false;
         if(!set_sys_ctrl(&sys_ctrl_f)) {
             return false;
         }
@@ -1229,26 +1291,15 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
         return false;
     }
 
-    // To disable wait4resp it is mandatory to turn on and off rxenab.
-    sys_ctrl_f.rxenab = true;
-    sys_ctrl_f.wait4resp = false;
-    sys_ctrl_f.txstrt = false;
-    if(!set_sys_ctrl(&sys_ctrl_f)) {
-        return false;
-    }
-
-    sys_ctrl_f.rxenab = false;
-    if(!set_sys_ctrl(&sys_ctrl_f)) {
-        return false;
-    }
-
     if(frame->ack_req) {
+
+        // Disable transceiver to avoid other messages.
+        dw_turn_off_transceiver();
 
         bool received_ack = false;
         uwb_frame_format rx_frame;
         init_uwb_frame_format(NULL, 0, DATA, PAN_ID_AND_ADDRESS_ARE_NOT_PRESENT,
                 SHORT_ADDRESS, &rx_frame);
-
 
         rx_finfo_format rx_finfo_f;
         if(!get_rx_finfo(&rx_finfo_f)) {
@@ -1256,17 +1307,17 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
         }
 
         if (rx_finfo_f.rxflen <= TX_RX_BUFFER_MAX_SIZE) {
-            if(!get_rx_buffer(frame)) {
+            if(!get_rx_buffer(&rx_frame)) {
                 return false;
             }
         }
 
-        if(!get_sys_event_sts(&sys_evt_sts_f, SES_OCT_0_TO_3)) {
+        if(!get_sys_event_sts(&sys_evt_sts_f, -1)) {
             return false;
         }
 
-        // Check if the last received message was an ACKNOWLEDGMENT message.
-        if(frame->frame_t == ACKNOWLEDGMENT && sys_evt_sts_f.rxfcg &&
+        // Check if the ACK message is the expected.
+        if(rx_frame.frame_t == ACKNOWLEDGMENT && sys_evt_sts_f.rxfcg &&
                 frame->seq_num == rx_frame.seq_num) {
             received_ack = true;
         }
@@ -1277,13 +1328,10 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
             return false;
         }
 
-        if(!get_sys_ctrl(&sys_ctrl_f)) {
-            return false;
-        }
-
         if(received_ack) {
             frame->seq_num++;
         }
+
         return received_ack;
     }
 
@@ -1516,6 +1564,37 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
         if(frame->frame_t != expected_type) {
             goto RETRY_SEARCH;
         }
+
+        #ifdef DEFAULT_PAYLOAD_FORMAT
+
+        switch(frame->api_message_t) {
+            case CALC_DISTANCE: {
+
+                // Get rx stamp.
+                rx_time_format rx_time_f;
+                if(!get_rx_time(&rx_time_f, RX_TIME_OCT_0_TO_3)) {
+                    return false;
+                }
+
+                uwb_frame_format tx_msg;
+
+                init_uwb_frame_format(NULL, 0, DATA, SHORT_ADDRESS, SHORT_ADDRESS, &tx_msg);
+
+                tx_msg.ack_req = true;
+                tx_msg.rx_stamp = rx_time_f.rx_stamp;
+                if(!dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE, frame->sour_addr, frame->sour_PAN_id)) {
+                    return false;
+                }
+
+                break;
+            }
+            case CALC_DISTANCE_RESP:
+                break;
+            default:
+                break;
+        }
+
+        #endif
 
     } else {
 
