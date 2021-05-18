@@ -1158,16 +1158,18 @@ bool dw_parse_API_message(uwb_frame_format* frame) {
                 return false;
             }
 
-            break;
+            return true;
         }
         case CALC_DISTANCE_RESP:
             break;
         default:
             break;
     }
+
+    return false;
 }
 
-#endif DEFAULT_PAYLOAD_FORMAT
+#endif
 
 bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const uint64_t dev_id, const uint16_t pan_id) {
 

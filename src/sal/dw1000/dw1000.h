@@ -218,7 +218,7 @@ bool dw_initialise(const int config_flags);
  *
  */
 bool dw_parse_API_message(uwb_frame_format* frame);
-#endif DEFAULT_PAYLOAD_FORMAT
+#endif
 
 // Defined constants for "mode" bitmask parameter passed into dw_receive_message() function.
 #define DW_START_RX_IMMEDIATE  0
