@@ -280,17 +280,11 @@ size_t tx_fctrl_unformatter(void *format, spi_frame fr, const size_t sub_registe
 
 /******* TX_BUFFER *******/
 
-#define DEFAULT_PAYLOAD_FORMAT // If this flag is not defined, you must provide uwb_frame_payload(fields of the payload), payload_formatter
-                               // and payload_formatter_f values. Comment this line to disable default payload format.
-
 #define FIXED_FRAME_FIELDS_SIZE 3
 
 // Default configuration of payload field.
-#define uwb_frame_payload                                              \
+#define UWB_FRAME_PAYLOAD                                              \
     uint8_t raw_payload[TX_RX_BUFFER_MAX_SIZE-FIXED_FRAME_FIELDS_SIZE] \
-
-#define payload_formatter                                                             \
-    void (*payload_formatter_f)(spi_frame f, void* structure, const int payload_size) \
 
 /**
  * @brief Default formatter payload function.
@@ -301,9 +295,6 @@ size_t tx_fctrl_unformatter(void *format, spi_frame fr, const size_t sub_registe
  *
  */
 void payload_formatter_f(spi_frame fr, void *format, const int payload_size);
-
-#define payload_unformatter                                                             \
-    void (*payload_unformatter_f)(void* structure, spi_frame f, const int payload_size) \
 
 /**
  * @brief Default unformatter payload function.
@@ -340,8 +331,8 @@ typedef enum {
 
 // Possibles values of api_message_t field.
 typedef enum {
-    CALC_DISTANCE,      // Device wants to calculate distance with the receiver.
-    CALC_DISTANCE_RESP, // Answer to calculate distance message.
+    CALC_DISTANCE = 0b00000000,      // Device wants to calculate distance with the receiver.
+    CALC_DISTANCE_RESP = 0b00000001, // Answer to calculate distance message.
 } api_flag_value;
 
 // Frame format encoded as per the IEEE 802.15.4 standard.
@@ -364,21 +355,10 @@ typedef struct {
     uint16_t sour_PAN_id;                   // Source PAN identifier. (pan_adr_format.pan_id)
     uint64_t sour_addr;                     // Source address. (eui_format)
 
-    #ifdef DEFAULT_PAYLOAD_FORMAT
-    // Internal API flags.
-    api_flag_value api_message_t;           // Message types of the API.
+    api_flag_value api_message_t;           // Internal type of message.
+    double rx_stamp;                        // Receive time stamp.
 
-    // CALC_DISTANCE_RESP.
-    double rx_stamp;
-
-    #endif
-
-    // Payload fields.
-    uwb_frame_payload;                      // By default, this field contains an array with the rest of the frame's bytes,
-                                            // but you can define a specific format for the payload. It it mandatory that:
-                                            // sizeof(uwb_frame_payload) = TX_RX_BUFFER_MAX_SIZE - fr_ctrl - sec_num - dev_id - check_sum.
-    payload_formatter;                      // Pointer to the function that formats the spi_frame. (Automatic points to default payload formatter).
-    payload_unformatter;                    // Pointer to the function that unformats the spi_frame. (Automatic points to default payload unformatter).
+    uint8_t raw_payload[TX_RX_BUFFER_MAX_SIZE-FIXED_FRAME_FIELDS_SIZE];
 
     uint16_t check_sum;                     // Frame check-sum.
 } uwb_frame_format;

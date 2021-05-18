@@ -56,7 +56,7 @@ size_t eui_unformatter(void *format, spi_frame fr, const size_t sub_register) {
 
 void pan_addr_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
-    pan_adr_format *pan_adr_f = ((pan_adr_format*) format);
+    pan_adr_format *pan_adr_f = (pan_adr_format*) format;
 
     pan_adr_f->pan_id = fr[2] | ((uint16_t) fr[3]) << 8;
     pan_adr_f->short_addr = fr[0] | ((uint16_t) fr[1]) << 8;
@@ -374,11 +374,7 @@ size_t tx_buffer_unformatter(void *format, spi_frame fr, const size_t sub_regist
 
     // Payload.
     if(uwb_frame_f->frame_t != ACKNOWLEDGMENT) {
-        #ifdef DEFAULT_PAYLOAD_FORMAT
-            payload_unformatter_f(uwb_frame_f, &fr[start_payload_byte], payload_size);
-        #else
-            uwb_frame_f->payload_unformatter_f(uwb_frame_f, &fr[start_payload_byte], payload_size);
-        #endif
+        payload_unformatter_f(uwb_frame_f, &fr[start_payload_byte], payload_size);
     }
 
     // Check sum.
@@ -767,11 +763,7 @@ void rx_buffer_formatter(spi_frame fr, void *format, const size_t sub_register) 
 
     // Payload.
     if(uwb_frame_f->frame_t != ACKNOWLEDGMENT) {
-        #ifdef DEFAULT_PAYLOAD_FORMAT
-            payload_formatter_f(&fr[start_payload_byte], uwb_frame_f, payload_size);
-        #else
-            uwb_frame_f->payload_formatter_f(&fr[start_payload_byte], uwb_frame_f, payload_size);
-        #endif
+        payload_formatter_f(&fr[start_payload_byte], uwb_frame_f, payload_size);
     }
 
     // Check sum.

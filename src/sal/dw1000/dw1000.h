@@ -22,8 +22,8 @@
 #include "register.h"
 #include "params.h"
 
-#define dw_power_on  palSetPad(IOPORT1, DW_RST)
-#define dw_power_off palClearPad(IOPORT1, DW_RST)
+#define DW_POWER_ON  palSetPad(IOPORT1, DW_RST)
+#define DW_POWER_OFF palClearPad(IOPORT1, DW_RST)
 
 /**
  * @brief Calculates the estimated signal power of a received message.
@@ -205,7 +205,6 @@ bool dw_get_voltage_bat_and_temp(double* temperature, double* voltage);
  */
 bool dw_initialise(const int config_flags);
 
-#ifdef DEFAULT_PAYLOAD_FORMAT
 /**
  * @brief Analyze what type of message has been received and act accordingly
  *
@@ -218,7 +217,6 @@ bool dw_initialise(const int config_flags);
  *
  */
 bool dw_parse_API_message(uwb_frame_format* frame);
-#endif
 
 // Defined constants for "mode" bitmask parameter passed into dw_receive_message() function.
 #define DW_START_RX_IMMEDIATE  0

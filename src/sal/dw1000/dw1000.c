@@ -18,7 +18,7 @@
 
 #include "dw1000.h"
 
-static SPIConfig spi_cfg = { .end_cb = NULL, .ssport = IOPORT1, .sspad = SPI_SS,
+SPIConfig spi_cfg = { .end_cb = NULL, .ssport = IOPORT1, .sspad = SPI_SS,
         .freq = NRF5_SPI_FREQ_2MBPS, .sckpad = SPI_SCK, .mosipad = SPI_MOSI,
         .misopad = SPI_MISO, .lsbfirst = false, .mode = 2};
 
@@ -28,7 +28,7 @@ static mutex_t IRQ_event_mtx;
 
 static dw_local_data_t dw_local_data;
 
-static dw_config_t dw_conf = {
+dw_config_t dw_conf = {
         .chan = CH2,
         .prf = TRPR_MHZ64,
         .tx_preamb_length = L_128,
@@ -449,7 +449,7 @@ bool dw_configure(void) {
 
 void dw_disable(void) {
     spiStop(&SPID1);
-    dw_power_off;
+    DW_POWER_OFF;
 }
 
 bool dw_eneable(const int config_flags) {
@@ -524,14 +524,6 @@ bool dw_eneable(const int config_flags) {
     // Set the TX antenna delay for auto TX time stamp adjustment.
     double seconds = TX_ANT_DLY;
     if(!set_tx_antd(&seconds)) {
-        return false;
-    }
-
-    if(!get_lde_if(&lde_if_f, LDE_RXANTD)) {
-        return false;
-    }
-
-    if(!get_tx_antd(&seconds)) {
         return false;
     }
 
@@ -1136,8 +1128,6 @@ bool dw_initialise(const int config_flags) {
     return true;
 }
 
-#ifdef DEFAULT_PAYLOAD_FORMAT
-
 bool dw_parse_API_message(uwb_frame_format* frame) {
 
     switch(frame->api_message_t) {
@@ -1168,8 +1158,6 @@ bool dw_parse_API_message(uwb_frame_format* frame) {
 
     return false;
 }
-
-#endif
 
 bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const uint64_t dev_id, const uint16_t pan_id) {
 
@@ -1637,9 +1625,9 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
 }
 
 void dw_reset(void) {
-    dw_power_off;
+    DW_POWER_OFF;
     chThdSleepMicroseconds(10);
-    dw_power_on;
+    DW_POWER_ON;
 }
 
 void dw_set_fast_spi_rate(void) {
@@ -1971,11 +1959,9 @@ bool _check_frame_validity(const uwb_frame_format uwb_frame_f, const size_t buff
                 addres_mode_size = EXTENDED_ADDRESS_SIZE;
             }
 
-            #ifdef DEFAULT_PAYLOAD_FORMAT
-                if(buffer_size > TX_RX_BUFFER_MAX_SIZE - FIXED_FRAME_FIELDS_SIZE - addres_mode_size) {
-                    return false;
-                }
-            #endif
+            if(buffer_size > TX_RX_BUFFER_MAX_SIZE - FIXED_FRAME_FIELDS_SIZE - addres_mode_size) {
+                return false;
+            }
 
             break;
         }
@@ -1988,11 +1974,9 @@ bool _check_frame_validity(const uwb_frame_format uwb_frame_f, const size_t buff
             }
 
             // ACKNOWLEDGMENT messages does not have payload.
-            #ifdef DEFAULT_PAYLOAD_FORMAT
-                if(buffer_size > 0) {
-                    return false;
-                }
-            #endif
+            if(buffer_size > 0) {
+                return false;
+            }
 
             break;
         default:
@@ -2024,16 +2008,16 @@ bool init_uwb_frame_format(uint8_t* buffer, const size_t buffer_size,
     uwb_frame_f->seq_num = 0;
     uwb_frame_f->check_sum = 0;
 
-    #ifdef DEFAULT_PAYLOAD_FORMAT
-        unsigned int i;
-        for(i = 0; i < buffer_size; ++i) {
-            uwb_frame_f->raw_payload[i] = buffer[i];
-        }
+    uwb_frame_f->rx_stamp = 0.0;
 
-        for(i = buffer_size; i < TX_RX_BUFFER_MAX_SIZE; ++i) {
-            uwb_frame_f->raw_payload[i] = 0;
-        }
-    #endif
+    unsigned int i;
+    for(i = 0; i < buffer_size; ++i) {
+        uwb_frame_f->raw_payload[i] = buffer[i];
+    }
+
+    for(i = buffer_size; i < TX_RX_BUFFER_MAX_SIZE; ++i) {
+        uwb_frame_f->raw_payload[i] = 0;
+    }
 
     return true;
 }
