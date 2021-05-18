@@ -214,7 +214,7 @@ void payload_formatter_f(spi_frame fr, void *format, const int payload_size) {
     // API flags.
     frame->api_message_t = fr[0];
 
-    int start_payload_index = 0;
+    int start_payload_index = 1;
 
     switch(frame->api_message_t) {
         case CALC_DISTANCE:
@@ -232,7 +232,7 @@ void payload_formatter_f(spi_frame fr, void *format, const int payload_size) {
 
             frame->rx_stamp = (double) rx_stamp;
 
-            start_payload_index = 17;
+            start_payload_index = 9;
             break;
         }
         default:
@@ -254,7 +254,7 @@ void payload_unformatter_f(void *format, spi_frame fr, const int payload_size) {
     // API flags.
     fr[0] = frame->api_message_t;
 
-    int start_payload_index = 0;
+    int start_payload_index = 1;
 
     switch(frame->api_message_t) {
         case CALC_DISTANCE:
@@ -283,7 +283,6 @@ void payload_unformatter_f(void *format, spi_frame fr, const int payload_size) {
     for(i = start_payload_index; i < payload_size; ++i) {
         fr[i] = frame->raw_payload[i];
     }
-
 }
 
 size_t tx_buffer_unformatter(void *format, spi_frame fr, const size_t sub_register) {
@@ -375,7 +374,7 @@ size_t tx_buffer_unformatter(void *format, spi_frame fr, const size_t sub_regist
 
     // Payload.
     if(uwb_frame_f->frame_t != ACKNOWLEDGMENT) {
-        #if defined(DEFAULT_PAYLOAD_FORMAT)
+        #ifdef DEFAULT_PAYLOAD_FORMAT
             payload_unformatter_f(uwb_frame_f, &fr[start_payload_byte], payload_size);
         #else
             uwb_frame_f->payload_unformatter_f(uwb_frame_f, &fr[start_payload_byte], payload_size);
@@ -768,7 +767,7 @@ void rx_buffer_formatter(spi_frame fr, void *format, const size_t sub_register) 
 
     // Payload.
     if(uwb_frame_f->frame_t != ACKNOWLEDGMENT) {
-        #if defined(DEFAULT_PAYLOAD_FORMAT)
+        #ifdef DEFAULT_PAYLOAD_FORMAT
             payload_formatter_f(&fr[start_payload_byte], uwb_frame_f, payload_size);
         #else
             uwb_frame_f->payload_formatter_f(&fr[start_payload_byte], uwb_frame_f, payload_size);
@@ -2280,7 +2279,9 @@ void lde_if_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     } else if(sub_register == LDE_RXANTD) {
 
-        lde_if_f->lde_rxantd = (((uint16_t)fr[1]) << 8) | fr[0];
+        uint16_t register_value = ((uint16_t)fr[1]) << 8 | fr[0];
+
+        lde_if_f->lde_rxantd = calculate_tx_antd(register_value);
 
     } else if(sub_register == LDE_PPAMPL) {
 
@@ -2323,8 +2324,10 @@ size_t lde_if_unformatter(void *format, spi_frame fr, const size_t sub_register)
 
     } else if(sub_register == LDE_RXANTD) {
 
-        fr[0] = lde_if_f->lde_rxantd && 0xFF;
-        fr[1] = (lde_if_f->lde_rxantd  && 0xFF00) >> 8;
+        uint16_t reg_value = tx_antd_calculate_register_val(lde_if_f->lde_rxantd);
+
+        fr[1] = (reg_value & 0xFF00) >> 8;
+        fr[0] = reg_value & 0xFF;
 
         return 2;
 

@@ -100,38 +100,24 @@ double calc_signal_power(const rx_time_format rx_time_f, const rx_fqual_format r
     return (10.0 * log10(numerator/pow(rx_finfo_f.rxpacc - usr_sfd_f.sfd_length, 2))) - substractor;
 }
 
-bool dw_calculate_distance(const uint64_t dev_id, const uint16_t pan_id, double* distance, const int wait_timer) {
+bool dw_calculate_distance(const uint64_t dev_id, const uint16_t pan_id, double* distance, const int wait_tries) {
 
-    /*
-    Apply default antenna delay value. See NOTE 2 below.
-    dwt_setrxantennadelay(RX_ANT_DLY); // ESTO HAY QUE HACERLO EN ENABLE!!!
-    dwt_settxantennadelay(TX_ANT_DLY);
-
-    Set expected response's delay and timeout. See NOTE 1 and 5 below.
-    As this example only handles one incoming frame with always the same delay and timeout, those values can be set here once for all.
-    dwt_setrxaftertxdelay(POLL_TX_TO_RESP_RX_DLY_UUS);
-    dwt_setrxtimeout(RESP_RX_TIMEOUT_UUS);
-
-    // send a message.
-
-    */
     uwb_frame_format tx_msg;
-
     if(!init_uwb_frame_format(NULL, 0, DATA, SHORT_ADDRESS, SHORT_ADDRESS, &tx_msg)) {
         return false;
     }
+
     tx_msg.ack_req = true;
     tx_msg.api_message_t = CALC_DISTANCE;
 
     if(dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE | DW_RESPONSE_EXPECTED, dev_id, pan_id)) {
 
         uwb_frame_format rx_msg;
-
         if(!init_uwb_frame_format(NULL, 0, DATA, SHORT_ADDRESS, SHORT_ADDRESS, &rx_msg)) {
             return false;
         }
 
-        if(dw_receive_message(&rx_msg, DW_START_RX_IMMEDIATE, wait_timer, dev_id, pan_id)) {
+        if(dw_receive_message(&rx_msg, DW_START_RX_IMMEDIATE, wait_tries, dev_id, pan_id)) {
 
             // Calculate distance.
 
@@ -194,14 +180,25 @@ bool dw_calculate_distance(const uint64_t dev_id, const uint16_t pan_id, double*
 
             const float clock_offset = carrier_integrator * (freq_offset_multiplier * hertz_to_ppm_multiplier_chan / 1.0e6);
 
-            // Compute time of flight and distance, using clock offset ratio to correct for differing local and remote clock rates.
+            // Get the RX antenna delay for auto TX time stamp adjustment.
+            lde_if_format lde_if_f;
+            if(!get_lde_if(&lde_if_f, LDE_RXANTD)) {
+                return false;
+            }
+
+            // Set the TX antenna delay for auto TX time stamp adjustment.
+            double tx_antd = 0.0;
+            if(!get_tx_antd(&tx_antd)) {
+                return false;
+            }
 
             // Number of seconds that the message use in go to the receiver.
-            const double go = rx_msg.rx_stamp - tx_time_f.tx_stamp;
+            const double go = rx_msg.rx_stamp - (tx_time_f.tx_stamp + tx_antd);
 
             // Number of seconds that the message use in return to the sender.
-            const double ret = rx_time_f.rx_stamp - rx_msg.rx_stamp;
+            const double ret = rx_time_f.rx_stamp - (rx_msg.rx_stamp + lde_if_f.lde_rxantd);
 
+            // Calculate time of flight.
             const double time_of_flight = ((go + ret * (1 - clock_offset)) / 2.0);
 
             *distance = time_of_flight * SPEED_OF_LIGHT;
@@ -514,6 +511,27 @@ bool dw_eneable(const int config_flags) {
     ack_resp_t_f.w4r_tim = 0.0;
 
     if(!set_ack_resp_t(&ack_resp_t_f)) {
+        return false;
+    }
+
+    // Set the RX antenna delay for auto TX time stamp adjustment.
+    lde_if_format lde_if_f;
+    lde_if_f.lde_rxantd = RX_ANT_DLY;
+    if(!set_lde_if(&lde_if_f, LDE_RXANTD)) {
+        return false;
+    }
+
+    // Set the TX antenna delay for auto TX time stamp adjustment.
+    double seconds = TX_ANT_DLY;
+    if(!set_tx_antd(&seconds)) {
+        return false;
+    }
+
+    if(!get_lde_if(&lde_if_f, LDE_RXANTD)) {
+        return false;
+    }
+
+    if(!get_tx_antd(&seconds)) {
         return false;
     }
 
@@ -1118,28 +1136,60 @@ bool dw_initialise(const int config_flags) {
     return true;
 }
 
+#ifdef DEFAULT_PAYLOAD_FORMAT
+
+bool dw_parse_API_message(uwb_frame_format* frame) {
+
+    switch(frame->api_message_t) {
+        case CALC_DISTANCE: {
+
+            // Get rx stamp.
+            rx_time_format rx_time_f;
+            if(!get_rx_time(&rx_time_f, RX_TIME_OCT_0_TO_3)) {
+                return false;
+            }
+
+            uwb_frame_format tx_msg;
+            init_uwb_frame_format(NULL, 0, DATA, SHORT_ADDRESS, SHORT_ADDRESS, &tx_msg);
+
+            tx_msg.ack_req = true;
+            tx_msg.rx_stamp = rx_time_f.rx_stamp;
+            if(!dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE, frame->sour_addr, frame->sour_PAN_id)) {
+                return false;
+            }
+
+            break;
+        }
+        case CALC_DISTANCE_RESP:
+            break;
+        default:
+            break;
+    }
+}
+
+#endif DEFAULT_PAYLOAD_FORMAT
+
 bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const uint64_t dev_id, const uint16_t pan_id) {
+
+    pan_adr_format pan_adr_f;
+    eui_format eui_f;
 
     switch(frame->sour_addr_mod) {
         case PAN_ID_AND_ADDRESS_ARE_NOT_PRESENT:
             break;
-        case SHORT_ADDRESS: {
-            pan_adr_format pan_adr_f;
+        case SHORT_ADDRESS:
             if(!get_pan_adr(&pan_adr_f)) {
                 return false;
             }
             frame->sour_PAN_id = pan_adr_f.pan_id;
             frame->sour_addr = pan_adr_f.short_addr;
             break;
-        }
-        case EXTENDED_ADDRESS: {
+        case EXTENDED_ADDRESS:
 
-            eui_format eui_f;
             if(!get_eui(&eui_f)) {
                 return false;
             }
 
-            pan_adr_format pan_adr_f;
             if(!get_pan_adr(&pan_adr_f)) {
                 return false;
             }
@@ -1147,7 +1197,6 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
             frame->sour_PAN_id = pan_adr_f.pan_id;
             frame->sour_addr = (eui_f.ext_ID << 24) | eui_f.mc_ID;
             break;
-        }
         default:
             return false;
     }
@@ -1155,9 +1204,8 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
     switch(frame->dest_addr_mod) {
         case PAN_ID_AND_ADDRESS_ARE_NOT_PRESENT:
             break;
-        case SHORT_ADDRESS: {
+        case SHORT_ADDRESS:
 
-            pan_adr_format pan_adr_f;
             if(!get_pan_adr(&pan_adr_f)) {
                 return false;
             }
@@ -1172,10 +1220,7 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
 
             frame->dest_addr = dev_id;
             break;
-        }
-        case EXTENDED_ADDRESS: {
-
-            pan_adr_format pan_adr_f;
+        case EXTENDED_ADDRESS:
             if(!get_pan_adr(&pan_adr_f)) {
                 return false;
             }
@@ -1190,7 +1235,6 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
 
             frame->dest_addr = dev_id;
             break;
-        }
         default:
             return false;
     }
@@ -1265,8 +1309,6 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
             0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0};
     sys_evt_msk_f.mtxfrs = true;
 
-    get_sys_event_sts(&sys_evt_sts_f, -1);
-
     sys_evt_sts_f = dw_wait_irq_event(sys_evt_msk_f);
 
     if(!sys_evt_sts_f.txfrs) {
@@ -1339,7 +1381,7 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
     return true;
 }
 
-bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int wait_timer,
+bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int wait_tries,
         const uint64_t dev_id, const uint16_t pan_id) {
 
     frame_type_value expected_type = frame->frame_t;
@@ -1415,28 +1457,14 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
         }
     }
 
-    systime_t start;
-    sysinterval_t end;
-    const bool enabled_timer = wait_timer > 0;
-    const bool enabled_infinite_wait = wait_timer < 0;
+    const bool enabled_tries = wait_tries >= 0;
 
     sys_cfg_format sys_cfg_f;
     if(!get_sys_cfg(&sys_cfg_f)) {
         return false;
     }
 
-    if(enabled_timer) {
-        start = chVTGetSystemTime();
-        end = chTimeAddX(start, TIME_MS2I(wait_timer));
-
-        sys_cfg_f.rxautr = true;
-        if(!set_sys_cfg(&sys_cfg_f)) {
-            return false;
-        }
-
-    }
-
-    if(enabled_infinite_wait) {
+    if(!enabled_tries) {
         sys_cfg_f.rxautr = true;
         if(!set_sys_cfg(&sys_cfg_f)) {
             return false;
@@ -1455,20 +1483,27 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
     sys_evt_msk_f.mldeerr = true;
 
     sys_evt_sts_format sys_evt_sts_f;
+    int tries_attemp = 0;
 
     RETRY_SEARCH:
 
     sys_evt_sts_f = dw_wait_irq_event(sys_evt_msk_f);
 
-    while(sys_evt_sts_f.rxsfdto && ((enabled_timer && chVTIsSystemTimeWithin(start, end)) || enabled_infinite_wait)) {
+    while(sys_evt_sts_f.rxsfdto && ((enabled_tries && tries_attemp++ < wait_tries) || !enabled_tries)) {
 
         sys_evt_sts_f.rxsfdto = false;
         if(!set_sys_event_sts(&sys_evt_sts_f, SES_OCT_0_TO_3)) {
             return false;
         }
 
-        sys_evt_sts_f = dw_wait_irq_event(sys_evt_msk_f);
+        if(enabled_tries) {
+            sys_ctrl_f.rxenab = true;
+            if(!set_sys_ctrl(&sys_ctrl_f)) {
+                return false;
+            }
+        }
 
+        sys_evt_sts_f = dw_wait_irq_event(sys_evt_msk_f);
     }
 
     if (sys_evt_sts_f.rxfcg) {
@@ -1538,7 +1573,7 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
                 break;
         }
 
-        if(!match && ((enabled_timer && chVTIsSystemTimeWithin(start, end)) || enabled_infinite_wait)) {
+        if(!match && ((enabled_tries && tries_attemp++ < wait_tries) || !enabled_tries)) {
             goto RETRY_SEARCH;
         }
 
@@ -1554,7 +1589,7 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
                 match &= frame->sour_addr == dev_id;
             }
 
-            if(!match && ((enabled_timer && chVTIsSystemTimeWithin(start, end)) || enabled_infinite_wait)) {
+            if(!match && ((enabled_tries && tries_attemp++ < wait_tries) || !enabled_tries)) {
                 goto RETRY_SEARCH;
             }
 
@@ -1564,37 +1599,6 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
         if(frame->frame_t != expected_type) {
             goto RETRY_SEARCH;
         }
-
-        #ifdef DEFAULT_PAYLOAD_FORMAT
-
-        switch(frame->api_message_t) {
-            case CALC_DISTANCE: {
-
-                // Get rx stamp.
-                rx_time_format rx_time_f;
-                if(!get_rx_time(&rx_time_f, RX_TIME_OCT_0_TO_3)) {
-                    return false;
-                }
-
-                uwb_frame_format tx_msg;
-
-                init_uwb_frame_format(NULL, 0, DATA, SHORT_ADDRESS, SHORT_ADDRESS, &tx_msg);
-
-                tx_msg.ack_req = true;
-                tx_msg.rx_stamp = rx_time_f.rx_stamp;
-                if(!dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE, frame->sour_addr, frame->sour_PAN_id)) {
-                    return false;
-                }
-
-                break;
-            }
-            case CALC_DISTANCE_RESP:
-                break;
-            default:
-                break;
-        }
-
-        #endif
 
     } else {
 
@@ -1610,17 +1614,21 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
             return false;
         }
 
-        sys_cfg_f.rxautr = false;
-        if(!set_sys_cfg(&sys_cfg_f)) {
-            return false;
+        if(!enabled_tries) {
+            sys_cfg_f.rxautr = false;
+            if(!set_sys_cfg(&sys_cfg_f)) {
+                return false;
+            }
         }
 
         return false;
     }
 
-    sys_cfg_f.rxautr = false;
-    if(!set_sys_cfg(&sys_cfg_f)) {
-        return false;
+    if(!enabled_tries) {
+        sys_cfg_f.rxautr = false;
+        if(!set_sys_cfg(&sys_cfg_f)) {
+            return false;
+        }
     }
 
     return true;
@@ -1961,7 +1969,7 @@ bool _check_frame_validity(const uwb_frame_format uwb_frame_f, const size_t buff
                 addres_mode_size = EXTENDED_ADDRESS_SIZE;
             }
 
-            #if defined(DEFAULT_PAYLOAD_FORMAT)
+            #ifdef DEFAULT_PAYLOAD_FORMAT
                 if(buffer_size > TX_RX_BUFFER_MAX_SIZE - FIXED_FRAME_FIELDS_SIZE - addres_mode_size) {
                     return false;
                 }
@@ -1978,7 +1986,7 @@ bool _check_frame_validity(const uwb_frame_format uwb_frame_f, const size_t buff
             }
 
             // ACKNOWLEDGMENT messages does not have payload.
-            #if defined(DEFAULT_PAYLOAD_FORMAT)
+            #ifdef DEFAULT_PAYLOAD_FORMAT
                 if(buffer_size > 0) {
                     return false;
                 }
@@ -2014,7 +2022,7 @@ bool init_uwb_frame_format(uint8_t* buffer, const size_t buffer_size,
     uwb_frame_f->seq_num = 0;
     uwb_frame_f->check_sum = 0;
 
-    #if defined(DEFAULT_PAYLOAD_FORMAT)
+    #ifdef DEFAULT_PAYLOAD_FORMAT
         unsigned int i;
         for(i = 0; i < buffer_size; ++i) {
             uwb_frame_f->raw_payload[i] = buffer[i];

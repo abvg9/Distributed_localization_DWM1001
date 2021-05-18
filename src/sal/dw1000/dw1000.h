@@ -97,9 +97,8 @@ double calc_signal_power(const rx_time_format rx_time_f, const rx_fqual_format r
  * @param dev_id[in]: Identifier of the device with which you want to calculate distance.
  * @param pan_id[in]: Network identifier of the device with which you want to calculate distance.
  * @param distance[out]: Distance calculated.
- * @param wait_timer[in]: Timer that determines the number of ms(aprox) that will be waiting for a message.
- *                        If wait_timer < 0, it will wait until the expected message be received(infinitely).
- *                        If wait_timer < SDF_TO, it will wait until the SDF time out expires.
+ * @param wait_tries[in]: Number of tries to receive the message. When SDFTO occurs consumes one try.
+ *                        If wait_tries < 0, it will wait infinitely.
  *
  * @return bool: Returns true if the distance can be calculated, otherwise false.
  *
@@ -199,12 +198,27 @@ bool dw_get_voltage_bat_and_temp(double* temperature, double* voltage);
 /**
  * @brief Initializes the dw1000.
  *
- * @param config_flags: Indicates which options of the dw_local_data_t should be initialized.
+ * @param config_flags[in]: Indicates which options of the dw_local_data_t should be initialized.
  *
  * @return bool: True if the device can be initialized, otherwise false.
  *
  */
 bool dw_initialise(const int config_flags);
+
+#ifdef DEFAULT_PAYLOAD_FORMAT
+/**
+ * @brief Analyze what type of message has been received and act accordingly
+ *
+ * @param frame: Received message.
+ *
+ * @note: This function must be called after the receive_message function and
+ *        must receive as a parameter the frame that was passed as input to receive_message.
+ *
+ * @return bool: True if the message can be parsed, otherwise false.
+ *
+ */
+bool dw_parse_API_message(uwb_frame_format* frame);
+#endif DEFAULT_PAYLOAD_FORMAT
 
 // Defined constants for "mode" bitmask parameter passed into dw_receive_message() function.
 #define DW_START_RX_IMMEDIATE  0
@@ -223,9 +237,8 @@ bool dw_initialise(const int config_flags);
  *                  DWT_START_RX_DELAYED | DWT_IDLE_ON_DLY_ERR used to disable re-enabling of receiver if delayed RX failed due to "late" error.
  *                  DWT_START_RX_IMMEDIATE | DWT_NO_SYNC_PTRS used to re-enable RX without trying to sync IC and host side buffer pointers, typically when
  *                  performing manual RX re-enabling in double buffering mode.
- * @param wait_timer[in]: Timer that determines the number of ms(aprox) that will be waiting for a message.
- *                        If wait_timer < 0, it will wait until the expected message be received(infinitely).
- *                        If wait_timer < SDF_TO, it will wait until the SDF time out expires.
+ * @param wait_tries[in]: Number of tries to receive the message. When SDFTO occurs consumes one try.
+ *                        If wait_tries < 0, it will wait infinitely.
  * @param dev_id[in]: Identifier of the sender. If this value is equal to zero, means that it will
  *                    wait for any sender.
  * @param pan_id[in]: PAN id of the sender.
@@ -235,7 +248,7 @@ bool dw_initialise(const int config_flags);
  * @return bool: Returns true if the message was received, otherwise false.
  *
  */
-bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int wait_timer,
+bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int wait_tries,
         const uint64_t dev_id, const uint16_t pan_id);
 
 /**

@@ -167,6 +167,10 @@ extern const uint16_t lde_replicaCoeff[PCODES];
 #define FREQ_OFFSET_MULTIPLIER          (998.4e6/2.0/1024.0/131072.0)
 #define FREQ_OFFSET_MULTIPLIER_110KB    (998.4e6/2.0/8192.0/131072.0)
 
+// Default antenna delay values for 64 MHz PRF.
+#define TX_ANT_DLY 2.5830325*pow(10,-7)
+#define RX_ANT_DLY 2.5830325*pow(10,-7)
+
 // Structure for setting device configuration.
 typedef struct {
     channel chan;                               // Channel number.

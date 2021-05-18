@@ -2147,7 +2147,7 @@ typedef struct {
     unsigned int ntm :5;    // Noise threshold multiplier. (RW)
     uint16_t lde_ppindx;    // LDE peak path index. (RO)
     uint16_t lde_ppampl;    // LDE peak path amplitude. (RO)
-    uint16_t lde_rxantd;    // LDE receive antenna delay configuration. (RW)
+    double lde_rxantd;      // LDE receive antenna delay configuration. (RW)
     uint16_t lde_cfg2;      // LDE configuration register 2. (RW)
     uint16_t lde_repc;      // LDE replica coefficient configuration. (RW)
 } lde_if_format;
