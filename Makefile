@@ -61,7 +61,7 @@ endif
 # Stack size to be allocated to the Cortex-M process stack. This stack is
 # the stack used by the main() thread.
 ifeq ($(USE_PROCESS_STACKSIZE),)
-  USE_PROCESS_STACKSIZE = 0x400
+  USE_PROCESS_STACKSIZE = 0x800
 endif
 
 # Stack size to the allocated to the Cortex-M main/exceptions stack. This
@@ -129,8 +129,8 @@ CSRC = $(ALLCSRC) \
        $(PROJECT_DIRECTORY)/src/driver/led/led.c \
        $(PROJECT_DIRECTORY)/src/driver/button/button.c \
        $(PROJECT_DIRECTORY)/src/sal/dw1000/register/format/format.c \
-       $(PROJECT_DIRECTORY)/src/sal/dw1000/register/register.c \
        $(PROJECT_DIRECTORY)/src/sal/dw1000/params/params.c \
+       $(PROJECT_DIRECTORY)/src/sal/dw1000/register/register.c \
        $(PROJECT_DIRECTORY)/src/sal/dw1000/dw1000.c \
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
@@ -165,8 +165,8 @@ INCDIR = $(CONFDIR) $(ALLINC) $(TESTINC) $(TESTHAL) \
 		 $(PROJECT_DIRECTORY)/src/driver/led \
 		 $(PROJECT_DIRECTORY)/src/driver/button \
 		 $(PROJECT_DIRECTORY)/src/sal/dw1000/register/format \
-		 $(PROJECT_DIRECTORY)/src/sal/dw1000/register \
 		 $(PROJECT_DIRECTORY)/src/sal/dw1000/params \
+		 $(PROJECT_DIRECTORY)/src/sal/dw1000/register \
 		 $(PROJECT_DIRECTORY)/src/sal/dw1000 \
 #
 # Project, sources and paths
@@ -244,10 +244,8 @@ OBIN = $(BUILDDIR)/$(PROJECT).bin
 include $(CHIBIOS_CONTRIB)/os/various/jlink.mk
 include $(CHIBIOS_CONTRIB)/os/various/gdb.mk
 
-
 pin-reset: jlink-pin-reset
 flash: all jlink-flash
 debug: gdb-debug
 erase-all: jlink-erase-all
 debug-server: jlink-debug-server
-
