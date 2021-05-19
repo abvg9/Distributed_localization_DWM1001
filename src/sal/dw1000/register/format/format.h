@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <math.h>
+#include <string.h>
 
 // Defines frames of the SPI dwm1000 communications.
 typedef uint8_t *spi_frame;

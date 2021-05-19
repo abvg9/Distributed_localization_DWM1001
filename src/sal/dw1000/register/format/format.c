@@ -221,18 +221,8 @@ void payload_formatter_f(spi_frame fr, void *format, const int payload_size) {
             break;
         case CALC_DISTANCE_RESP: {
 
-            uint64_t rx_stamp = fr[1];
-            rx_stamp |= ((uint16_t)fr[2]) << 8;
-            rx_stamp |= ((uint32_t)fr[3]) << 16;
-            rx_stamp |= ((uint32_t)fr[4]) << 24;
-            rx_stamp |= ((uint64_t)fr[5]) << 32;
-            rx_stamp |= ((uint64_t)fr[6]) << 40;
-            rx_stamp |= ((uint64_t)fr[7]) << 48;
-            rx_stamp |= ((uint64_t)fr[8]) << 56;
-
-            frame->rx_stamp = (double) rx_stamp;
-
-            start_payload_index = 9;
+            memcpy(&frame->rx_stamp, &fr[1], sizeof(double));
+            start_payload_index += sizeof(double);
             break;
         }
         default:
@@ -261,17 +251,13 @@ void payload_unformatter_f(void *format, spi_frame fr, const int payload_size) {
             break;
         case CALC_DISTANCE_RESP: {
 
-            uint64_t rx_stamp = (uint64_t) frame->rx_stamp;
-            fr[1] = rx_stamp & 0x00000000000000FF;
-            fr[2] = (rx_stamp & 0x000000000000FF00) >> 8;
-            fr[3] = (rx_stamp & 0x0000000000FF0000) >> 16;
-            fr[4] = (rx_stamp & 0x00000000FF000000) >> 24;
-            fr[5] = (rx_stamp & 0x000000FF00000000) >> 32;
-            fr[6] = (rx_stamp & 0x0000FF0000000000) >> 40;
-            fr[7] = (rx_stamp & 0x00FF000000000000) >> 48;
-            fr[8] = (rx_stamp & 0xFF00000000000000) >> 56;
+            char* rx_stamp_bits = (char *) &frame->rx_stamp;
+            unsigned int i;
+            for(i = 0; i < sizeof(double); ++i) {
+                fr[start_payload_index] = rx_stamp_bits[i];
+                start_payload_index++;
+            }
 
-            start_payload_index = 9;
             break;
         }
         default:
