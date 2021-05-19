@@ -1146,9 +1146,8 @@ bool dw_parse_API_message(uwb_frame_format* frame) {
             uwb_frame_format tx_msg;
             init_uwb_frame_format(NULL, 0, DATA, SHORT_ADDRESS, SHORT_ADDRESS, &tx_msg);
 
-            tx_msg.ack_req = true;
             tx_msg.rx_stamp = rx_time_f.rx_stamp + lde_if_f.lde_rxantd;
-            if(!dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE  | DW_RESPONSE_EXPECTED, frame->sour_addr, frame->sour_PAN_id)) {
+            if(!dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE | DW_RESPONSE_EXPECTED, frame->sour_addr, frame->sour_PAN_id)) {
                 return false;
             }
 
@@ -1224,6 +1223,7 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
     }
 
     if(mode & DW_RESPONSE_EXPECTED) {
+        frame->ack_req = true;
         sys_ctrl_f.wait4resp = true;
         dw_local_data.wait_4_resp = true;
     }
