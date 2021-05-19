@@ -106,8 +106,6 @@ bool dw_calculate_distance(const uint64_t dev_id, const uint16_t pan_id, double*
     if(!init_uwb_frame_format(NULL, 0, DATA, SHORT_ADDRESS, SHORT_ADDRESS, &tx_msg)) {
         return false;
     }
-
-    tx_msg.ack_req = true;
     tx_msg.api_message_t = CALC_DISTANCE;
 
     if(dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE | DW_RESPONSE_EXPECTED, dev_id, pan_id)) {
@@ -1139,12 +1137,18 @@ bool dw_parse_API_message(uwb_frame_format* frame) {
                 return false;
             }
 
+            // Get the RX antenna delay.
+            lde_if_format lde_if_f;
+            if(!get_lde_if(&lde_if_f, LDE_RXANTD)) {
+                return false;
+            }
+
             uwb_frame_format tx_msg;
             init_uwb_frame_format(NULL, 0, DATA, SHORT_ADDRESS, SHORT_ADDRESS, &tx_msg);
 
             tx_msg.ack_req = true;
-            tx_msg.rx_stamp = rx_time_f.rx_stamp;
-            if(!dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE, frame->sour_addr, frame->sour_PAN_id)) {
+            tx_msg.rx_stamp = rx_time_f.rx_stamp + lde_if_f.lde_rxantd;
+            if(!dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE  | DW_RESPONSE_EXPECTED, frame->sour_addr, frame->sour_PAN_id)) {
                 return false;
             }
 
@@ -1162,43 +1166,14 @@ bool dw_parse_API_message(uwb_frame_format* frame) {
 bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const uint64_t dev_id, const uint16_t pan_id) {
 
     pan_adr_format pan_adr_f;
-    eui_format eui_f;
-
-    switch(frame->sour_addr_mod) {
-        case PAN_ID_AND_ADDRESS_ARE_NOT_PRESENT:
-            break;
-        case SHORT_ADDRESS:
-            if(!get_pan_adr(&pan_adr_f)) {
-                return false;
-            }
-            frame->sour_PAN_id = pan_adr_f.pan_id;
-            frame->sour_addr = pan_adr_f.short_addr;
-            break;
-        case EXTENDED_ADDRESS:
-
-            if(!get_eui(&eui_f)) {
-                return false;
-            }
-
-            if(!get_pan_adr(&pan_adr_f)) {
-                return false;
-            }
-
-            frame->sour_PAN_id = pan_adr_f.pan_id;
-            frame->sour_addr = (eui_f.ext_ID << 24) | eui_f.mc_ID;
-            break;
-        default:
-            return false;
+    if(!get_pan_adr(&pan_adr_f)) {
+        return false;
     }
 
     switch(frame->dest_addr_mod) {
         case PAN_ID_AND_ADDRESS_ARE_NOT_PRESENT:
             break;
         case SHORT_ADDRESS:
-
-            if(!get_pan_adr(&pan_adr_f)) {
-                return false;
-            }
 
             frame->intra_PAN = frame->dest_PAN_id == pan_adr_f.pan_id;
 
@@ -1211,9 +1186,6 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
             frame->dest_addr = dev_id;
             break;
         case EXTENDED_ADDRESS:
-            if(!get_pan_adr(&pan_adr_f)) {
-                return false;
-            }
 
             frame->intra_PAN = frame->dest_PAN_id == pan_adr_f.pan_id;
 
@@ -1325,9 +1297,6 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
 
     if(frame->ack_req) {
 
-        // Disable transceiver to avoid other messages.
-        dw_turn_off_transceiver();
-
         bool received_ack = false;
         uwb_frame_format rx_frame;
         init_uwb_frame_format(NULL, 0, DATA, PAN_ID_AND_ADDRESS_ARE_NOT_PRESENT,
@@ -1363,6 +1332,8 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
         if(received_ack) {
             frame->seq_num++;
         }
+
+        dw_turn_off_transceiver();
 
         return received_ack;
     }
@@ -2009,6 +1980,26 @@ bool init_uwb_frame_format(uint8_t* buffer, const size_t buffer_size,
     uwb_frame_f->check_sum = 0;
 
     uwb_frame_f->rx_stamp = 0.0;
+
+    pan_adr_format pan_adr_f;
+    if(!get_pan_adr(&pan_adr_f)) {
+        return false;
+    }
+    uwb_frame_f->sour_PAN_id = pan_adr_f.pan_id;
+
+    if(sour_addr_mod == SHORT_ADDRESS) {
+        uwb_frame_f->sour_addr = pan_adr_f.short_addr;
+    }
+
+    if(sour_addr_mod == EXTENDED_ADDRESS) {
+
+        eui_format eui_f;
+        if(!get_eui(&eui_f)) {
+            return false;
+        }
+
+        uwb_frame_f->sour_addr = (eui_f.ext_ID << 24) | eui_f.mc_ID;
+    }
 
     unsigned int i;
     for(i = 0; i < buffer_size; ++i) {

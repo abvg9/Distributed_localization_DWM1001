@@ -19,8 +19,8 @@
 #ifndef _DW1000_H_
 #define _DW1000_H_
 
-#include "register.h"
 #include "params.h"
+#include "register.h"
 
 #define DW_POWER_ON  palSetPad(IOPORT1, DW_RST)
 #define DW_POWER_OFF palClearPad(IOPORT1, DW_RST)
@@ -352,4 +352,4 @@ bool init_uwb_frame_format(uint8_t* buffer, const size_t buffer_size,
         const frame_type_value messagge_type, const dest_sour_addr_mod_value dest_addr_mod,
         const dest_sour_addr_mod_value sour_addr_mod, uwb_frame_format* uwb_frame_f);
 
-#endif /* _DWM1000_H_ */
+#endif // _DWM1000_H_
