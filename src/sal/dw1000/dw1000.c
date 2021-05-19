@@ -1126,10 +1126,14 @@ bool dw_initialise(const int config_flags) {
     return true;
 }
 
-bool dw_parse_API_message(uwb_frame_format* frame) {
+bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api_msg_t) {
 
-    switch(frame->api_message_t) {
+    switch(frame.api_message_t) {
         case CALC_DISTANCE: {
+
+            if(api_msg_t != CALC_DISTANCE) {
+                return false;
+            }
 
             // Get rx stamp.
             rx_time_format rx_time_f;
@@ -1149,9 +1153,14 @@ bool dw_parse_API_message(uwb_frame_format* frame) {
             tx_msg.api_message_t = CALC_DISTANCE_RESP;
             tx_msg.rx_stamp = rx_time_f.rx_stamp + lde_if_f.lde_rxantd;
 
-            return dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE | DW_RESPONSE_EXPECTED, frame->sour_addr, frame->sour_PAN_id);
+            return dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE | DW_RESPONSE_EXPECTED, frame.sour_addr, frame.sour_PAN_id);
         }
         case CALC_DISTANCE_RESP:
+
+            if(api_msg_t != CALC_DISTANCE_RESP) {
+                return false;
+            }
+
             break;
         default:
             break;

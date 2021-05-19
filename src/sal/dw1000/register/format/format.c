@@ -207,21 +207,19 @@ size_t tx_fctrl_unformatter(void* format, spi_frame fr, const size_t sub_registe
     return 0;
 }
 
-void payload_formatter_f(spi_frame fr, void *format, const int payload_size) {
-
-    uwb_frame_format* frame = (uwb_frame_format*)format;
+void payload_formatter_f(spi_frame fr, uwb_frame_format* format, const int payload_size) {
 
     // API flags.
-    frame->api_message_t = fr[0];
+    format->api_message_t = fr[0];
 
     int start_payload_index = 1;
 
-    switch(frame->api_message_t) {
+    switch(format->api_message_t) {
         case CALC_DISTANCE:
             break;
         case CALC_DISTANCE_RESP: {
 
-            memcpy(&frame->rx_stamp, &fr[1], sizeof(double));
+            memcpy(&format->rx_stamp, &fr[1], sizeof(double));
             start_payload_index += sizeof(double);
             break;
         }
@@ -232,26 +230,24 @@ void payload_formatter_f(spi_frame fr, void *format, const int payload_size) {
     // Payload.
     int i;
     for(i = start_payload_index; i < payload_size; ++i) {
-        frame->raw_payload[i] = fr[i];
+        format->raw_payload[i] = fr[i];
     }
 
 }
 
-void payload_unformatter_f(void *format, spi_frame fr, const int payload_size) {
-
-    uwb_frame_format* frame = (uwb_frame_format*)format;
+void payload_unformatter_f(const uwb_frame_format format, spi_frame fr, const int payload_size) {
 
     // API flags.
-    fr[0] = frame->api_message_t;
+    fr[0] = format.api_message_t;
 
     int start_payload_index = 1;
 
-    switch(frame->api_message_t) {
+    switch(format.api_message_t) {
         case CALC_DISTANCE:
             break;
         case CALC_DISTANCE_RESP: {
 
-            char* rx_stamp_bits = (char *) &frame->rx_stamp;
+            char* rx_stamp_bits = (char *) &format.rx_stamp;
             unsigned int i;
             for(i = 0; i < sizeof(double); ++i) {
                 fr[start_payload_index] = rx_stamp_bits[i];
@@ -267,7 +263,7 @@ void payload_unformatter_f(void *format, spi_frame fr, const int payload_size) {
     // Payload.
     int i;
     for(i = start_payload_index; i < payload_size; ++i) {
-        fr[i] = frame->raw_payload[i];
+        fr[i] = format.raw_payload[i];
     }
 }
 
@@ -360,7 +356,7 @@ size_t tx_buffer_unformatter(void *format, spi_frame fr, const size_t sub_regist
 
     // Payload.
     if(uwb_frame_f->frame_t != ACKNOWLEDGMENT) {
-        payload_unformatter_f(uwb_frame_f, &fr[start_payload_byte], payload_size);
+        payload_unformatter_f(*uwb_frame_f, &fr[start_payload_byte], payload_size);
     }
 
     // Check sum.
@@ -1769,21 +1765,6 @@ size_t drx_conf_unformatter(void *format, spi_frame fr, const size_t sub_registe
 
         fr[0] = drx_conf_f->drx_tune4h & 0x00FF;
         fr[1] = (drx_conf_f->drx_tune4h & 0xFF00) >> 8;
-
-        return 2;
-
-    } else if(sub_register == DRX_CAR_INT) {
-
-        fr[0] = drx_conf_f->drx_car_int & 0x0000FF;
-        fr[1] = (drx_conf_f->drx_car_int & 0x00FF00) >> 8;
-        fr[2] = (drx_conf_f->drx_car_int & 0x1F0000) >> 16;
-
-        return 2;
-
-    } else if(sub_register == RXPACC_NOSAT) {
-
-        fr[0] = drx_conf_f->rxpacc_nosat & 0x00FF;
-        fr[1] = (drx_conf_f->rxpacc_nosat & 0xFF00) >> 8;
 
         return 2;
 

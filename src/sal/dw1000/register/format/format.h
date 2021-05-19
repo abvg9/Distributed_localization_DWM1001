@@ -283,30 +283,6 @@ size_t tx_fctrl_unformatter(void *format, spi_frame fr, const size_t sub_registe
 
 #define FIXED_FRAME_FIELDS_SIZE 3
 
-// Default configuration of payload field.
-#define UWB_FRAME_PAYLOAD                                              \
-    uint8_t raw_payload[TX_RX_BUFFER_MAX_SIZE-FIXED_FRAME_FIELDS_SIZE] \
-
-/**
- * @brief Default formatter payload function.
- *
- * @param[in] fr: The spi_frame to initialize the uwb_frame_payload.
- * @param[out] format: uwb_frame_payload which will contains the spi_frame formatted.
- * @param[in] payload_size: payload length.
- *
- */
-void payload_formatter_f(spi_frame fr, void *format, const int payload_size);
-
-/**
- * @brief Default unformatter payload function.
- *
- * @param[in] format: uwb_frame_payload which contains the payload.
- * @param[out] fr: spi_frame where this function will store the uwb_frame_payload(format).
- * @param[in] payload_size: payload length.
- *
- */
-void payload_unformatter_f(void *format, spi_frame fr, const int payload_size);
-
 // Possibles values of the frame_t field.
 typedef enum {
     //BEACON = 0b000, NO IMPLEMENTED.
@@ -363,6 +339,26 @@ typedef struct {
 
     uint16_t check_sum;                     // Frame check-sum.
 } uwb_frame_format;
+
+/**
+ * @brief Default formatter payload function.
+ *
+ * @param[in] fr: The spi_frame to initialize the uwb_frame_payload.
+ * @param[out] format: uwb_frame_payload which will contains the spi_frame formatted.
+ * @param[in] payload_size: payload length.
+ *
+ */
+void payload_formatter_f(spi_frame fr, uwb_frame_format* format, const int payload_size) ;
+
+/**
+ * @brief Default unformatter payload function.
+ *
+ * @param[in] format: uwb_frame_payload which contains the payload.
+ * @param[out] fr: spi_frame where this function will store the uwb_frame_payload(format).
+ * @param[in] payload_size: payload length.
+ *
+ */
+void payload_unformatter_f(const uwb_frame_format format, spi_frame fr, const int payload_size);
 
 /**
  * @brief Unformats an uint8_t* to a spi_frame.
@@ -1737,7 +1733,7 @@ typedef enum {
 // Structure of the digital receiver configuration register.
 typedef struct {
     uint16_t rxpacc_nosat;        // Digital debug register. (RO)
-    unsigned int drx_car_int :21; // Carrier recovery integrator. (RO)
+    signed int drx_car_int :21;   // Carrier recovery integrator. (RO)
     uint16_t drx_tune4h;          // Digital tuning register (RW)
     uint16_t drx_pretoc;          // Preamble detection timeout count. (RW)
     uint16_t drx_sfdtoc;          // SFD detection timeout count. (RW)
