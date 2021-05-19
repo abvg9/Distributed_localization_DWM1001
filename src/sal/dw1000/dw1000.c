@@ -1200,6 +1200,10 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
             return false;
     }
 
+    if(mode & DW_RESPONSE_EXPECTED) {
+        frame->ack_req = true;
+    }
+
     // Write frame data to DW1000.
     if(!set_tx_buffer(frame)){
         return false;
