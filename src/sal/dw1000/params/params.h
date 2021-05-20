@@ -37,8 +37,6 @@
 #define DW_PAC64       3   // PAC 64 (recommended for RX of preamble length 1024 and up.
 
 #define SPEED_OF_LIGHT 299702547 // Speed of light in air, in meters per second.
-#define B20_SIGN_EXTEND_TEST (0x00100000UL)
-#define B20_SIGN_EXTEND_MASK (0xFFF00000UL)
 
 typedef struct {
     uint32_t lo32;
@@ -168,8 +166,12 @@ extern const uint16_t lde_replicaCoeff[PCODES];
 #define FREQ_OFFSET_MULTIPLIER_110KB    (998.4e6/2.0/8192.0/131072.0)
 
 // Default antenna delay values for 64 MHz PRF.
-#define TX_ANT_DLY 2.5830325*pow(10,-7)
-#define RX_ANT_DLY 2.5830325*pow(10,-7)
+#define TX_ANT_DLY 2.5830325*pow(10,-7) // 2.5830325*pow(10,-7)
+#define RX_ANT_DLY 2.5830325*pow(10,-7) // 2.5830325*pow(10,-7)
+
+// Default delay between frames.
+#define RX_TO_RESP_TX_DLY 4.0064110257*pow(10, -9)
+#define TX_TO_RESP_RX_DLY 2.191772461*pow(10, -9)
 
 // Structure for setting device configuration.
 typedef struct {

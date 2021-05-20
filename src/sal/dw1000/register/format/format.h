@@ -1734,7 +1734,7 @@ typedef enum {
 // Structure of the digital receiver configuration register.
 typedef struct {
     uint16_t rxpacc_nosat;        // Digital debug register. (RO)
-    unsigned int drx_car_int :21; // Carrier recovery integrator. (RO)
+    signed int drx_car_int :21;   // Carrier recovery integrator. (RO)
     uint16_t drx_tune4h;          // Digital tuning register (RW)
     uint16_t drx_pretoc;          // Preamble detection timeout count. (RW)
     uint16_t drx_sfdtoc;          // SFD detection timeout count. (RW)
