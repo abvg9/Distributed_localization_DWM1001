@@ -40,7 +40,7 @@
 #define B20_SIGN_EXTEND_TEST (0x00100000UL)
 #define B20_SIGN_EXTEND_MASK (0xFFF00000UL)
 
-#define DEFAULT_RX_TX_DELAY (1.0 * pow(10, -9))
+#define DEFAULT_RX_TX_DELAY (0.5 * pow(10, -9))
 
 typedef struct {
     uint32_t lo32;

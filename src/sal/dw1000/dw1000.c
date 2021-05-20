@@ -1364,7 +1364,7 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
     }
 
     frame->seq_num++;
-    dw_turn_off_transceiver();
+
     return true;
 }
 
