@@ -194,7 +194,7 @@ bool dw_calc_dist(const uint64_t dev_id, const uint16_t pan_id, double* distance
             const double rtd_init = lde_if_f.lde_rxantd - rx_msg.tx_stamp;
             const double rtd_resp = rx_msg.rx_stamp - tx_antd;
 
-            const double time_of_flight = ((rtd_init - rtd_resp * (1 - clock_offset)) / 2.0);
+            const double time_of_flight = ((fabs(fabs(rtd_init) - fabs(rtd_resp)) * (1 - clock_offset)) / 2.0);
 
             *distance = time_of_flight * SPEED_OF_LIGHT;
             return true;
@@ -1144,30 +1144,24 @@ bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api
                 return false;
             }
 
+            double tx_antd = 0.0;
+            if(!get_tx_antd(&tx_antd)) {
+                return false;
+            }
+
             uwb_frame_format tx_msg;
             init_uwb_frame_format(NULL, 0, DATA, SHORT_ADDRESS, SHORT_ADDRESS, &tx_msg);
 
             tx_msg.api_message_t = CALC_DISTANCE_RESP;
-            tx_msg.rx_stamp = rx_time_f.rx_stamp;
-            tx_msg.tx_stamp = tx_msg.rx_stamp + DEFAULT_RX_TX_DELAY;
+            tx_msg.rx_stamp = rx_time_f.rx_stamp - lde_if_f.lde_rxantd;
+            tx_msg.tx_stamp = tx_msg.rx_stamp - tx_antd;
 
             double previous_delay = 0.0;
             if(!get_dx_time(&previous_delay)) {
                 return false;
             }
 
-            // Set tx delay time.
-            double default_delay = DEFAULT_RX_TX_DELAY;
-            if(!set_dx_time(&default_delay)) {
-                return false;
-            }
-
-            if(!dw_send_message(&tx_msg, true, DW_START_TX_DELAYED, frame.sour_addr, frame.sour_PAN_id)) {
-                return false;
-            }
-
-            // Restore previous tx delay time.
-            if(!set_dx_time(&previous_delay)) {
+            if(!dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE, frame.sour_addr, frame.sour_PAN_id)) {
                 return false;
             }
 
