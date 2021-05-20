@@ -1186,16 +1186,14 @@ bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api
             tx_msg.rx_stamp = rx_time_f.rx_stamp;
             tx_msg.tx_stamp = cur_tx_dly + TX_ANT_DLY;
 
-            if(dw_send_message(&tx_msg, true, DW_START_TX_DELAYED, frame.sour_addr, frame.sour_PAN_id)){
-                return true;
-            }
+            bool ret = dw_send_message(&tx_msg, true, DW_START_TX_DELAYED, frame.sour_addr, frame.sour_PAN_id);
 
             // Restore previous TX delay.
             if(!set_dx_time(&previous_tx_time)) {
                 return false;
             }
 
-            return false;
+            return ret;
         }
         case CALC_DISTANCE_RESP:
 
