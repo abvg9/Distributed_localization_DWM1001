@@ -108,7 +108,7 @@ bool dw_calculate_distance(const uint64_t dev_id, const uint16_t pan_id, double*
     }
     tx_msg.api_message_t = CALC_DISTANCE;
 
-    if(dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE | DW_RESPONSE_EXPECTED, dev_id, pan_id)) {
+    if(dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE, dev_id, pan_id)) {
 
         uwb_frame_format rx_msg;
         if(!init_uwb_frame_format(NULL, 0, DATA, SHORT_ADDRESS, SHORT_ADDRESS, &rx_msg)) {
@@ -137,12 +137,12 @@ bool dw_calculate_distance(const uint64_t dev_id, const uint16_t pan_id, double*
                 return false;
             }
 
-            uint32_t carrier_integrator;
+            int32_t carrier_integrator;
 
             if(drx_conf_f.drx_car_int & B20_SIGN_EXTEND_TEST) {
-                carrier_integrator = drx_conf_f.drx_car_int | B20_SIGN_EXTEND_MASK;
+                carrier_integrator = (int32_t)(drx_conf_f.drx_car_int | B20_SIGN_EXTEND_MASK);
             } else {
-                carrier_integrator = drx_conf_f.drx_car_int & B20_SIGN_EXTEND_MASK;
+                carrier_integrator = (int32_t)(drx_conf_f.drx_car_int & B20_SIGN_EXTEND_MASK);
             }
 
             double hertz_to_ppm_multiplier_chan;
@@ -176,8 +176,6 @@ bool dw_calculate_distance(const uint64_t dev_id, const uint16_t pan_id, double*
                     break;
             }
 
-            const float clock_offset = carrier_integrator * (freq_offset_multiplier * hertz_to_ppm_multiplier_chan / 1.0e6);
-
             // Get the RX antenna delay for auto TX time stamp adjustment.
             lde_if_format lde_if_f;
             if(!get_lde_if(&lde_if_f, LDE_RXANTD)) {
@@ -190,14 +188,13 @@ bool dw_calculate_distance(const uint64_t dev_id, const uint16_t pan_id, double*
                 return false;
             }
 
-            // Number of seconds that the message use in go to the receiver.
-            const double go = rx_msg.rx_stamp - (tx_time_f.tx_stamp + tx_antd);
+            const float clock_offset = carrier_integrator * (freq_offset_multiplier * hertz_to_ppm_multiplier_chan / 1.0e6);
 
-            // Number of seconds that the message use in return to the sender.
-            const double ret = rx_time_f.rx_stamp - (rx_msg.rx_stamp + lde_if_f.lde_rxantd);
+            // Compute time of flight and distance, using clock offset ratio to correct for differing local and remote clock rates.
+            const double rtd_init = lde_if_f.lde_rxantd - rx_msg.tx_stamp;
+            const double rtd_resp = rx_msg.rx_stamp - tx_antd;
 
-            // Calculate time of flight.
-            const double time_of_flight = ((go + ret * (1 - clock_offset)) / 2.0);
+            const double time_of_flight = ((rtd_init - rtd_resp * (1 - clock_offset)) / 2.0);
 
             *distance = time_of_flight * SPEED_OF_LIGHT;
             return true;
@@ -1151,9 +1148,30 @@ bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api
             init_uwb_frame_format(NULL, 0, DATA, SHORT_ADDRESS, SHORT_ADDRESS, &tx_msg);
 
             tx_msg.api_message_t = CALC_DISTANCE_RESP;
-            tx_msg.rx_stamp = rx_time_f.rx_stamp + lde_if_f.lde_rxantd;
+            tx_msg.rx_stamp = rx_time_f.rx_stamp;
+            tx_msg.tx_stamp = tx_msg.rx_stamp + DEFAULT_RX_TX_DELAY;
 
-            return dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE | DW_RESPONSE_EXPECTED, frame.sour_addr, frame.sour_PAN_id);
+            double previous_delay = 0.0;
+            if(!get_dx_time(&previous_delay)) {
+                return false;
+            }
+
+            // Set tx delay time.
+            double default_delay = DEFAULT_RX_TX_DELAY;
+            if(!set_dx_time(&default_delay)) {
+                return false;
+            }
+
+            if(!dw_send_message(&tx_msg, true, DW_START_TX_DELAYED, frame.sour_addr, frame.sour_PAN_id)) {
+                return false;
+            }
+
+            // Restore previous tx delay time.
+            if(!set_dx_time(&previous_delay)) {
+                return false;
+            }
+
+            return true;
         }
         case CALC_DISTANCE_RESP:
 

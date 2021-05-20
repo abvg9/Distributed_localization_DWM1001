@@ -40,6 +40,8 @@
 #define B20_SIGN_EXTEND_TEST (0x00100000UL)
 #define B20_SIGN_EXTEND_MASK (0xFFF00000UL)
 
+#define DEFAULT_RX_TX_DELAY (1.0 * pow(10, -9))
+
 typedef struct {
     uint32_t lo32;
     uint16_t target[NUM_PRF];
@@ -102,7 +104,7 @@ extern const uint32_t tx_config[NUM_CH];
 #define DW_NS_SFD_LEN_110K      64              // Decawave non-standard SFD length for 110 KBPS.
 #define DW_NS_SFD_LEN_850K      16              // Decawave non-standard SFD length for 850 KBPS.
 #define DW_NS_SFD_LEN_6M8       8               // Decawave non-standard SFD length for 6.8 MBPS.
-extern const uint8_t dwnsSFDlen[NUM_BR]; //length of SFD for each of the bitrates
+extern const uint8_t dwnsSFDlen[NUM_BR];        // Length of SFD for each of the bitrates
 
 #define DRX_TUNE2_PRF16_PAC8    0x311A003CUL
 #define DRX_TUNE2_PRF16_PAC16   0x331A0052UL

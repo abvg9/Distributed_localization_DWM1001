@@ -334,6 +334,7 @@ typedef struct {
 
     api_flag_value api_message_t;           // Internal type of message.
     double rx_stamp;                        // Receive time stamp.
+    double tx_stamp;                        // Transmit time stamp.
 
     uint8_t raw_payload[TX_RX_BUFFER_MAX_SIZE-FIXED_FRAME_FIELDS_SIZE];
 
@@ -1733,7 +1734,7 @@ typedef enum {
 // Structure of the digital receiver configuration register.
 typedef struct {
     uint16_t rxpacc_nosat;        // Digital debug register. (RO)
-    signed int drx_car_int :21;   // Carrier recovery integrator. (RO)
+    unsigned int drx_car_int :21; // Carrier recovery integrator. (RO)
     uint16_t drx_tune4h;          // Digital tuning register (RW)
     uint16_t drx_pretoc;          // Preamble detection timeout count. (RW)
     uint16_t drx_sfdtoc;          // SFD detection timeout count. (RW)

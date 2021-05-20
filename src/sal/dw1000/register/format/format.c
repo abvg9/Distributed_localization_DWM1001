@@ -221,6 +221,9 @@ void payload_formatter_f(spi_frame fr, uwb_frame_format* format, const int paylo
 
             memcpy(&format->rx_stamp, &fr[1], sizeof(double));
             start_payload_index += sizeof(double);
+
+            memcpy(&format->tx_stamp, &fr[start_payload_index], sizeof(double));
+            start_payload_index += sizeof(double);
             break;
         }
         default:
@@ -251,6 +254,12 @@ void payload_unformatter_f(const uwb_frame_format format, spi_frame fr, const in
             unsigned int i;
             for(i = 0; i < sizeof(double); ++i) {
                 fr[start_payload_index] = rx_stamp_bits[i];
+                start_payload_index++;
+            }
+
+            char* tx_stamp_bits = (char *) &format.tx_stamp;
+            for(i = 0; i < sizeof(double); ++i) {
+                fr[start_payload_index] = tx_stamp_bits[i];
                 start_payload_index++;
             }
 
