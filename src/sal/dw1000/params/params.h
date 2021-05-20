@@ -169,10 +169,6 @@ extern const uint16_t lde_replicaCoeff[PCODES];
 #define TX_ANT_DLY 2.5830325*pow(10,-7) // 2.5830325*pow(10,-7)
 #define RX_ANT_DLY 2.5830325*pow(10,-7) // 2.5830325*pow(10,-7)
 
-// Default delay between frames.
-#define RX_TO_RESP_TX_DLY 4.0064110257*pow(10, -9)
-#define TX_TO_RESP_RX_DLY 2.191772461*pow(10, -9)
-
 // Structure for setting device configuration.
 typedef struct {
     channel chan;                               // Channel number.

@@ -804,11 +804,8 @@ void rx_time_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     if(sub_register == RX_TIME_OCT_0_TO_3) {
 
-        const uint32_t rx_stamp_low_bits = (((uint32_t)fr[0]) << 24) | (((uint32_t)fr[1]) << 16) |
-                (((uint16_t)fr[2]) << 8) | fr[3];
-
-        //const uint32_t rx_stamp_low_bits = (((uint32_t)fr[3]) << 24) | (((uint32_t)fr[2]) << 16) |
-        // (((uint16_t)fr[1]) << 8) | fr[0];
+        const uint32_t rx_stamp_low_bits = (((uint32_t)fr[3]) << 24) | (((uint32_t)fr[2]) << 16) |
+                (((uint16_t)fr[1]) << 8) | fr[0];
         rx_time_f->rx_stamp = calculate_stamp(rx_stamp_low_bits);
 
     } else if(sub_register == RX_TIME_OCT_4_TO_7) {
@@ -842,11 +839,8 @@ void tx_time_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     if(sub_register == TX_TIME_OCT_0_TO_3) {
 
-        const uint32_t tx_stamp_low_bits = (((uint32_t)fr[0]) << 24) | (((uint32_t)fr[1]) << 16) |
-                (((uint16_t)fr[2]) << 8) | fr[3];
-        //const uint32_t tx_stamp_low_bits = (((uint32_t)fr[3]) << 24) | (((uint32_t)fr[2]) << 16) |
-        //        (((uint16_t)fr[1]) << 8) | fr[0];
-
+        const uint32_t tx_stamp_low_bits = (((uint32_t)fr[3]) << 24) | (((uint32_t)fr[2]) << 16) |
+                (((uint16_t)fr[1]) << 8) | fr[0];
         tx_time_f->tx_stamp = calculate_stamp(tx_stamp_low_bits);
 
     } else if(sub_register == TX_TIME_OCT_4_TO_7) {
