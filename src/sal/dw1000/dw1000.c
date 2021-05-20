@@ -108,7 +108,7 @@ bool dw_calc_dist(const uint64_t dev_id, const uint16_t pan_id, double* distance
     }
     tx_msg.api_message_t = CALC_DISTANCE;
 
-    if(dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE, dev_id, pan_id)) {
+    if(dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE | DW_RESPONSE_EXPECTED, dev_id, pan_id)) {
 
         uwb_frame_format rx_msg;
         if(!init_uwb_frame_format(NULL, 0, DATA, SHORT_ADDRESS, SHORT_ADDRESS, &rx_msg)) {
@@ -119,31 +119,21 @@ bool dw_calc_dist(const uint64_t dev_id, const uint16_t pan_id, double* distance
 
             // Calculate distance.
 
-            // Get tx stamp.
-            tx_time_format tx_time_f;
-            if(!get_tx_time(&tx_time_f, TX_TIME_OCT_0_TO_3)) {
-                return false;
-            }
-
-            // Get rx stamp.
-            rx_time_format rx_time_f;
-            if(!get_rx_time(&rx_time_f, RX_TIME_OCT_0_TO_3)) {
-                return false;
-            }
-
             // Get carrier integrator.
             drx_conf_format drx_conf_f;
             if(!get_drx_conf(&drx_conf_f, DRX_CAR_INT)) {
                 return false;
             }
 
-            int32_t carrier_integrator;
+            int32_t carrier_integrator = (int32_t)(drx_conf_f.drx_car_int);
 
+            /*
             if(drx_conf_f.drx_car_int & B20_SIGN_EXTEND_TEST) {
                 carrier_integrator = (int32_t)(drx_conf_f.drx_car_int | B20_SIGN_EXTEND_MASK);
             } else {
                 carrier_integrator = (int32_t)(drx_conf_f.drx_car_int & B20_SIGN_EXTEND_MASK);
             }
+            */
 
             double hertz_to_ppm_multiplier_chan;
 
@@ -176,25 +166,25 @@ bool dw_calc_dist(const uint64_t dev_id, const uint16_t pan_id, double* distance
                     break;
             }
 
-            // Get the RX antenna delay for auto TX time stamp adjustment.
-            lde_if_format lde_if_f;
-            if(!get_lde_if(&lde_if_f, LDE_RXANTD)) {
+            // Get tx stamp.
+            tx_time_format tx_time_f;
+            if(!get_tx_time(&tx_time_f, TX_TIME_OCT_0_TO_3)) {
                 return false;
             }
 
-            // Set the TX antenna delay for auto TX time stamp adjustment.
-            double tx_antd = 0.0;
-            if(!get_tx_antd(&tx_antd)) {
+            // Get rx stamp.
+            rx_time_format rx_time_f;
+            if(!get_rx_time(&rx_time_f, RX_TIME_OCT_0_TO_3)) {
                 return false;
             }
 
             const float clock_offset = carrier_integrator * (freq_offset_multiplier * hertz_to_ppm_multiplier_chan / 1.0e6);
 
             // Compute time of flight and distance, using clock offset ratio to correct for differing local and remote clock rates.
-            const double rtd_init = lde_if_f.lde_rxantd - rx_msg.tx_stamp;
-            const double rtd_resp = rx_msg.rx_stamp - tx_antd;
+            const double rtd_init = rx_time_f.rx_stamp - tx_time_f.tx_stamp;
+            const double rtd_resp = rx_msg.tx_stamp - rx_msg.rx_stamp;
 
-            const double time_of_flight = ((fabs(fabs(rtd_init) - fabs(rtd_resp)) * (1 - clock_offset)) / 2.0);
+            const double time_of_flight = ((rtd_init - rtd_resp * (1 - clock_offset)) / 2.0);
 
             *distance = time_of_flight * SPEED_OF_LIGHT;
             return true;
@@ -1132,20 +1122,15 @@ bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api
                 return false;
             }
 
+            // Get tx stamp.
+            tx_time_format tx_time_f;
+            if(!get_tx_time(&tx_time_f, TX_TIME_OCT_0_TO_3)) {
+                return false;
+            }
+
             // Get rx stamp.
             rx_time_format rx_time_f;
             if(!get_rx_time(&rx_time_f, RX_TIME_OCT_0_TO_3)) {
-                return false;
-            }
-
-            // Get the RX antenna delay.
-            lde_if_format lde_if_f;
-            if(!get_lde_if(&lde_if_f, LDE_RXANTD)) {
-                return false;
-            }
-
-            double tx_antd = 0.0;
-            if(!get_tx_antd(&tx_antd)) {
                 return false;
             }
 
@@ -1153,19 +1138,10 @@ bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api
             init_uwb_frame_format(NULL, 0, DATA, SHORT_ADDRESS, SHORT_ADDRESS, &tx_msg);
 
             tx_msg.api_message_t = CALC_DISTANCE_RESP;
-            tx_msg.rx_stamp = rx_time_f.rx_stamp - lde_if_f.lde_rxantd;
-            tx_msg.tx_stamp = tx_msg.rx_stamp - tx_antd;
+            tx_msg.rx_stamp = rx_time_f.rx_stamp;
+            tx_msg.tx_stamp = tx_time_f.tx_stamp;
 
-            double previous_delay = 0.0;
-            if(!get_dx_time(&previous_delay)) {
-                return false;
-            }
-
-            if(!dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE, frame.sour_addr, frame.sour_PAN_id)) {
-                return false;
-            }
-
-            return true;
+            return dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE, frame.sour_addr, frame.sour_PAN_id);
         }
         case CALC_DISTANCE_RESP:
 
