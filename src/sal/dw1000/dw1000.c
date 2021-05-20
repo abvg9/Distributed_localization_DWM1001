@@ -100,7 +100,7 @@ double calc_signal_power(const rx_time_format rx_time_f, const rx_fqual_format r
     return (10.0 * log10(numerator/pow(rx_finfo_f.rxpacc - usr_sfd_f.sfd_length, 2))) - substractor;
 }
 
-bool dw_calculate_distance(const uint64_t dev_id, const uint16_t pan_id, double* distance, const int wait_tries) {
+bool dw_calc_dist(const uint64_t dev_id, const uint16_t pan_id, double* distance, const int wait_tries) {
 
     uwb_frame_format tx_msg;
     if(!init_uwb_frame_format(NULL, 0, DATA, SHORT_ADDRESS, SHORT_ADDRESS, &tx_msg)) {
@@ -1345,10 +1345,8 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
         }
 
         // Check if the ACK message is the expected.
-        if(rx_frame.frame_t == ACKNOWLEDGMENT && sys_evt_sts_f.rxfcg &&
-                frame->seq_num == rx_frame.seq_num) {
-            received_ack = true;
-        }
+        received_ack = rx_frame.frame_t == ACKNOWLEDGMENT && sys_evt_sts_f.rxfcg &&
+                frame->seq_num == rx_frame.seq_num;
 
         // Clear good RX frame event in the DW1000 status register.
         sys_evt_sts_f.rxfcg = true;
@@ -1366,6 +1364,7 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
     }
 
     frame->seq_num++;
+    dw_turn_off_transceiver();
     return true;
 }
 
@@ -2007,6 +2006,7 @@ bool init_uwb_frame_format(uint8_t* buffer, const size_t buffer_size,
     uwb_frame_f->check_sum = 0;
 
     uwb_frame_f->rx_stamp = 0.0;
+    uwb_frame_f->tx_stamp = 0.0;
 
     pan_adr_format pan_adr_f;
     if(!get_pan_adr(&pan_adr_f)) {

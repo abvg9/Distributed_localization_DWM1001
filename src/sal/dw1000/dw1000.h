@@ -100,10 +100,12 @@ double calc_signal_power(const rx_time_format rx_time_f, const rx_fqual_format r
  * @param wait_tries[in]: Number of tries to receive the message. When SDFTO occurs consumes one try.
  *                        If wait_tries < 0, it will wait infinitely.
  *
+ * @note: It is mandatory to use DW_LOADUCODE flag in dw_initialise function so this function works.
+ *
  * @return bool: Returns true if the distance can be calculated, otherwise false.
  *
  */
-bool dw_calculate_distance(const uint64_t dev_id, const uint16_t pan_id, double* distance, const int wait_timer);
+bool dw_calc_dist(const uint64_t dev_id, const uint16_t pan_id, double* distance, const int wait_timer);
 
 /**
  * @brief This function provides the main API for the configuration of the
