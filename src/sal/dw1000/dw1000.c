@@ -137,16 +137,6 @@ bool dw_calc_dist(const uint64_t dev_id, const uint16_t pan_id, double* distance
                 return false;
             }
 
-            /*
-            int32_t carrier_integrator;
-
-            if(drx_conf_f.drx_car_int & B20_SIGN_EXTEND_TEST) {
-                carrier_integrator = (int32_t)(drx_conf_f.drx_car_int | B20_SIGN_EXTEND_MASK);
-            } else {
-                carrier_integrator = (int32_t)(drx_conf_f.drx_car_int & B20_SIGN_EXTEND_MASK);
-            }
-            */
-
             double hertz_to_ppm_multiplier_chan;
 
             switch(dw_conf.chan) {
@@ -189,8 +179,8 @@ bool dw_calc_dist(const uint64_t dev_id, const uint16_t pan_id, double* distance
             *distance = time_of_flight * SPEED_OF_LIGHT;
 
             /* IMPORTANT NOTE:
-             * If a development environment is used to view the result, the returned distance will be corrupted
-             * and have wrong values. The reason is that the development environment itself adds delays that are
+             * If a development environment is used to view the result, the returned distance will be corrupted.
+             * The reason is that the development environment itself adds delays that are
              * not taken into account in the formulas. In this way, it will return values ​​much higher than the
              * real distances if you add a breakpoint.
              */
