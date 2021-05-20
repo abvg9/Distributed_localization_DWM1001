@@ -108,7 +108,13 @@ bool dw_calc_dist(const uint64_t dev_id, const uint16_t pan_id, double* distance
     }
     tx_msg.api_message_t = CALC_DISTANCE;
 
-    if(dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE, dev_id, pan_id)) {
+    if(dw_send_message(&tx_msg, false, DW_START_TX_IMMEDIATE, dev_id, pan_id)) {
+
+        // Get tx stamp.
+        tx_time_format tx_time_f;
+        if(!get_tx_time(&tx_time_f, -1)) {
+            return false;
+        }
 
         uwb_frame_format rx_msg;
         if(!init_uwb_frame_format(NULL, 0, DATA, SHORT_ADDRESS, SHORT_ADDRESS, &rx_msg)) {
@@ -116,6 +122,12 @@ bool dw_calc_dist(const uint64_t dev_id, const uint16_t pan_id, double* distance
         }
 
         if(dw_receive_message(&rx_msg, DW_START_RX_IMMEDIATE, wait_tries, dev_id, pan_id)) {
+
+            // Get rx stamp.
+            rx_time_format rx_time_f;
+            if(!get_rx_time(&rx_time_f, -1)) {
+                return false;
+            }
 
             // Calculate distance.
 
@@ -168,18 +180,6 @@ bool dw_calc_dist(const uint64_t dev_id, const uint16_t pan_id, double* distance
 
             const float clock_offset = drx_conf_f.drx_car_int * (freq_offset_multiplier * hertz_to_ppm_multiplier_chan / 1.0e6);
 
-            // Get tx stamp.
-            tx_time_format tx_time_f;
-            if(!get_tx_time(&tx_time_f, -1)) {
-                return false;
-            }
-
-            // Get rx stamp.
-            rx_time_format rx_time_f;
-            if(!get_rx_time(&rx_time_f, -1)) {
-                return false;
-            }
-
             // Compute time of flight and distance, using clock offset ratio to correct for differing local and remote clock rates.
             const double rtd_init = rx_time_f.rx_stamp - tx_time_f.tx_stamp;
             const double rtd_resp = rx_msg.tx_stamp - rx_msg.rx_stamp;
@@ -188,6 +188,12 @@ bool dw_calc_dist(const uint64_t dev_id, const uint16_t pan_id, double* distance
 
             *distance = time_of_flight * SPEED_OF_LIGHT;
 
+            /* IMPORTANT NOTE:
+             * If a development environment is used to view the result, the returned distance will be corrupted
+             * and have wrong values. The reason is that the development environment itself adds delays that are
+             * not taken into account in the formulas. In this way, it will return values ​​much higher than the
+             * real distances if you add a breakpoint.
+             */
             return true;
         }
     }
@@ -1135,7 +1141,7 @@ bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api
             tx_msg.rx_stamp = rx_time_f.rx_stamp;
             tx_msg.tx_stamp = rx_time_f.rx_stamp + TX_ANT_DLY;
 
-            if(dw_send_message(&tx_msg, true, DW_START_TX_DELAYED, frame.sour_addr, frame.sour_PAN_id)){
+            if(dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE, frame.sour_addr, frame.sour_PAN_id)){
                 return true;
             }
 
@@ -1325,7 +1331,9 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
             frame->seq_num++;
         }
 
-        dw_turn_off_transceiver();
+        if(!dw_turn_off_transceiver()) {
+            return false;
+        }
 
         return received_ack;
     }
