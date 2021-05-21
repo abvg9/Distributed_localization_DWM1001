@@ -257,13 +257,15 @@ void payload_unformatter_f(const uwb_frame_format format, spi_frame fr, size_t* 
             char* rx_stamp_bits = (char *) &format.rx_stamp;
             unsigned int i;
             for(i = 0; i < sizeof(double); ++i) {
-                fr[start_payload_index++] = rx_stamp_bits[i];
+                fr[start_payload_index] = rx_stamp_bits[i];
+                start_payload_index++;
             }
             *payload_size = *payload_size + sizeof(double);
 
             char* tx_stamp_bits = (char *) &format.tx_stamp;
             for(i = 0; i < sizeof(double); ++i) {
-                fr[start_payload_index++] = tx_stamp_bits[i];
+                fr[start_payload_index] = tx_stamp_bits[i];
+                start_payload_index++;
             }
             *payload_size = *payload_size + sizeof(double);
 
