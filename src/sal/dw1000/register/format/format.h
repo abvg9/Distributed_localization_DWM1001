@@ -308,8 +308,9 @@ typedef enum {
 
 // Possibles values of api_message_t field.
 typedef enum {
-    CALC_DISTANCE = 0b00000000,      // Device wants to calculate distance with the receiver.
-    CALC_DISTANCE_RESP = 0b00000001, // Answer to calculate distance message.
+    CALC_DISTANCE = 0b00000000,         // Device wants to calculate distance with the receiver.
+    CALC_DISTANCE_RESP_RX = 0b00000001, // Answer with the RX time.
+    CALC_DISTANCE_RESP_TX = 0b00000010, // Answer with the TX time.
 } api_flag_value;
 
 // Frame format encoded as per the IEEE 802.15.4 standard.

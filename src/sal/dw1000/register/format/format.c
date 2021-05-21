@@ -218,11 +218,14 @@ void payload_formatter_f(spi_frame fr, uwb_frame_format* format, size_t* payload
     switch(format->api_message_t) {
         case CALC_DISTANCE:
             break;
-        case CALC_DISTANCE_RESP: {
+        case CALC_DISTANCE_RESP_RX: {
 
             memcpy(&format->rx_stamp, &fr[1], sizeof(double));
             start_raw_payload_index += sizeof(double);
             *payload_size = *payload_size + sizeof(double);
+            break;
+        }
+        case CALC_DISTANCE_RESP_TX: {
 
             memcpy(&format->tx_stamp, &fr[start_raw_payload_index], sizeof(double));
             start_raw_payload_index += sizeof(double);
@@ -252,23 +255,29 @@ void payload_unformatter_f(const uwb_frame_format format, spi_frame fr, size_t* 
     switch(format.api_message_t) {
         case CALC_DISTANCE:
             break;
-        case CALC_DISTANCE_RESP: {
+        case CALC_DISTANCE_RESP_RX: {
 
             char* rx_stamp_bits = (char *) &format.rx_stamp;
             unsigned int i;
+
             for(i = 0; i < sizeof(double); ++i) {
                 fr[start_payload_index] = rx_stamp_bits[i];
                 start_payload_index++;
             }
             *payload_size = *payload_size + sizeof(double);
+            break;
+        }
+
+        case CALC_DISTANCE_RESP_TX: {
 
             char* tx_stamp_bits = (char *) &format.tx_stamp;
+            unsigned int i;
+
             for(i = 0; i < sizeof(double); ++i) {
                 fr[start_payload_index] = tx_stamp_bits[i];
                 start_payload_index++;
             }
             *payload_size = *payload_size + sizeof(double);
-
             break;
         }
         default:

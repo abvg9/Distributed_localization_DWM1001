@@ -108,6 +108,7 @@ bool dw_calc_dist(const uint64_t dev_id, const uint16_t pan_id, double* distance
     }
     tx_msg.api_message_t = CALC_DISTANCE;
 
+    // Send a message to request distance calculation.
     double consumed_time_send;
     if(dw_send_message(&tx_msg, false, DW_START_TX_IMMEDIATE, dev_id, pan_id, &consumed_time_send)) {
 
@@ -122,71 +123,42 @@ bool dw_calc_dist(const uint64_t dev_id, const uint16_t pan_id, double* distance
             return false;
         }
 
+        // Wait for response, and if we receive it, get the RX stamp of the message.
         double consumed_time_recv;
         if(dw_receive_message(&rx_msg, DW_START_RX_IMMEDIATE, wait_tries, dev_id, pan_id, &consumed_time_recv)) {
 
-            // Get rx stamp.
+            if(!dw_parse_API_message(rx_msg, CALC_DISTANCE_RESP_RX, 0)) {
+                return false;
+            }
+
+            // Get RX stamp.
             rx_time_format rx_time_f;
             if(!get_rx_time(&rx_time_f, -1)) {
                 return false;
             }
 
-            // Calculate distance.
-
-            double hertz_to_ppm_multiplier_chan;
-
-            switch(dw_conf.chan) {
-                case CH1:
-                    hertz_to_ppm_multiplier_chan = HERTZ_TO_PPM_MULTIPLIER_CHAN_1;
-                    break;
-                case CH2:
-                    hertz_to_ppm_multiplier_chan = HERTZ_TO_PPM_MULTIPLIER_CHAN_2;
-                    break;
-                case CH3:
-                    hertz_to_ppm_multiplier_chan = HERTZ_TO_PPM_MULTIPLIER_CHAN_3;
-                    break;
-                case CH5:
-                    hertz_to_ppm_multiplier_chan = HERTZ_TO_PPM_MULTIPLIER_CHAN_5;
-                    break;
-                default:
-                    hertz_to_ppm_multiplier_chan = HERTZ_TO_PPM_MULTIPLIER_CHAN_5;
-                    break;
-            }
-
-            double freq_offset_multiplier;
-
-            switch(dw_conf.data_rate) {
-                case KBPS110:
-                    freq_offset_multiplier = FREQ_OFFSET_MULTIPLIER_110KB;
-                    break;
-                default:
-                    freq_offset_multiplier = FREQ_OFFSET_MULTIPLIER;
-                    break;
-            }
-
-            // Get carrier integrator.
-            drx_conf_format drx_conf_f;
-            if(!get_drx_conf(&drx_conf_f, DRX_CAR_INT)) {
-                return false;
-            }
-
-            const float clock_offset = drx_conf_f.drx_car_int * (freq_offset_multiplier * hertz_to_ppm_multiplier_chan / 1.0e6);
-
-            // Compute time of flight and distance, using clock offset ratio to correct for differing local and remote clock rates.
+            // Calculate own time between transmit and receive message.
             const double rtd_init = rx_time_f.rx_stamp - tx_time_f.tx_stamp - consumed_time_send - consumed_time_recv;
-            const double rtd_resp = rx_msg.tx_stamp - rx_msg.rx_stamp;
 
-            const double time_of_flight = (( rtd_init - rtd_resp * (1.0 - clock_offset)) / 2.0);
+            // Get time stamp of the receiver.
+            const double rx_stamp = rx_msg.rx_stamp;
 
-            *distance = time_of_flight * SPEED_OF_LIGHT;
+            // Wait for response, and if we receive it, get the TX stamp of the message.
+            double consumed_time_recv2;
+            if(dw_receive_message(&rx_msg, DW_START_RX_IMMEDIATE, wait_tries, dev_id, pan_id, &consumed_time_recv2)) {
 
-            /* IMPORTANT NOTE:
-             * If a development environment is used to view the result, the returned distance will be corrupted.
-             * The reason is that the development environment itself adds delays that are
-             * not taken into account in the formulas. In this way, it will return values ​​much higher than the
-             * real distances if you add a breakpoint.
-             */
-            return true;
+                if(!dw_parse_API_message(rx_msg, CALC_DISTANCE_RESP_TX, 0)) {
+                    return false;
+                }
+
+                // Calculate receiver time between transmit and receive message.
+                const double rtd_resp = rx_stamp - rx_msg.tx_stamp;
+
+                // Calculate distance.
+                const double time_of_flight = (rtd_init - rtd_resp) / 2.0;
+                *distance = time_of_flight * SPEED_OF_LIGHT;
+            }
+
         }
     }
 
@@ -1111,7 +1083,7 @@ bool dw_initialise(const int config_flags) {
 }
 
 bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api_msg_t,
-        const double inter_func_tim_consum) {
+        const double consumed_time_recv) {
 
     switch(frame.api_message_t) {
         case CALC_DISTANCE: {
@@ -1128,26 +1100,40 @@ bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api
 
             uwb_frame_format tx_msg;
             init_uwb_frame_format(NULL, 0, DATA, SHORT_ADDRESS, SHORT_ADDRESS, &tx_msg);
-            tx_msg.api_message_t = CALC_DISTANCE_RESP;
-            tx_msg.rx_stamp = rx_time_f.rx_stamp;
-
-            double tx_ant_dly;
-            if(!get_tx_antd(&tx_ant_dly)) {
-                return false;
-            }
-
-            tx_msg.tx_stamp = rx_time_f.rx_stamp + tx_ant_dly + inter_func_tim_consum;
+            tx_msg.api_message_t = CALC_DISTANCE_RESP_RX;
+            tx_msg.rx_stamp = rx_time_f.rx_stamp + consumed_time_recv;
 
             double consumed_time_send;
             if(dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE, frame.sour_addr, frame.sour_PAN_id, &consumed_time_send)){
                 return true;
             }
 
+            // Get tx stamp.
+            tx_time_format tx_time_f;
+            if(!get_tx_time(&tx_time_f, -1)) {
+                return false;
+            }
+
+            tx_msg.api_message_t = CALC_DISTANCE_RESP_TX;
+            tx_msg.tx_stamp = tx_time_f.tx_stamp + consumed_time_send;
+
+            double consumed_time_send2;
+            if(dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE, frame.sour_addr, frame.sour_PAN_id, &consumed_time_send2)){
+                return true;
+            }
+
             return false;
         }
-        case CALC_DISTANCE_RESP:
+        case CALC_DISTANCE_RESP_RX:
 
-            if(api_msg_t != CALC_DISTANCE_RESP) {
+            if(api_msg_t != CALC_DISTANCE_RESP_RX) {
+                return false;
+            }
+
+            break;
+        case CALC_DISTANCE_RESP_TX:
+
+            if(api_msg_t != CALC_DISTANCE_RESP_TX) {
                 return false;
             }
 
