@@ -207,12 +207,13 @@ size_t tx_fctrl_unformatter(void* format, spi_frame fr, const size_t sub_registe
     return 0;
 }
 
-void payload_formatter_f(spi_frame fr, uwb_frame_format* format) {
+void payload_formatter_f(spi_frame fr, uwb_frame_format* format, size_t* payload_size) {
 
     int start_raw_payload_index = 0;
 
     // API flags.
     format->api_message_t = fr[start_raw_payload_index++];
+    payload_size++;
 
     switch(format->api_message_t) {
         case CALC_DISTANCE:
@@ -221,9 +222,11 @@ void payload_formatter_f(spi_frame fr, uwb_frame_format* format) {
 
             memcpy(&format->rx_stamp, &fr[1], sizeof(double));
             start_raw_payload_index += sizeof(double);
+            payload_size += sizeof(double);
 
             memcpy(&format->tx_stamp, &fr[start_raw_payload_index], sizeof(double));
             start_raw_payload_index += sizeof(double);
+            payload_size += sizeof(double);
             break;
         }
         default:
@@ -232,18 +235,19 @@ void payload_formatter_f(spi_frame fr, uwb_frame_format* format) {
 
     // Payload.
     int i;
-    for(i = start_raw_payload_index; i < format->payload_size; ++i) {
+    for(i = start_raw_payload_index; i < format->raw_payload_size; ++i) {
         format->raw_payload[i] = fr[i];
     }
 
 }
 
-void payload_unformatter_f(const uwb_frame_format format, spi_frame fr) {
+void payload_unformatter_f(const uwb_frame_format format, spi_frame fr, size_t* payload_size) {
 
     int start_payload_index = 0;
 
     // API flags.
     fr[start_payload_index++] = format.api_message_t;
+    payload_size++;
 
     switch(format.api_message_t) {
         case CALC_DISTANCE:
@@ -255,11 +259,13 @@ void payload_unformatter_f(const uwb_frame_format format, spi_frame fr) {
             for(i = 0; i < sizeof(double); ++i) {
                 fr[start_payload_index++] = rx_stamp_bits[i];
             }
+            payload_size += sizeof(double);
 
             char* tx_stamp_bits = (char *) &format.tx_stamp;
             for(i = 0; i < sizeof(double); ++i) {
                 fr[start_payload_index++] = tx_stamp_bits[i];
             }
+            payload_size += sizeof(double);
 
             break;
         }
@@ -269,7 +275,7 @@ void payload_unformatter_f(const uwb_frame_format format, spi_frame fr) {
 
     // Payload.
     int i;
-    for(i = start_payload_index; i < format.payload_size; ++i) {
+    for(i = start_payload_index; i < format.raw_payload_size; ++i) {
         fr[i] = format.raw_payload[i];
     }
 }
@@ -278,21 +284,21 @@ size_t tx_buffer_unformatter(void *format, spi_frame fr, const size_t sub_regist
 
     uwb_frame_format* uwb_frame_f = (uwb_frame_format*) format;
 
+    size_t start_payload_byte = 0;
+
     // Frame control.
-    fr[0] = (uint8_t)uwb_frame_f->frame_t;
-    fr[0] |= ((uint8_t)uwb_frame_f->seq_enab) << 3;
+    fr[start_payload_byte] = (uint8_t)uwb_frame_f->frame_t;
+    fr[start_payload_byte] |= ((uint8_t)uwb_frame_f->seq_enab) << 3;
 
-    fr[0] |= ((uint8_t)uwb_frame_f->frame_pend) << 4;
-    fr[0] |= ((uint8_t)uwb_frame_f->ack_req) << 5;
-    fr[0] |= ((uint8_t)uwb_frame_f->intra_PAN) << 6;
+    fr[start_payload_byte] |= ((uint8_t)uwb_frame_f->frame_pend) << 4;
+    fr[start_payload_byte] |= ((uint8_t)uwb_frame_f->ack_req) << 5;
+    fr[start_payload_byte] |= ((uint8_t)uwb_frame_f->intra_PAN) << 6;
 
-    fr[1] = ((uint8_t)uwb_frame_f->dest_addr_mod) << 2;
-    fr[1] |= ((uint8_t)uwb_frame_f->sour_addr_mod) << 6;
+    fr[++start_payload_byte] = ((uint8_t)uwb_frame_f->dest_addr_mod) << 2;
+    fr[start_payload_byte] |= ((uint8_t)uwb_frame_f->sour_addr_mod) << 6;
 
     // Sequence number.
-    fr[2] = uwb_frame_f->seq_num;
-
-    size_t start_payload_byte = 3;
+    fr[++start_payload_byte] = uwb_frame_f->seq_num;
 
     // Addressing fields.
     switch(uwb_frame_f->dest_addr_mod) {
@@ -346,15 +352,15 @@ size_t tx_buffer_unformatter(void *format, spi_frame fr, const size_t sub_regist
             break;
     }
 
-    fr[start_payload_byte++] = uwb_frame_f->payload_size & 0x00FF;
-    fr[start_payload_byte++] = (uwb_frame_f->payload_size & 0xFF00) >> 8;
+    fr[start_payload_byte++] = uwb_frame_f->raw_payload_size & 0x00FF;
+    fr[start_payload_byte++] = (uwb_frame_f->raw_payload_size & 0xFF00) >> 8;
 
     // Payload.
     if(uwb_frame_f->frame_t != ACKNOWLEDGMENT) {
-        payload_unformatter_f(*uwb_frame_f, &fr[start_payload_byte]);
+        payload_unformatter_f(*uwb_frame_f, &fr[start_payload_byte], &start_payload_byte);
     }
 
-    uwb_frame_f->frame_size = start_payload_byte + uwb_frame_f->payload_size;
+    uwb_frame_f->frame_size = start_payload_byte + uwb_frame_f->raw_payload_size;
 
     // Check sum.
     fr[uwb_frame_f->frame_size++] = uwb_frame_f->check_sum & 0x00FF;
@@ -648,20 +654,20 @@ void rx_buffer_formatter(spi_frame fr, void *format, const size_t sub_register) 
 
     uwb_frame_format* uwb_frame_f = (uwb_frame_format*) format;
 
-    // Frame control.
-    uwb_frame_f->frame_t = fr[0] & 0b00000111;
-    uwb_frame_f->seq_enab = (fr[0] & 0b00001000) >> 3;
-    uwb_frame_f->frame_pend = (fr[0] & 0b00010000) >> 4;
-    uwb_frame_f->ack_req = (fr[0] & 0b00100000) >> 5;
-    uwb_frame_f->intra_PAN = (fr[0] & 0b01000000) >> 6;
+    size_t start_payload_byte = 0;
 
-    uwb_frame_f->dest_addr_mod = (fr[1] & 0b00001100) >> 2;
-    uwb_frame_f->sour_addr_mod = (fr[1] & 0b11000000) >> 6;
+    // Frame control.
+    uwb_frame_f->frame_t = fr[start_payload_byte] & 0b00000111;
+    uwb_frame_f->seq_enab = (fr[start_payload_byte] & 0b00001000) >> 3;
+    uwb_frame_f->frame_pend = (fr[start_payload_byte] & 0b00010000) >> 4;
+    uwb_frame_f->ack_req = (fr[start_payload_byte] & 0b00100000) >> 5;
+    uwb_frame_f->intra_PAN = (fr[start_payload_byte] & 0b01000000) >> 6;
+
+    uwb_frame_f->dest_addr_mod = (fr[++start_payload_byte] & 0b00001100) >> 2;
+    uwb_frame_f->sour_addr_mod = (fr[start_payload_byte] & 0b11000000) >> 6;
 
     // Sequence number.
-    uwb_frame_f->seq_num = fr[2];
-
-    size_t start_payload_byte = 3;
+    uwb_frame_f->seq_num = fr[++start_payload_byte];
 
     // Addressing fields.
     switch(uwb_frame_f->dest_addr_mod) {
@@ -725,15 +731,15 @@ void rx_buffer_formatter(spi_frame fr, void *format, const size_t sub_register) 
             break;
     }
 
-    uwb_frame_f->payload_size = (fr[start_payload_byte++]);
-    uwb_frame_f->payload_size |= ((uint16_t)fr[start_payload_byte++]) << 8;
+    uwb_frame_f->raw_payload_size = (fr[start_payload_byte++]);
+    uwb_frame_f->raw_payload_size |= ((uint16_t)fr[start_payload_byte++]) << 8;
 
     // Payload.
     if(uwb_frame_f->frame_t != ACKNOWLEDGMENT) {
-        payload_formatter_f(&fr[start_payload_byte], uwb_frame_f);
+        payload_formatter_f(&fr[start_payload_byte], uwb_frame_f, &start_payload_byte);
     }
 
-    uwb_frame_f->frame_size = start_payload_byte + uwb_frame_f->payload_size;
+    uwb_frame_f->frame_size = start_payload_byte + uwb_frame_f->raw_payload_size;
 
     // Check sum.
     uwb_frame_f->check_sum = fr[uwb_frame_f->frame_size++];

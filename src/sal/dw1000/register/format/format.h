@@ -337,7 +337,7 @@ typedef struct {
     double rx_stamp;                        // Receive time stamp.
     double tx_stamp;                        // Transmit time stamp.
     size_t frame_size;                      // Size of the frame.
-    uint16_t payload_size;                  // Size of the payload.
+    uint16_t raw_payload_size;              // Size of the raw payload.
 
     uint8_t raw_payload[TX_RX_BUFFER_MAX_SIZE];
 
@@ -349,18 +349,20 @@ typedef struct {
  *
  * @param[in] fr: The spi_frame to initialize the uwb_frame_payload.
  * @param[out] format: uwb_frame_payload which will contains the spi_frame formatted.
+ * @param[in/out] payload_size: Size of payload.
  *
  */
-void payload_formatter_f(spi_frame fr, uwb_frame_format* format) ;
+void payload_formatter_f(spi_frame fr, uwb_frame_format* format, size_t* payload_size) ;
 
 /**
  * @brief Default unformatter payload function.
  *
  * @param[in] format: uwb_frame_payload which contains the payload.
  * @param[out] fr: spi_frame where this function will store the uwb_frame_payload(format).
+ * @param[in/out] payload_size: Size of payload.
  *
  */
-void payload_unformatter_f(const uwb_frame_format format, spi_frame fr);
+void payload_unformatter_f(const uwb_frame_format format, spi_frame fr, size_t* payload_size);
 
 /**
  * @brief Unformats an uint8_t* to a spi_frame.
