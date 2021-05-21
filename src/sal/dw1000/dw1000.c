@@ -19,7 +19,7 @@
 #include "dw1000.h"
 
 SPIConfig spi_cfg = { .end_cb = NULL, .ssport = IOPORT1, .sspad = SPI_SS,
-        .freq = NRF5_SPI_FREQ_2MBPS, .sckpad = SPI_SCK, .mosipad = SPI_MOSI,
+        .freq = NRF5_SPI_FREQ_8MBPS, .sckpad = SPI_SCK, .mosipad = SPI_MOSI,
         .misopad = SPI_MISO, .lsbfirst = false, .mode = 2};
 
 static bool fast_SPI = true;
@@ -108,7 +108,8 @@ bool dw_calc_dist(const uint64_t dev_id, const uint16_t pan_id, double* distance
     }
     tx_msg.api_message_t = CALC_DISTANCE;
 
-    if(dw_send_message(&tx_msg, false, DW_START_TX_IMMEDIATE, dev_id, pan_id)) {
+    double consumed_time_send;
+    if(dw_send_message(&tx_msg, false, DW_START_TX_IMMEDIATE, dev_id, pan_id, &consumed_time_send)) {
 
         // Get tx stamp.
         tx_time_format tx_time_f;
@@ -121,7 +122,8 @@ bool dw_calc_dist(const uint64_t dev_id, const uint16_t pan_id, double* distance
             return false;
         }
 
-        if(dw_receive_message(&rx_msg, DW_START_RX_IMMEDIATE, wait_tries, dev_id, pan_id)) {
+        double consumed_time_recv;
+        if(dw_receive_message(&rx_msg, DW_START_RX_IMMEDIATE, wait_tries, dev_id, pan_id, &consumed_time_recv)) {
 
             // Get rx stamp.
             rx_time_format rx_time_f;
@@ -171,7 +173,7 @@ bool dw_calc_dist(const uint64_t dev_id, const uint16_t pan_id, double* distance
             const float clock_offset = drx_conf_f.drx_car_int * (freq_offset_multiplier * hertz_to_ppm_multiplier_chan / 1.0e6);
 
             // Compute time of flight and distance, using clock offset ratio to correct for differing local and remote clock rates.
-            const double rtd_init = rx_time_f.rx_stamp - tx_time_f.tx_stamp;
+            const double rtd_init = (rx_time_f.rx_stamp - tx_time_f.tx_stamp) - consumed_time_send - consumed_time_recv;
             const double rtd_resp = rx_msg.tx_stamp - rx_msg.rx_stamp;
 
             const double time_of_flight = (( rtd_init - rtd_resp * (1.0 - clock_offset)) / 2.0);
@@ -1129,9 +1131,16 @@ bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api
             init_uwb_frame_format(NULL, 0, DATA, SHORT_ADDRESS, SHORT_ADDRESS, &tx_msg);
             tx_msg.api_message_t = CALC_DISTANCE_RESP;
             tx_msg.rx_stamp = rx_time_f.rx_stamp;
-            tx_msg.tx_stamp = rx_time_f.rx_stamp + TX_ANT_DLY;
 
-            if(dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE, frame.sour_addr, frame.sour_PAN_id)){
+            double tx_ant_dly;
+            if(!get_tx_antd(&tx_ant_dly)) {
+                return false;
+            }
+
+            tx_msg.tx_stamp = rx_time_f.rx_stamp + tx_ant_dly;
+
+            double consumed_time_send;
+            if(dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE, frame.sour_addr, frame.sour_PAN_id, &consumed_time_send)){
                 return true;
             }
 
@@ -1151,7 +1160,13 @@ bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api
     return false;
 }
 
-bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const uint64_t dev_id, const uint16_t pan_id) {
+bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const uint64_t dev_id,
+        const uint16_t pan_id, double* inter_func_tim_consum) {
+
+    double tim_consum_init;
+    if(!get_sys_time(&tim_consum_init)) {
+        return false;
+    }
 
     pan_adr_format pan_adr_f;
     if(!get_pan_adr(&pan_adr_f)) {
@@ -1225,9 +1240,16 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
         // Both SYS_CTRL_TXSTRT and SYS_CTRL_TXDLYS to correctly enable TX.
         sys_ctrl_f.txdlys = true;
         sys_ctrl_f.txstrt = true;
+
         if(!set_sys_ctrl(&sys_ctrl_f)) {
             return false;
         }
+
+        double tim_consum_end;
+        if(!get_sys_time(&tim_consum_end)) {
+            return false;
+        }
+        *inter_func_tim_consum = tim_consum_end - tim_consum_init;
 
         if(!get_sys_event_sts(&sys_evt_sts_f, -1)) {
             return false;
@@ -1253,6 +1275,12 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
         if(!set_sys_ctrl(&sys_ctrl_f)) {
             return false;
         }
+
+        double tim_consum_end;
+        if(!get_sys_time(&tim_consum_end)) {
+            return false;
+        }
+        *inter_func_tim_consum = tim_consum_end - tim_consum_init;
 
     }
 
@@ -1334,7 +1362,12 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
 }
 
 bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int wait_tries,
-        const uint64_t dev_id, const uint16_t pan_id) {
+        const uint64_t dev_id, const uint16_t pan_id, double* inter_func_tim_consum) {
+
+    double tim_consum_init;
+    if(!get_sys_time(&tim_consum_init)) {
+        return false;
+    }
 
     frame_type_value expected_type = frame->frame_t;
 
@@ -1381,6 +1414,12 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
         return false;
     }
 
+    double tim_consum_end;
+    if(!get_sys_time(&tim_consum_end)) {
+        return false;
+    }
+    *inter_func_tim_consum = tim_consum_end - tim_consum_init;
+
     // Check for errors.
     if (mode & DW_START_RX_DELAYED) {
 
@@ -1403,6 +1442,12 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
                 if(!set_sys_ctrl(&sys_ctrl_f)) {
                     return false;
                 }
+
+                double tim_consum_end;
+                if(!get_sys_time(&tim_consum_end)) {
+                    return false;
+                }
+                *inter_func_tim_consum = tim_consum_end - tim_consum_init;
             }
 
             return false;

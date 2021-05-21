@@ -16,8 +16,8 @@
  *
  */
 
-//#ifndef _REGISTER_H_
-//#define _REGISTER_H_
+#ifndef _REGISTER_H_
+#define _REGISTER_H_
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -848,4 +848,4 @@ bool get_pmsc(pmsc_format* pmsc_f, const pmsc_subregister subregister);
  */
 bool set_pmsc(pmsc_format* pmsc_f, const pmsc_subregister subregister);
 
-//#endif // _REGISTER_H_
+#endif // _REGISTER_H_

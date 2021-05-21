@@ -240,9 +240,10 @@ bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api
  *                  performing manual RX re-enabling in double buffering mode.
  * @param wait_tries[in]: Number of tries to receive the message. When SDFTO occurs consumes one try.
  *                        If wait_tries < 0, it will wait infinitely.
- * @param dev_id[in]: Identifier of the sender. If this value is equal to zero, means that it will
- *                    wait for any sender.
+ * @param dev_id[in]: Identifier of the sender. If this value is equal to zero, means that it will wait for any sender.
  * @param pan_id[in]: PAN id of the sender.
+ * @param inter_func_tim_consum[out]: This parameter determines how many seconds were consumed in intermediate functions
+ *                                    to carry out its functionality.
  *
  * @note: See function get_rx_buffer to understand better this function.
  *
@@ -250,7 +251,7 @@ bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api
  *
  */
 bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int wait_tries,
-        const uint64_t dev_id, const uint16_t pan_id);
+        const uint64_t dev_id, const uint16_t pan_id, double* inter_func_tim_consum);
 
 /**
  * @brief Resets the dw1000.
@@ -276,6 +277,8 @@ void dw_reset(void);
  *                    means is a broadcast message.
  * @param pan_id[in]: Network identifier where the receiver is located. If frame.intra_PAN == true,
  *                    this parameter will be ignored.
+ * @param inter_func_tim_consum[out]: This parameter determines how many seconds were consumed in intermediate functions
+ *                                    to carry out its functionality.
  *
  * @note: Standard PHR mode allows up to 127 bytes
  *        if > 127 is programmed, DWT_PHRMODE_EXT needs to be set in the phrMode configuration
@@ -286,7 +289,8 @@ void dw_reset(void);
  * @return bool: Returns true if the message can be sent, otherwise false.
  *
  */
-bool dw_send_message(uwb_frame_format* frame, const bool ranging, const uint8_t mode, const uint64_t dev_id, const uint16_t pan_id);
+bool dw_send_message(uwb_frame_format* frame, const bool ranging, const uint8_t mode, const uint64_t dev_id,
+        const uint16_t pan_id, double* inter_func_tim_consum);
 
 /**
  * @brief Sets the rate SPI communication of the dwm1000(8MBPS).
