@@ -209,10 +209,10 @@ size_t tx_fctrl_unformatter(void* format, spi_frame fr, const size_t sub_registe
 
 void payload_formatter_f(spi_frame fr, uwb_frame_format* format) {
 
-    // API flags.
-    format->api_message_t = fr[0];
+    int start_raw_payload_index = 0;
 
-    int start_raw_payload_index = 1;
+    // API flags.
+    format->api_message_t = fr[start_raw_payload_index++];
 
     switch(format->api_message_t) {
         case CALC_DISTANCE:
@@ -240,10 +240,10 @@ void payload_formatter_f(spi_frame fr, uwb_frame_format* format) {
 
 void payload_unformatter_f(const uwb_frame_format format, spi_frame fr) {
 
-    // API flags.
-    fr[0] = format.api_message_t;
+    int start_payload_index = 0;
 
-    int start_payload_index = 1;
+    // API flags.
+    fr[start_payload_index++] = format.api_message_t;
 
     switch(format.api_message_t) {
         case CALC_DISTANCE:
@@ -253,14 +253,12 @@ void payload_unformatter_f(const uwb_frame_format format, spi_frame fr) {
             char* rx_stamp_bits = (char *) &format.rx_stamp;
             unsigned int i;
             for(i = 0; i < sizeof(double); ++i) {
-                fr[start_payload_index] = rx_stamp_bits[i];
-                start_payload_index++;
+                fr[start_payload_index++] = rx_stamp_bits[i];
             }
 
             char* tx_stamp_bits = (char *) &format.tx_stamp;
             for(i = 0; i < sizeof(double); ++i) {
-                fr[start_payload_index] = tx_stamp_bits[i];
-                start_payload_index++;
+                fr[start_payload_index++] = tx_stamp_bits[i];
             }
 
             break;
