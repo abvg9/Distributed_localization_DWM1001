@@ -2044,6 +2044,7 @@ bool init_uwb_frame_format(uint8_t* buffer, const size_t buffer_size,
     }
 
     uwb_frame_f->frame_size = 0;
+    uwb_frame_f->payload_size = buffer_size;
 
     return true;
 }

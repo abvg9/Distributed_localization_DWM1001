@@ -281,7 +281,7 @@ size_t tx_fctrl_unformatter(void *format, spi_frame fr, const size_t sub_registe
 
 /******* TX_BUFFER *******/
 
-#define FIXED_FRAME_FIELDS_SIZE 4
+#define FIXED_FRAME_FIELDS_SIZE 3
 
 // Possibles values of the frame_t field.
 typedef enum {
@@ -337,8 +337,9 @@ typedef struct {
     double rx_stamp;                        // Receive time stamp.
     double tx_stamp;                        // Transmit time stamp.
     size_t frame_size;                      // Size of the frame.
+    uint16_t payload_size;                  // Size of the payload.
 
-    uint8_t raw_payload[TX_RX_BUFFER_MAX_SIZE-FIXED_FRAME_FIELDS_SIZE];
+    uint8_t raw_payload[TX_RX_BUFFER_MAX_SIZE];
 
     uint16_t check_sum;                     // Frame check-sum.
 } uwb_frame_format;
@@ -348,20 +349,18 @@ typedef struct {
  *
  * @param[in] fr: The spi_frame to initialize the uwb_frame_payload.
  * @param[out] format: uwb_frame_payload which will contains the spi_frame formatted.
- * @param[in] payload_size: payload length.
  *
  */
-void payload_formatter_f(spi_frame fr, uwb_frame_format* format, const int payload_size) ;
+void payload_formatter_f(spi_frame fr, uwb_frame_format* format) ;
 
 /**
  * @brief Default unformatter payload function.
  *
  * @param[in] format: uwb_frame_payload which contains the payload.
  * @param[out] fr: spi_frame where this function will store the uwb_frame_payload(format).
- * @param[in] payload_size: payload length.
  *
  */
-void payload_unformatter_f(const uwb_frame_format format, spi_frame fr, const int payload_size);
+void payload_unformatter_f(const uwb_frame_format format, spi_frame fr);
 
 /**
  * @brief Unformats an uint8_t* to a spi_frame.
