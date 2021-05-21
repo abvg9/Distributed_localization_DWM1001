@@ -212,6 +212,8 @@ bool dw_initialise(const int config_flags);
  *
  * @param frame[in]: Received message.
  * @param api_msg_t[in]: Expected API message type.
+ * @param inter_func_tim_consum[out]: This parameter determines how many seconds were consumed in intermediate functions
+ *                                    to carry out its functionality.
  *
  * @note: This function must be called after the receive_message function and
  *        must receive as a parameter the frame that was passed as input to receive_message.
@@ -219,7 +221,8 @@ bool dw_initialise(const int config_flags);
  * @return bool: True if the message can be parsed, otherwise false.
  *
  */
-bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api_msg_t);
+bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api_msg_t,
+        const double inter_func_tim_consum);
 
 // Defined constants for "mode" bitmask parameter passed into dw_receive_message() function.
 #define DW_START_RX_IMMEDIATE  0

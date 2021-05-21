@@ -133,12 +133,6 @@ bool dw_calc_dist(const uint64_t dev_id, const uint16_t pan_id, double* distance
 
             // Calculate distance.
 
-            // Get carrier integrator.
-            drx_conf_format drx_conf_f;
-            if(!get_drx_conf(&drx_conf_f, DRX_CAR_INT)) {
-                return false;
-            }
-
             double hertz_to_ppm_multiplier_chan;
 
             switch(dw_conf.chan) {
@@ -168,6 +162,12 @@ bool dw_calc_dist(const uint64_t dev_id, const uint16_t pan_id, double* distance
                 default:
                     freq_offset_multiplier = FREQ_OFFSET_MULTIPLIER;
                     break;
+            }
+
+            // Get carrier integrator.
+            drx_conf_format drx_conf_f;
+            if(!get_drx_conf(&drx_conf_f, DRX_CAR_INT)) {
+                return false;
             }
 
             const float clock_offset = drx_conf_f.drx_car_int * (freq_offset_multiplier * hertz_to_ppm_multiplier_chan / 1.0e6);
@@ -1110,7 +1110,8 @@ bool dw_initialise(const int config_flags) {
     return true;
 }
 
-bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api_msg_t) {
+bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api_msg_t,
+        const double inter_func_tim_consum) {
 
     switch(frame.api_message_t) {
         case CALC_DISTANCE: {
@@ -1135,7 +1136,7 @@ bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api
                 return false;
             }
 
-            tx_msg.tx_stamp = rx_time_f.rx_stamp + tx_ant_dly;
+            tx_msg.tx_stamp = rx_time_f.rx_stamp + tx_ant_dly + inter_func_tim_consum;
 
             double consumed_time_send;
             if(dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE, frame.sour_addr, frame.sour_PAN_id, &consumed_time_send)){
