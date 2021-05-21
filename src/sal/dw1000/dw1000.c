@@ -19,10 +19,10 @@
 #include "dw1000.h"
 
 SPIConfig spi_cfg = { .end_cb = NULL, .ssport = IOPORT1, .sspad = SPI_SS,
-        .freq = NRF5_SPI_FREQ_2MBPS, .sckpad = SPI_SCK, .mosipad = SPI_MOSI,
+        .freq = NRF5_SPI_FREQ_8MBPS, .sckpad = SPI_SCK, .mosipad = SPI_MOSI,
         .misopad = SPI_MISO, .lsbfirst = false, .mode = 2};
 
-static bool fast_SPI = false;
+static bool fast_SPI = true;
 static mutex_t SPI_clock_freq_mtx;
 static mutex_t IRQ_event_mtx;
 
@@ -173,7 +173,7 @@ bool dw_calc_dist(const uint64_t dev_id, const uint16_t pan_id, double* distance
             const float clock_offset = drx_conf_f.drx_car_int * (freq_offset_multiplier * hertz_to_ppm_multiplier_chan / 1.0e6);
 
             // Compute time of flight and distance, using clock offset ratio to correct for differing local and remote clock rates.
-            const double rtd_init = (rx_time_f.rx_stamp - tx_time_f.tx_stamp) - consumed_time_send - consumed_time_recv;
+            const double rtd_init = rx_time_f.rx_stamp - tx_time_f.tx_stamp - consumed_time_send - consumed_time_recv;
             const double rtd_resp = rx_msg.tx_stamp - rx_msg.rx_stamp;
 
             const double time_of_flight = (( rtd_init - rtd_resp * (1.0 - clock_offset)) / 2.0);
@@ -440,7 +440,10 @@ bool dw_eneable(const int config_flags) {
 
     dw_reset();
 
-    spiStart(&SPID1, &spi_cfg);
+    chMtxObjectInit(&SPI_clock_freq_mtx);
+    chMtxObjectInit(&IRQ_event_mtx);
+
+    dw_set_slow_spi_rate();
 
     dev_id_format dev_id_f;
     bool ret = get_dev_id(&dev_id_f);
@@ -451,11 +454,6 @@ bool dw_eneable(const int config_flags) {
         ret &= DEFINED_DEV_ID.ver == dev_id_f.ver;
         ret &= DEFINED_DEV_ID.rev == dev_id_f.rev;
     }
-
-    chMtxObjectInit(&SPI_clock_freq_mtx);
-    chMtxObjectInit(&IRQ_event_mtx);
-
-    dw_set_slow_spi_rate();
 
     // Initialize device.
     ret &= dw_initialise(config_flags);
@@ -1643,6 +1641,7 @@ void dw_set_fast_spi_rate(void) {
 
     if(!fast_SPI) {
         spi_cfg.freq = NRF5_SPI_FREQ_8MBPS;
+        dw_reset();
         spiStart(&SPID1, &spi_cfg);
         fast_SPI = true;
     }
@@ -1709,6 +1708,7 @@ void dw_set_slow_spi_rate(void) {
 
     if(fast_SPI) {
         spi_cfg.freq = NRF5_SPI_FREQ_2MBPS;
+        dw_reset();
         spiStart(&SPID1, &spi_cfg);
         fast_SPI = false;
     }
