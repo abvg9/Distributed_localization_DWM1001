@@ -369,10 +369,10 @@ size_t tx_buffer_unformatter(void *format, spi_frame fr, const size_t sub_regist
     }
 
     // Check sum.
-    fr[TX_RX_BUFFER_MAX_SIZE-2] = (uwb_frame_f->check_sum & 0xFF00) >> 8;
-    fr[TX_RX_BUFFER_MAX_SIZE-1] = uwb_frame_f->check_sum & 0x00FF;
+    fr[payload_size++] = (uwb_frame_f->check_sum & 0xFF00) >> 8;
+    fr[payload_size++] = uwb_frame_f->check_sum & 0x00FF;
 
-    return TX_RX_BUFFER_MAX_SIZE;
+    return payload_size;
 }
 
 void dx_time_formatter(spi_frame fr, void *format, const size_t sub_register) {
@@ -758,8 +758,8 @@ void rx_buffer_formatter(spi_frame fr, void *format, const size_t sub_register) 
     }
 
     // Check sum.
-    uwb_frame_f->check_sum = fr[TX_RX_BUFFER_MAX_SIZE-1];
-    uwb_frame_f->check_sum |= ((uint16_t)fr[TX_RX_BUFFER_MAX_SIZE-2]) << 8;
+    uwb_frame_f->check_sum = fr[payload_size++];
+    uwb_frame_f->check_sum |= ((uint16_t)fr[payload_size++]) << 8;
 
 }
 

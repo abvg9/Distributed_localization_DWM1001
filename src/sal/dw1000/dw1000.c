@@ -19,10 +19,10 @@
 #include "dw1000.h"
 
 SPIConfig spi_cfg = { .end_cb = NULL, .ssport = IOPORT1, .sspad = SPI_SS,
-        .freq = NRF5_SPI_FREQ_8MBPS, .sckpad = SPI_SCK, .mosipad = SPI_MOSI,
+        .freq = NRF5_SPI_FREQ_2MBPS, .sckpad = SPI_SCK, .mosipad = SPI_MOSI,
         .misopad = SPI_MISO, .lsbfirst = false, .mode = 2};
 
-static bool fast_SPI = true;
+static bool fast_SPI = false;
 static mutex_t SPI_clock_freq_mtx;
 static mutex_t IRQ_event_mtx;
 
@@ -2041,10 +2041,6 @@ bool init_uwb_frame_format(uint8_t* buffer, const size_t buffer_size,
     unsigned int i;
     for(i = 0; i < buffer_size; ++i) {
         uwb_frame_f->raw_payload[i] = buffer[i];
-    }
-
-    for(i = buffer_size; i < TX_RX_BUFFER_MAX_SIZE; ++i) {
-        uwb_frame_f->raw_payload[i] = 0;
     }
 
     return true;
