@@ -284,21 +284,21 @@ size_t tx_buffer_unformatter(void *format, spi_frame fr, const size_t sub_regist
 
     uwb_frame_format* uwb_frame_f = (uwb_frame_format*) format;
 
-    size_t start_payload_byte = 0;
-
     // Frame control.
-    fr[start_payload_byte] = (uint8_t)uwb_frame_f->frame_t;
-    fr[start_payload_byte] |= ((uint8_t)uwb_frame_f->seq_enab) << 3;
+    fr[0] = (uint8_t)uwb_frame_f->frame_t;
+    fr[0] |= ((uint8_t)uwb_frame_f->seq_enab) << 3;
 
-    fr[start_payload_byte] |= ((uint8_t)uwb_frame_f->frame_pend) << 4;
-    fr[start_payload_byte] |= ((uint8_t)uwb_frame_f->ack_req) << 5;
-    fr[start_payload_byte] |= ((uint8_t)uwb_frame_f->intra_PAN) << 6;
+    fr[0] |= ((uint8_t)uwb_frame_f->frame_pend) << 4;
+    fr[0] |= ((uint8_t)uwb_frame_f->ack_req) << 5;
+    fr[0] |= ((uint8_t)uwb_frame_f->intra_PAN) << 6;
 
-    fr[++start_payload_byte] = ((uint8_t)uwb_frame_f->dest_addr_mod) << 2;
-    fr[start_payload_byte] |= ((uint8_t)uwb_frame_f->sour_addr_mod) << 6;
+    fr[1] = ((uint8_t)uwb_frame_f->dest_addr_mod) << 2;
+    fr[1] |= ((uint8_t)uwb_frame_f->sour_addr_mod) << 6;
 
     // Sequence number.
-    fr[++start_payload_byte] = uwb_frame_f->seq_num;
+    fr[2] = uwb_frame_f->seq_num;
+
+    size_t start_payload_byte = 3;
 
     // Addressing fields.
     switch(uwb_frame_f->dest_addr_mod) {
@@ -654,20 +654,20 @@ void rx_buffer_formatter(spi_frame fr, void *format, const size_t sub_register) 
 
     uwb_frame_format* uwb_frame_f = (uwb_frame_format*) format;
 
-    size_t start_payload_byte = 0;
-
     // Frame control.
-    uwb_frame_f->frame_t = fr[start_payload_byte] & 0b00000111;
-    uwb_frame_f->seq_enab = (fr[start_payload_byte] & 0b00001000) >> 3;
-    uwb_frame_f->frame_pend = (fr[start_payload_byte] & 0b00010000) >> 4;
-    uwb_frame_f->ack_req = (fr[start_payload_byte] & 0b00100000) >> 5;
-    uwb_frame_f->intra_PAN = (fr[start_payload_byte] & 0b01000000) >> 6;
+    uwb_frame_f->frame_t = fr[0] & 0b00000111;
+    uwb_frame_f->seq_enab = (fr[0] & 0b00001000) >> 3;
+    uwb_frame_f->frame_pend = (fr[0] & 0b00010000) >> 4;
+    uwb_frame_f->ack_req = (fr[0] & 0b00100000) >> 5;
+    uwb_frame_f->intra_PAN = (fr[0] & 0b01000000) >> 6;
 
-    uwb_frame_f->dest_addr_mod = (fr[++start_payload_byte] & 0b00001100) >> 2;
-    uwb_frame_f->sour_addr_mod = (fr[start_payload_byte] & 0b11000000) >> 6;
+    uwb_frame_f->dest_addr_mod = (fr[1] & 0b00001100) >> 2;
+    uwb_frame_f->sour_addr_mod = (fr[1] & 0b11000000) >> 6;
 
     // Sequence number.
-    uwb_frame_f->seq_num = fr[++start_payload_byte];
+    uwb_frame_f->seq_num = fr[2];
+
+    size_t start_payload_byte = 3;
 
     // Addressing fields.
     switch(uwb_frame_f->dest_addr_mod) {
