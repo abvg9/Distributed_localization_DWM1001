@@ -213,7 +213,7 @@ void payload_formatter_f(spi_frame fr, uwb_frame_format* format, size_t* payload
 
     // API flags.
     format->api_message_t = fr[start_raw_payload_index++];
-    payload_size++;
+    *payload_size = *payload_size + 1;
 
     switch(format->api_message_t) {
         case CALC_DISTANCE:
@@ -222,11 +222,11 @@ void payload_formatter_f(spi_frame fr, uwb_frame_format* format, size_t* payload
 
             memcpy(&format->rx_stamp, &fr[1], sizeof(double));
             start_raw_payload_index += sizeof(double);
-            payload_size += sizeof(double);
+            *payload_size = *payload_size + sizeof(double);
 
             memcpy(&format->tx_stamp, &fr[start_raw_payload_index], sizeof(double));
             start_raw_payload_index += sizeof(double);
-            payload_size += sizeof(double);
+            *payload_size = *payload_size + sizeof(double);
             break;
         }
         default:
@@ -247,7 +247,7 @@ void payload_unformatter_f(const uwb_frame_format format, spi_frame fr, size_t* 
 
     // API flags.
     fr[start_payload_index++] = format.api_message_t;
-    payload_size++;
+    *payload_size = *payload_size + 1;
 
     switch(format.api_message_t) {
         case CALC_DISTANCE:
@@ -259,13 +259,13 @@ void payload_unformatter_f(const uwb_frame_format format, spi_frame fr, size_t* 
             for(i = 0; i < sizeof(double); ++i) {
                 fr[start_payload_index++] = rx_stamp_bits[i];
             }
-            payload_size += sizeof(double);
+            *payload_size = *payload_size + sizeof(double);
 
             char* tx_stamp_bits = (char *) &format.tx_stamp;
             for(i = 0; i < sizeof(double); ++i) {
                 fr[start_payload_index++] = tx_stamp_bits[i];
             }
-            payload_size += sizeof(double);
+            *payload_size = *payload_size + sizeof(double);
 
             break;
         }
