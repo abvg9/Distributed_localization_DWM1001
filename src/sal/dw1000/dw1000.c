@@ -484,7 +484,7 @@ bool dw_eneable(const int config_flags) {
             ack_resp_t_f.ack_tim = 2;
             break;
         case MBPS6_8:
-            ack_resp_t_f.ack_tim = 3;
+            ack_resp_t_f.ack_tim = 120;
             break;
         default:
             return false;
@@ -1243,12 +1243,6 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
             return false;
         }
 
-        double tim_consum_end;
-        if(!get_sys_time(&tim_consum_end)) {
-            return false;
-        }
-        *inter_func_tim_consum = tim_consum_end - tim_consum_init;
-
         if(!get_sys_event_sts(&sys_evt_sts_f, -1)) {
             return false;
         }
@@ -1274,18 +1268,18 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
             return false;
         }
 
-        double tim_consum_end;
-        if(!get_sys_time(&tim_consum_end)) {
-            return false;
-        }
-        *inter_func_tim_consum = tim_consum_end - tim_consum_init;
-
     }
 
     // Set masks of the events related to the sending of messages.
     sys_evt_msk_format sys_evt_msk_f = {0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0,
             0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0};
     sys_evt_msk_f.mtxfrs = true;
+
+    double tim_consum_end;
+    if(!get_sys_time(&tim_consum_end)) {
+        return false;
+    }
+    *inter_func_tim_consum = tim_consum_end - tim_consum_init;
 
     sys_evt_sts_f = dw_wait_irq_event(sys_evt_msk_f);
 
@@ -1302,6 +1296,10 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
             return false;
         }
 
+        return false;
+    }
+
+    if(!get_sys_time(&tim_consum_init)) {
         return false;
     }
 
@@ -1351,10 +1349,20 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
             return false;
         }
 
+        if(!get_sys_time(&tim_consum_end)) {
+            return false;
+        }
+        *inter_func_tim_consum += tim_consum_end - tim_consum_init;
+
         return received_ack;
     }
 
     frame->seq_num++;
+
+    if(!get_sys_time(&tim_consum_end)) {
+        return false;
+    }
+    *inter_func_tim_consum += tim_consum_end - tim_consum_init;
 
     return true;
 }
@@ -1412,12 +1420,6 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
         return false;
     }
 
-    double tim_consum_end;
-    if(!get_sys_time(&tim_consum_end)) {
-        return false;
-    }
-    *inter_func_tim_consum = tim_consum_end - tim_consum_init;
-
     // Check for errors.
     if (mode & DW_START_RX_DELAYED) {
 
@@ -1441,11 +1443,6 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
                     return false;
                 }
 
-                double tim_consum_end;
-                if(!get_sys_time(&tim_consum_end)) {
-                    return false;
-                }
-                *inter_func_tim_consum = tim_consum_end - tim_consum_init;
             }
 
             return false;
@@ -1480,6 +1477,12 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
     sys_evt_sts_format sys_evt_sts_f;
     int tries_attemp = 0;
 
+    double tim_consum_end;
+    if(!get_sys_time(&tim_consum_end)) {
+        return false;
+    }
+    *inter_func_tim_consum = tim_consum_end - tim_consum_init;
+
     RETRY_SEARCH:
 
     sys_evt_sts_f = dw_wait_irq_event(sys_evt_msk_f);
@@ -1499,6 +1502,10 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
         }
 
         sys_evt_sts_f = dw_wait_irq_event(sys_evt_msk_f);
+    }
+
+    if(!get_sys_time(&tim_consum_init)) {
+        return false;
     }
 
     if (sys_evt_sts_f.rxfcg) {
@@ -1616,6 +1623,11 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
             }
         }
 
+        if(!get_sys_time(&tim_consum_end)) {
+            return false;
+        }
+        *inter_func_tim_consum += tim_consum_end - tim_consum_init;
+
         return false;
     }
 
@@ -1625,6 +1637,11 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
             return false;
         }
     }
+
+    if(!get_sys_time(&tim_consum_end)) {
+        return false;
+    }
+    *inter_func_tim_consum += tim_consum_end - tim_consum_init;
 
     return true;
 }
