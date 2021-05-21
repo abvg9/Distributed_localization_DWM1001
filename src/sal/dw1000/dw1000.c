@@ -1214,7 +1214,7 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
     // Prepare transmission.
     tx_fctrl_format tx_fctrl_f = dw_local_data.tx_FCTRL;
 
-    tx_fctrl_f.tflen = TX_RX_BUFFER_MAX_SIZE;
+    tx_fctrl_f.tflen = frame->frame_size;
     tx_fctrl_f.txboffs = 0;
     tx_fctrl_f.tr = ranging;
 
@@ -2042,6 +2042,8 @@ bool init_uwb_frame_format(uint8_t* buffer, const size_t buffer_size,
     for(i = 0; i < buffer_size; ++i) {
         uwb_frame_f->raw_payload[i] = buffer[i];
     }
+
+    uwb_frame_f->frame_size = 0;
 
     return true;
 }

@@ -281,7 +281,7 @@ size_t tx_fctrl_unformatter(void *format, spi_frame fr, const size_t sub_registe
 
 /******* TX_BUFFER *******/
 
-#define FIXED_FRAME_FIELDS_SIZE 3
+#define FIXED_FRAME_FIELDS_SIZE 4
 
 // Possibles values of the frame_t field.
 typedef enum {
@@ -332,9 +332,11 @@ typedef struct {
     uint16_t sour_PAN_id;                   // Source PAN identifier. (pan_adr_format.pan_id)
     uint64_t sour_addr;                     // Source address. (eui_format)
 
+    // API flags.
     api_flag_value api_message_t;           // Internal type of message.
     double rx_stamp;                        // Receive time stamp.
     double tx_stamp;                        // Transmit time stamp.
+    size_t frame_size;                      // Size of the frame.
 
     uint8_t raw_payload[TX_RX_BUFFER_MAX_SIZE-FIXED_FRAME_FIELDS_SIZE];
 

@@ -372,6 +372,8 @@ size_t tx_buffer_unformatter(void *format, spi_frame fr, const size_t sub_regist
     fr[payload_size++] = (uwb_frame_f->check_sum & 0xFF00) >> 8;
     fr[payload_size++] = uwb_frame_f->check_sum & 0x00FF;
 
+    uwb_frame_f->frame_size = payload_size;
+
     return payload_size;
 }
 
@@ -760,6 +762,8 @@ void rx_buffer_formatter(spi_frame fr, void *format, const size_t sub_register) 
     // Check sum.
     uwb_frame_f->check_sum = fr[payload_size++];
     uwb_frame_f->check_sum |= ((uint16_t)fr[payload_size++]) << 8;
+
+    uwb_frame_f->frame_size = payload_size;
 
 }
 
