@@ -157,6 +157,8 @@ bool dw_calc_dist(const uint64_t dev_id, const uint16_t pan_id, double* distance
                 // Calculate distance.
                 const double time_of_flight = (rtd_init - rtd_resp) / 2.0;
                 *distance = time_of_flight * SPEED_OF_LIGHT;
+
+                return true;
             }
 
         }
@@ -1139,10 +1141,10 @@ bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api
 
             break;
         default:
-            break;
+            return false;
     }
 
-    return false;
+    return true;
 }
 
 bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const uint64_t dev_id,
