@@ -1104,8 +1104,8 @@ bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api
             tx_msg.rx_stamp = rx_time_f.rx_stamp + consumed_time_recv;
 
             double consumed_time_send;
-            if(dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE, frame.sour_addr, frame.sour_PAN_id, &consumed_time_send)){
-                return true;
+            if(!dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE, frame.sour_addr, frame.sour_PAN_id, &consumed_time_send)){
+                return false;
             }
 
             // Get tx stamp.
@@ -1118,11 +1118,11 @@ bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api
             tx_msg.tx_stamp = tx_time_f.tx_stamp + consumed_time_send;
 
             double consumed_time_send2;
-            if(dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE, frame.sour_addr, frame.sour_PAN_id, &consumed_time_send2)){
-                return true;
+            if(!dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE, frame.sour_addr, frame.sour_PAN_id, &consumed_time_send2)){
+                return false;
             }
 
-            return false;
+            return true;
         }
         case CALC_DISTANCE_RESP_RX:
 
