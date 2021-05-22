@@ -92,6 +92,16 @@ double calc_signal_power(const rx_time_format rx_time_f, const rx_fqual_format r
         const rx_finfo_format rx_finfo_f, const usr_sfd_format usr_sfd_f);
 
 /**
+ * @brief Calculate the clock offset with the device with which it last communicated.
+ *
+ * @param[out] clock_offset: clock offset value.
+ *
+ * @return boolean: True if the clock offset could be calculated, otherwise false.
+ *
+ */
+bool dw_calc_clock_offset(float* clock_offset);
+
+/**
  * @brief Calculates the distance between two dw1000 devices.
  *
  * @param dev_id[in]: Identifier of the device with which you want to calculate distance.
@@ -220,8 +230,7 @@ bool dw_initialise(const int config_flags);
  * @return bool: True if the message can be parsed, otherwise false.
  *
  */
-bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api_msg_t,
-        const uint64_t consumed_time_recv);
+bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api_msg_t);
 
 // Defined constants for "mode" bitmask parameter passed into dw_receive_message() function.
 #define DW_START_RX_IMMEDIATE  0
@@ -244,8 +253,6 @@ bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api
  *                        If wait_tries < 0, it will wait infinitely.
  * @param dev_id[in]: Identifier of the sender. If this value is equal to zero, means that it will wait for any sender.
  * @param pan_id[in]: PAN id of the sender.
- * @param inter_func_tim_consum[out]: This parameter determines how many seconds were consumed in intermediate functions
- *                                    to carry out its functionality.
  *
  * @note: See function get_rx_buffer to understand better this function.
  *
@@ -253,7 +260,7 @@ bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api
  *
  */
 bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int wait_tries,
-        const uint64_t dev_id, const uint16_t pan_id, uint64_t* inter_func_tim_consum);
+        const uint64_t dev_id, const uint16_t pan_id);
 
 /**
  * @brief Resets the dw1000.
@@ -279,8 +286,6 @@ void dw_reset(void);
  *                    means is a broadcast message.
  * @param pan_id[in]: Network identifier where the receiver is located. If frame.intra_PAN == true,
  *                    this parameter will be ignored.
- * @param inter_func_tim_consum[out]: This parameter determines how many seconds were consumed in intermediate functions
- *                                    to carry out its functionality.
  *
  * @note: Standard PHR mode allows up to 127 bytes
  *        if > 127 is programmed, DWT_PHRMODE_EXT needs to be set in the phrMode configuration
@@ -292,7 +297,7 @@ void dw_reset(void);
  *
  */
 bool dw_send_message(uwb_frame_format* frame, const bool ranging, const uint8_t mode, const uint64_t dev_id,
-        const uint16_t pan_id, uint64_t* inter_func_tim_consum);
+        const uint16_t pan_id);
 
 /**
  * @brief Sets the rate SPI communication of the dwm1000(8MBPS).

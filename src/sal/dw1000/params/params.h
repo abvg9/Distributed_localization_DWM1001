@@ -166,11 +166,17 @@ extern const uint16_t lde_replicaCoeff[PCODES];
 #define FREQ_OFFSET_MULTIPLIER_110KB    (998.4e6/2.0/8192.0/131072.0)
 
 // Default antenna delay values for 64 MHz PRF.
-#define TX_ANT_DLY 2.5830325*pow(10,-7) // 2.5830325*pow(10,-7)
-#define RX_ANT_DLY 2.5830325*pow(10,-7) // 2.5830325*pow(10,-7)
+/* IMPORTANT NOTE:
+ * The sum of the values is the TX to RX antenna delay, this should be experimentally determined by a calibration process. Here we use a hard coded
+ * value (expected to be a little low so a positive error will be seen on the resultant distance estimate. For a real production application, each
+ * device should have its own antenna delay properly calibrated to get good precision when performing range measurements.
+ * To calibrate this values, this API provides two functions calc_signal_power and calc_estimated_signal_power in dwm1001.c source.
+ */
+#define TX_ANT_DLY 2.5830325*pow(10,-7)
+#define RX_ANT_DLY 2.5830325*pow(10,-7)
 
 // In seconds.
-#define DEFAULT_API_DELAY_CALC_DIST_RESP_S (0.28)
+#define DEFAULT_API_DELAY_CALC_DIST_RESP_S (0.5)
 
 // In system time units.
 #define DEFAULT_API_DELAY_CALC_DIST_RESP_STU                   \
