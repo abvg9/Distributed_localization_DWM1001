@@ -317,6 +317,14 @@ bool dw_set_leds(const bool enable);
 void dw_set_slow_spi_rate(void);
 
 /**
+ * @brief Delays for the specified number of seconds.
+ *
+ * @param seconds[in]: Time in system units. 1 ~ 15.65*10⁻¹²
+ *
+ */
+void dw_sleep(const uint64_t seconds_sys_tim_units);
+
+/**
  * @brief This is used to turn off the transceiver.
  *
  * @return bool: Returns true if the transceiver can turned off, otherwise false.

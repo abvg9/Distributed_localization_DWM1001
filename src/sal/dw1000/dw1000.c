@@ -131,6 +131,11 @@ bool dw_calc_dist(const uint64_t dev_id, const uint16_t pan_id, double* distance
     }
     tx_msg.api_message_t = CALC_DISTANCE;
 
+    uwb_frame_format rx_msg;
+    if(!init_uwb_frame_format(NULL, 0, DATA, SHORT_ADDRESS, SHORT_ADDRESS, &rx_msg)) {
+        return false;
+    }
+
     // Send a message to request distance calculation.
     uint64_t consumed_time_send;
     if(dw_send_message(&tx_msg, false, DW_START_TX_IMMEDIATE, dev_id, pan_id, &consumed_time_send)) {
@@ -138,11 +143,6 @@ bool dw_calc_dist(const uint64_t dev_id, const uint16_t pan_id, double* distance
         // Get tx stamp.
         tx_time_format tx_time_f;
         if(!get_tx_time(&tx_time_f, -1)) {
-            return false;
-        }
-
-        uwb_frame_format rx_msg;
-        if(!init_uwb_frame_format(NULL, 0, DATA, SHORT_ADDRESS, SHORT_ADDRESS, &rx_msg)) {
             return false;
         }
 
@@ -162,7 +162,7 @@ bool dw_calc_dist(const uint64_t dev_id, const uint16_t pan_id, double* distance
 
             // Calculate own time between transmit and receive message.
             const uint64_t rtd_init = (rx_time_f.rx_stamp - DEFAULT_API_DELAY_CALC_DIST_RESP_STU)
-                    - tx_time_f.tx_stamp - consumed_time_send - consumed_time_recv;
+                    - tx_time_f.tx_stamp + consumed_time_send + consumed_time_recv;
 
             // Get time stamp of the receiver.
             const uint64_t rx_stamp = rx_msg.rx_stamp;
@@ -1130,7 +1130,7 @@ bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api
             tx_msg.rx_stamp = rx_time_f.rx_stamp + consumed_time_recv;
 
             uint64_t consumed_time_send;
-            chThdSleepMilliseconds(DEFAULT_API_DELAY_CALC_DIST_RESP_MS);
+            dw_sleep(DEFAULT_API_DELAY_CALC_DIST_RESP_STU);
             if(!dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE, frame.sour_addr, frame.sour_PAN_id, &consumed_time_send)){
                 return false;
             }
@@ -1145,7 +1145,7 @@ bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api
             tx_msg.tx_stamp = tx_time_f.tx_stamp + consumed_time_send;
 
             uint64_t consumed_time_send2;
-            chThdSleepMilliseconds(DEFAULT_API_DELAY_CALC_DIST_RESP_MS);
+            dw_sleep(DEFAULT_API_DELAY_CALC_DIST_RESP_STU);
             if(!dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE, frame.sour_addr, frame.sour_PAN_id, &consumed_time_send2)){
                 return false;
             }
@@ -1743,6 +1743,18 @@ void dw_set_slow_spi_rate(void) {
     }
 
     chMtxUnlock(&SPI_clock_freq_mtx);
+}
+
+void dw_sleep(const uint64_t seconds_sys_tim_units) {
+
+    uint64_t init_ts;
+    get_sys_time(&init_ts);
+
+    uint64_t cur_ts;
+    do {
+        get_sys_time(&cur_ts);
+    } while(_dw_calc_elapsed_time(init_ts, cur_ts) < seconds_sys_tim_units);
+
 }
 
 bool dw_turn_off_transceiver(void) {
