@@ -170,7 +170,7 @@ extern const uint16_t lde_replicaCoeff[PCODES];
 #define RX_ANT_DLY 2.5830325*pow(10,-7) // 2.5830325*pow(10,-7)
 
 // In seconds.
-#define DEFAULT_API_DELAY_CALC_DIST_RESP_S (0.25)
+#define DEFAULT_API_DELAY_CALC_DIST_RESP_S (0.5)
 
 // In system time units.
 #define DEFAULT_API_DELAY_CALC_DIST_RESP_STU                   \

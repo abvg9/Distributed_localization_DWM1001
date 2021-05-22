@@ -221,7 +221,7 @@ bool dw_initialise(const int config_flags);
  *
  */
 bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api_msg_t,
-        const double consumed_time_recv);
+        const uint64_t consumed_time_recv);
 
 // Defined constants for "mode" bitmask parameter passed into dw_receive_message() function.
 #define DW_START_RX_IMMEDIATE  0

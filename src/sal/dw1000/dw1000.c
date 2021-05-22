@@ -1109,7 +1109,7 @@ bool dw_initialise(const int config_flags) {
 }
 
 bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api_msg_t,
-        const double consumed_time_recv) {
+        const uint64_t consumed_time_recv) {
 
     switch(frame.api_message_t) {
         case CALC_DISTANCE: {

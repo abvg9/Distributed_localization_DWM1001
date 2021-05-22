@@ -221,29 +221,23 @@ void payload_formatter_f(spi_frame fr, uwb_frame_format* format, size_t* payload
         case CALC_DISTANCE_RESP_RX: {
 
             format->rx_stamp = fr[start_raw_payload_index++];
-            format->rx_stamp = ((uint16_t)fr[start_raw_payload_index++]) << 8;
-            format->rx_stamp = ((uint32_t)fr[start_raw_payload_index++]) << 16;
-            format->rx_stamp = ((uint32_t)fr[start_raw_payload_index++]) << 24;
-            format->rx_stamp = ((uint64_t)fr[start_raw_payload_index++]) << 32;
-            format->rx_stamp = ((uint64_t)fr[start_raw_payload_index++]) << 40;
-            format->rx_stamp = ((uint64_t)fr[start_raw_payload_index++]) << 48;
-            format->rx_stamp = ((uint64_t)fr[start_raw_payload_index++]) << 52;
+            format->rx_stamp |= ((uint16_t)fr[start_raw_payload_index++]) << 8;
+            format->rx_stamp |= ((uint32_t)fr[start_raw_payload_index++]) << 16;
+            format->rx_stamp |= ((uint32_t)fr[start_raw_payload_index++]) << 24;
+            format->rx_stamp |= ((uint64_t)fr[start_raw_payload_index++]) << 32;
 
-            *payload_size = *payload_size + sizeof(uint64_t);
+            *payload_size += *payload_size + 5;
             break;
         }
         case CALC_DISTANCE_RESP_TX: {
 
             format->tx_stamp = fr[start_raw_payload_index++];
-            format->tx_stamp = ((uint16_t)fr[start_raw_payload_index++]) << 8;
-            format->tx_stamp = ((uint32_t)fr[start_raw_payload_index++]) << 16;
-            format->tx_stamp = ((uint32_t)fr[start_raw_payload_index++]) << 24;
-            format->tx_stamp = ((uint64_t)fr[start_raw_payload_index++]) << 32;
-            format->tx_stamp = ((uint64_t)fr[start_raw_payload_index++]) << 40;
-            format->tx_stamp = ((uint64_t)fr[start_raw_payload_index++]) << 48;
-            format->tx_stamp = ((uint64_t)fr[start_raw_payload_index++]) << 52;
+            format->tx_stamp |= ((uint16_t)fr[start_raw_payload_index++]) << 8;
+            format->tx_stamp |= ((uint32_t)fr[start_raw_payload_index++]) << 16;
+            format->tx_stamp |= ((uint32_t)fr[start_raw_payload_index++]) << 24;
+            format->tx_stamp |= ((uint64_t)fr[start_raw_payload_index++]) << 32;
 
-            *payload_size = *payload_size + sizeof(uint64_t);
+            *payload_size += *payload_size + 5;
             break;
         }
         default:
@@ -272,28 +266,22 @@ void payload_unformatter_f(const uwb_frame_format format, spi_frame fr, size_t* 
         case CALC_DISTANCE_RESP_RX: {
 
             fr[start_raw_payload_index++] = format.rx_stamp & 0x00000000000000FF;
-            fr[start_raw_payload_index++] = (format.rx_stamp & 0x000000000000FF00) >> 8;
-            fr[start_raw_payload_index++] = (format.rx_stamp & 0x0000000000FF0000) >> 16;
-            fr[start_raw_payload_index++] = (format.rx_stamp & 0x00000000FF000000) >> 24;
-            fr[start_raw_payload_index++] = (format.rx_stamp & 0x000000FF00000000) >> 32;
-            fr[start_raw_payload_index++] = (format.rx_stamp & 0x0000FF0000000000) >> 40;
-            fr[start_raw_payload_index++] = (format.rx_stamp & 0x00FF000000000000) >> 48;
-            fr[start_raw_payload_index++] = (format.rx_stamp & 0xFF00000000000000) >> 52;
-            *payload_size += sizeof(uint64_t);
+            fr[start_raw_payload_index++] |= (format.rx_stamp & 0x000000000000FF00) >> 8;
+            fr[start_raw_payload_index++] |= (format.rx_stamp & 0x0000000000FF0000) >> 16;
+            fr[start_raw_payload_index++] |= (format.rx_stamp & 0x00000000FF000000) >> 24;
+            fr[start_raw_payload_index++] |= (format.rx_stamp & 0x000000FF00000000) >> 32;
+            *payload_size += 5;
             break;
         }
 
         case CALC_DISTANCE_RESP_TX: {
 
             fr[start_raw_payload_index++] = format.tx_stamp & 0x00000000000000FF;
-            fr[start_raw_payload_index++] = (format.tx_stamp & 0x000000000000FF00) >> 8;
-            fr[start_raw_payload_index++] = (format.tx_stamp & 0x0000000000FF0000) >> 16;
-            fr[start_raw_payload_index++] = (format.tx_stamp & 0x00000000FF000000) >> 24;
-            fr[start_raw_payload_index++] = (format.tx_stamp & 0x000000FF00000000) >> 32;
-            fr[start_raw_payload_index++] = (format.tx_stamp & 0x0000FF0000000000) >> 40;
-            fr[start_raw_payload_index++] = (format.tx_stamp & 0x00FF000000000000) >> 48;
-            fr[start_raw_payload_index++] = (format.tx_stamp & 0xFF00000000000000) >> 52;
-            *payload_size += sizeof(uint64_t);
+            fr[start_raw_payload_index++] |= (format.tx_stamp & 0x000000000000FF00) >> 8;
+            fr[start_raw_payload_index++] |= (format.tx_stamp & 0x0000000000FF0000) >> 16;
+            fr[start_raw_payload_index++] |= (format.tx_stamp & 0x00000000FF000000) >> 24;
+            fr[start_raw_payload_index++] |= (format.tx_stamp & 0x000000FF00000000) >> 32;
+            *payload_size += 5;
             break;
         }
         default:
