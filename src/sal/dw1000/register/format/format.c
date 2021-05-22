@@ -154,11 +154,11 @@ size_t sys_cfg_unformatter(void *format, spi_frame fr, const size_t sub_register
 
 void sys_time_formatter(spi_frame fr, void* format, const size_t sub_register) {
 
-    uint64_t register_value  = (uint16_t) fr[1] << 8 | (uint32_t) fr[2] << 16
+    uint64_t* register_value = ((uint64_t*) format);
+
+    *register_value  = fr[0] | (uint16_t) fr[1] << 8 | (uint32_t) fr[2] << 16
             | (uint32_t) fr[3] << 24 | (uint64_t) fr[4] << 32;
 
-    double* seconds = ((double*) format);
-    *seconds = str_calculate_seconds(register_value);
 }
 
 void tx_fctrl_formatter(spi_frame fr, void* format, const size_t sub_register) {
@@ -220,16 +220,30 @@ void payload_formatter_f(spi_frame fr, uwb_frame_format* format, size_t* payload
             break;
         case CALC_DISTANCE_RESP_RX: {
 
-            memcpy(&format->rx_stamp, &fr[1], sizeof(double));
-            start_raw_payload_index += sizeof(double);
-            *payload_size = *payload_size + sizeof(double);
+            format->rx_stamp = fr[start_raw_payload_index++];
+            format->rx_stamp = ((uint16_t)fr[start_raw_payload_index++]) << 8;
+            format->rx_stamp = ((uint32_t)fr[start_raw_payload_index++]) << 16;
+            format->rx_stamp = ((uint32_t)fr[start_raw_payload_index++]) << 24;
+            format->rx_stamp = ((uint64_t)fr[start_raw_payload_index++]) << 32;
+            format->rx_stamp = ((uint64_t)fr[start_raw_payload_index++]) << 40;
+            format->rx_stamp = ((uint64_t)fr[start_raw_payload_index++]) << 48;
+            format->rx_stamp = ((uint64_t)fr[start_raw_payload_index++]) << 52;
+
+            *payload_size = *payload_size + sizeof(uint64_t);
             break;
         }
         case CALC_DISTANCE_RESP_TX: {
 
-            memcpy(&format->tx_stamp, &fr[start_raw_payload_index], sizeof(double));
-            start_raw_payload_index += sizeof(double);
-            *payload_size = *payload_size + sizeof(double);
+            format->tx_stamp = fr[start_raw_payload_index++];
+            format->tx_stamp = ((uint16_t)fr[start_raw_payload_index++]) << 8;
+            format->tx_stamp = ((uint32_t)fr[start_raw_payload_index++]) << 16;
+            format->tx_stamp = ((uint32_t)fr[start_raw_payload_index++]) << 24;
+            format->tx_stamp = ((uint64_t)fr[start_raw_payload_index++]) << 32;
+            format->tx_stamp = ((uint64_t)fr[start_raw_payload_index++]) << 40;
+            format->tx_stamp = ((uint64_t)fr[start_raw_payload_index++]) << 48;
+            format->tx_stamp = ((uint64_t)fr[start_raw_payload_index++]) << 52;
+
+            *payload_size = *payload_size + sizeof(uint64_t);
             break;
         }
         default:
@@ -246,10 +260,10 @@ void payload_formatter_f(spi_frame fr, uwb_frame_format* format, size_t* payload
 
 void payload_unformatter_f(const uwb_frame_format format, spi_frame fr, size_t* payload_size) {
 
-    int start_payload_index = 0;
+    int start_raw_payload_index = 0;
 
     // API flags.
-    fr[start_payload_index++] = format.api_message_t;
+    fr[start_raw_payload_index++] = format.api_message_t;
     *payload_size = *payload_size + 1;
 
     switch(format.api_message_t) {
@@ -257,27 +271,29 @@ void payload_unformatter_f(const uwb_frame_format format, spi_frame fr, size_t* 
             break;
         case CALC_DISTANCE_RESP_RX: {
 
-            char* rx_stamp_bits = (char *) &format.rx_stamp;
-            unsigned int i;
-
-            for(i = 0; i < sizeof(double); ++i) {
-                fr[start_payload_index] = rx_stamp_bits[i];
-                start_payload_index++;
-            }
-            *payload_size = *payload_size + sizeof(double);
+            fr[start_raw_payload_index++] = format.rx_stamp & 0x00000000000000FF;
+            fr[start_raw_payload_index++] = (format.rx_stamp & 0x000000000000FF00) >> 8;
+            fr[start_raw_payload_index++] = (format.rx_stamp & 0x0000000000FF0000) >> 16;
+            fr[start_raw_payload_index++] = (format.rx_stamp & 0x00000000FF000000) >> 24;
+            fr[start_raw_payload_index++] = (format.rx_stamp & 0x000000FF00000000) >> 32;
+            fr[start_raw_payload_index++] = (format.rx_stamp & 0x0000FF0000000000) >> 40;
+            fr[start_raw_payload_index++] = (format.rx_stamp & 0x00FF000000000000) >> 48;
+            fr[start_raw_payload_index++] = (format.rx_stamp & 0xFF00000000000000) >> 52;
+            *payload_size += sizeof(uint64_t);
             break;
         }
 
         case CALC_DISTANCE_RESP_TX: {
 
-            char* tx_stamp_bits = (char *) &format.tx_stamp;
-            unsigned int i;
-
-            for(i = 0; i < sizeof(double); ++i) {
-                fr[start_payload_index] = tx_stamp_bits[i];
-                start_payload_index++;
-            }
-            *payload_size = *payload_size + sizeof(double);
+            fr[start_raw_payload_index++] = format.tx_stamp & 0x00000000000000FF;
+            fr[start_raw_payload_index++] = (format.tx_stamp & 0x000000000000FF00) >> 8;
+            fr[start_raw_payload_index++] = (format.tx_stamp & 0x0000000000FF0000) >> 16;
+            fr[start_raw_payload_index++] = (format.tx_stamp & 0x00000000FF000000) >> 24;
+            fr[start_raw_payload_index++] = (format.tx_stamp & 0x000000FF00000000) >> 32;
+            fr[start_raw_payload_index++] = (format.tx_stamp & 0x0000FF0000000000) >> 40;
+            fr[start_raw_payload_index++] = (format.tx_stamp & 0x00FF000000000000) >> 48;
+            fr[start_raw_payload_index++] = (format.tx_stamp & 0xFF00000000000000) >> 52;
+            *payload_size += sizeof(uint64_t);
             break;
         }
         default:
@@ -286,7 +302,7 @@ void payload_unformatter_f(const uwb_frame_format format, spi_frame fr, size_t* 
 
     // Payload.
     int i;
-    for(i = start_payload_index; i < format.raw_payload_size; ++i) {
+    for(i = start_raw_payload_index; i < format.raw_payload_size; ++i) {
         fr[i] = format.raw_payload[i];
     }
 }
@@ -799,9 +815,8 @@ void rx_time_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     if(sub_register == RX_TIME_OCT_0_TO_3) {
 
-        const uint32_t rx_stamp_low_bits = (((uint32_t)fr[3]) << 24) | (((uint32_t)fr[2]) << 16) |
+        rx_time_f->rx_stamp = (((uint32_t)fr[3]) << 24) | (((uint32_t)fr[2]) << 16) |
                 (((uint16_t)fr[1]) << 8) | fr[0];
-        rx_time_f->rx_stamp = calculate_stamp(rx_stamp_low_bits);
 
     } else if(sub_register == RX_TIME_OCT_4_TO_7) {
 
@@ -809,20 +824,17 @@ void rx_time_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
         rx_time_f->fp_index = (((uint16_t)fr[2]) << 8) | fr[1];
 
-        const uint64_t rx_stamp_high_bits = ((uint64_t)fr[0] << 32);
-        rx_time_f->rx_stamp += calculate_stamp(rx_stamp_high_bits);
+        rx_time_f->rx_stamp |= ((uint64_t)fr[0] << 32);
 
     } else if(sub_register == RX_TIME_OCT_8_TO_11) {
 
-        const uint32_t rx_rawst_low_bits = (((uint32_t)fr[3]) << 16) | (((uint16_t)fr[2]) << 8) | fr[1];
-        rx_time_f->rx_rawst = str_calculate_seconds(rx_rawst_low_bits);
+        rx_time_f->rx_rawst = (((uint32_t)fr[3]) << 16) | (((uint16_t)fr[2]) << 8) | fr[1];
 
         rx_time_f->fp_ampl1 |= ((uint16_t)fr[0]) << 8;
 
     } else if(sub_register == RX_TIME_OCT_12_TO_13) {
 
-        const uint64_t rx_rawst_high_bits = ((uint64_t)fr[1] << 32) | ((uint32_t)fr[0] << 24);
-        rx_time_f->rx_rawst += str_calculate_seconds(rx_rawst_high_bits);
+        rx_time_f->rx_rawst |= ((uint64_t)fr[1] << 32) | ((uint32_t)fr[0] << 24);
 
     }
 
@@ -834,22 +846,18 @@ void tx_time_formatter(spi_frame fr, void *format, const size_t sub_register) {
 
     if(sub_register == TX_TIME_OCT_0_TO_3) {
 
-        const uint32_t tx_stamp_low_bits = (((uint32_t)fr[3]) << 24) | (((uint32_t)fr[2]) << 16) |
+        tx_time_f->tx_stamp = (((uint32_t)fr[3]) << 24) | (((uint32_t)fr[2]) << 16) |
                 (((uint16_t)fr[1]) << 8) | fr[0];
-        tx_time_f->tx_stamp = calculate_stamp(tx_stamp_low_bits);
 
     } else if(sub_register == TX_TIME_OCT_4_TO_7) {
 
-        const uint32_t tx_rawst_low_bits = (((uint32_t)fr[3]) << 16) | (((uint16_t)fr[2]) << 8) | fr[1];
-        tx_time_f->tx_rawst =  str_calculate_seconds(tx_rawst_low_bits);
+        tx_time_f->tx_rawst = (((uint32_t)fr[3]) << 16) | (((uint16_t)fr[2]) << 8) | fr[1];
 
-        const uint64_t tx_stamp_high_bits = ((uint64_t)fr[0]) << 32;
-        tx_time_f->tx_stamp += calculate_stamp(tx_stamp_high_bits);
+        tx_time_f->tx_stamp |= ((uint64_t)fr[0]) << 32;
 
     } else if(sub_register == TX_TIME_OCT_8_TO_9) {
 
-        const uint64_t tx_rawst_high_bits = (((uint64_t)fr[1]) << 32) | (((uint32_t)fr[0]) << 24);
-        tx_time_f->tx_rawst += str_calculate_seconds(tx_rawst_high_bits);
+        tx_time_f->tx_rawst |= (((uint64_t)fr[1]) << 32) | (((uint32_t)fr[0]) << 24);
 
     }
 

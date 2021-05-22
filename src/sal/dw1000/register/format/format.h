@@ -187,20 +187,21 @@ void sys_cfg_formatter(spi_frame fr, void *format, const size_t sub_register);
 size_t sys_cfg_unformatter(void *format, spi_frame fr, const size_t sub_register);
 
 /******* SYS_TIME *******/
+
 #define STR_COUNTER_WRAP_PERIOD 17.2074 // (seconds)
 #define STR_COUNTER_RESOLUTION pow(2, 40)
 #define STR_K STR_COUNTER_WRAP_PERIOD/STR_COUNTER_RESOLUTION
 #define str_calculate_seconds(register_value) register_value * STR_K
+#define str_calculate_register_val(seconds) seconds / STR_K
 
 /**
- * @brief Formats a spi_frame to a double.
+ * @brief Formats a spi_frame to an uint64_t.
  *
- * @param[in] fr: The spi_frame to initialize the double value.
- * @param[out] format: Double which will contains the spi_frame formatted.
+ * @param[in] fr: The spi_frame to initialize the uint64_t value.
+ * @param[out] format: uint64_t which will contains the spi_frame formatted.
  * @param[in] sub_register: Enumerate that indicates the sub-register.
  *
- * @note: This function must receive an double to work.
- * @note: The returned value will be in units of seconds.
+ * @note: This function must receive an uint64_t to work.
  *
  */
 void sys_time_formatter(spi_frame fr, void *format, const size_t sub_register);
@@ -335,8 +336,8 @@ typedef struct {
 
     // API flags.
     api_flag_value api_message_t;           // Internal type of message.
-    double rx_stamp;                        // Receive time stamp.
-    double tx_stamp;                        // Transmit time stamp.
+    uint64_t rx_stamp;                      // Receive time stamp.
+    uint64_t tx_stamp;                      // Transmit time stamp.
     size_t frame_size;                      // Size of the frame.
     uint16_t raw_payload_size;              // Size of the raw payload.
 
@@ -738,9 +739,6 @@ void rx_ttcko_formatter(spi_frame fr, void *format, const size_t sub_register);
 
 /******* RX_TIME *******/
 
-#define RX_TX_STAMP_RESOLUTION (1.0/(128*499.2*pow(10, 6))) // (seconds)
-#define calculate_stamp(register_value) register_value * RX_TX_STAMP_RESOLUTION
-
 // Fields of the receiver time stamp register.
 typedef enum {
     RX_TIME_OCT_0_TO_3 = 0,
@@ -751,12 +749,12 @@ typedef enum {
 
 // Structure of the receiver time stamp register.
 typedef struct {
-    double rx_stamp;   // Reports the the fully adjusted time of reception.
+    uint64_t rx_stamp; // Reports the the fully adjusted time of reception.
     uint16_t fp_index; // Reporting the position within the accumulator that the
                        // LDE algorithm has determined to be the first path.
     uint16_t fp_ampl1; // Reporting the magnitude of the leading edge signal seen in
                        // the accumulator data memory during the LDE algorithm’s analysis.
-    double rx_rawst;   // Reports the raw time stamp for the frame.
+    uint64_t rx_rawst; // Reports the raw time stamp for the frame.
 } rx_time_format;
 
 /**
@@ -782,8 +780,8 @@ typedef enum {
 
 // Structure of the transmit time stamp register.
 typedef struct {
-    double tx_stamp; // Reports the the fully adjusted time of reception.
-    double tx_rawst; // Reports the Raw Time stamp for the frame.
+    uint64_t tx_stamp; // Reports the the fully adjusted time of reception.
+    uint64_t tx_rawst; // Reports the Raw Time stamp for the frame.
 } tx_time_format;
 
 /**

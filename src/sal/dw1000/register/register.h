@@ -174,7 +174,7 @@ bool set_sys_cfg(sys_cfg_format* sys_cfg_f);
 /**
  * @brief Gets the system time register value.
  *
- * @param[out] seconds: Variable in will be stored the value of the register.
+ * @param[out] reg_value: Variable in will be stored the value of the register.
  *
  * @return bool: Returns true if the register can be gotten, otherwise false.
  *
@@ -182,7 +182,7 @@ bool set_sys_cfg(sys_cfg_format* sys_cfg_f);
  *        That means that after 17.2074 seconds, the register restarts.
  *
  */
-bool get_sys_time(double* seconds);
+bool get_sys_time(uint64_t* reg_value);
 
 /**
  * @brief Gets the transmit frame control register value.

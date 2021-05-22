@@ -41,6 +41,29 @@ dw_config_t dw_conf = {
         .sfd_TO = (128 + 8 - 8), // SFD timeout (preamble length + 1 + SFD length - PAC size).
 };
 
+/**
+ * @brief Calculates time elapsed between two time stamps.
+ *
+ * @param init[in]: Initial time stamp.
+ * @param end[in]: End time stamp.
+ *
+ * @return uint64_t: Time elapsed between init and end.
+ *
+ */
+uint64_t _dw_calc_elapsed_time(const uint64_t init, const uint64_t end) {
+
+    uint64_t elapsed_time = 0;
+
+    if(init > end) { // In case of wrap counter reached.
+        elapsed_time = STR_COUNTER_RESOLUTION - init;
+        elapsed_time += end;
+    } else {
+        elapsed_time = end - init;
+    }
+
+    return elapsed_time;
+}
+
 double calc_estimated_signal_power(const rx_fqual_format rx_fqual_f,
         const rx_finfo_format rx_finfo_f, const usr_sfd_format usr_sfd_f) {
 
@@ -109,7 +132,7 @@ bool dw_calc_dist(const uint64_t dev_id, const uint16_t pan_id, double* distance
     tx_msg.api_message_t = CALC_DISTANCE;
 
     // Send a message to request distance calculation.
-    double consumed_time_send;
+    uint64_t consumed_time_send;
     if(dw_send_message(&tx_msg, false, DW_START_TX_IMMEDIATE, dev_id, pan_id, &consumed_time_send)) {
 
         // Get tx stamp.
@@ -124,7 +147,7 @@ bool dw_calc_dist(const uint64_t dev_id, const uint16_t pan_id, double* distance
         }
 
         // Wait for response, and if we receive it, get the RX stamp of the message.
-        double consumed_time_recv;
+        uint64_t consumed_time_recv;
         if(dw_receive_message(&rx_msg, DW_START_RX_IMMEDIATE, wait_tries, dev_id, pan_id, &consumed_time_recv)) {
 
             if(!dw_parse_API_message(rx_msg, CALC_DISTANCE_RESP_RX, 0)) {
@@ -138,13 +161,14 @@ bool dw_calc_dist(const uint64_t dev_id, const uint16_t pan_id, double* distance
             }
 
             // Calculate own time between transmit and receive message.
-            const double rtd_init = rx_time_f.rx_stamp - tx_time_f.tx_stamp - consumed_time_send - consumed_time_recv;
+            const uint64_t rtd_init = (rx_time_f.rx_stamp - DEFAULT_API_DELAY_CALC_DIST_RESP_STU)
+                    - tx_time_f.tx_stamp - consumed_time_send - consumed_time_recv;
 
             // Get time stamp of the receiver.
-            const double rx_stamp = rx_msg.rx_stamp;
+            const uint64_t rx_stamp = rx_msg.rx_stamp;
 
             // Wait for response, and if we receive it, get the TX stamp of the message.
-            double consumed_time_recv2;
+            uint64_t consumed_time_recv2;
             if(dw_receive_message(&rx_msg, DW_START_RX_IMMEDIATE, wait_tries, dev_id, pan_id, &consumed_time_recv2)) {
 
                 if(!dw_parse_API_message(rx_msg, CALC_DISTANCE_RESP_TX, 0)) {
@@ -152,10 +176,10 @@ bool dw_calc_dist(const uint64_t dev_id, const uint16_t pan_id, double* distance
                 }
 
                 // Calculate receiver time between transmit and receive message.
-                const double rtd_resp = rx_stamp - rx_msg.tx_stamp;
+                const uint64_t rtd_resp = rx_stamp - (rx_msg.tx_stamp - DEFAULT_API_DELAY_CALC_DIST_RESP_STU);
 
                 // Calculate distance.
-                const double time_of_flight = (rtd_init - rtd_resp) / 2.0;
+                const double time_of_flight = str_calculate_seconds((rtd_init - rtd_resp) / 2);
                 *distance = time_of_flight * SPEED_OF_LIGHT;
 
                 return true;
@@ -1105,7 +1129,8 @@ bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api
             tx_msg.api_message_t = CALC_DISTANCE_RESP_RX;
             tx_msg.rx_stamp = rx_time_f.rx_stamp + consumed_time_recv;
 
-            double consumed_time_send;
+            uint64_t consumed_time_send;
+            chThdSleepMilliseconds(DEFAULT_API_DELAY_CALC_DIST_RESP_MS);
             if(!dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE, frame.sour_addr, frame.sour_PAN_id, &consumed_time_send)){
                 return false;
             }
@@ -1119,7 +1144,8 @@ bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api
             tx_msg.api_message_t = CALC_DISTANCE_RESP_TX;
             tx_msg.tx_stamp = tx_time_f.tx_stamp + consumed_time_send;
 
-            double consumed_time_send2;
+            uint64_t consumed_time_send2;
+            chThdSleepMilliseconds(DEFAULT_API_DELAY_CALC_DIST_RESP_MS);
             if(!dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE, frame.sour_addr, frame.sour_PAN_id, &consumed_time_send2)){
                 return false;
             }
@@ -1148,9 +1174,9 @@ bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api
 }
 
 bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const uint64_t dev_id,
-        const uint16_t pan_id, double* inter_func_tim_consum) {
+        const uint16_t pan_id, uint64_t* inter_func_tim_consum) {
 
-    double tim_consum_init;
+    uint64_t tim_consum_init;
     if(!get_sys_time(&tim_consum_init)) {
         return false;
     }
@@ -1264,11 +1290,11 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
             0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0, 0b0};
     sys_evt_msk_f.mtxfrs = true;
 
-    double tim_consum_end;
+    uint64_t tim_consum_end;
     if(!get_sys_time(&tim_consum_end)) {
         return false;
     }
-    *inter_func_tim_consum = tim_consum_end - tim_consum_init;
+    *inter_func_tim_consum = _dw_calc_elapsed_time(tim_consum_init, tim_consum_end);
 
     sys_evt_sts_f = dw_wait_irq_event(sys_evt_msk_f);
 
@@ -1341,7 +1367,7 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
         if(!get_sys_time(&tim_consum_end)) {
             return false;
         }
-        *inter_func_tim_consum += tim_consum_end - tim_consum_init;
+        *inter_func_tim_consum += _dw_calc_elapsed_time(tim_consum_init, tim_consum_end);
 
         return received_ack;
     }
@@ -1351,15 +1377,15 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
     if(!get_sys_time(&tim_consum_end)) {
         return false;
     }
-    *inter_func_tim_consum += tim_consum_end - tim_consum_init;
+    *inter_func_tim_consum += _dw_calc_elapsed_time(tim_consum_init, tim_consum_end);
 
     return true;
 }
 
 bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int wait_tries,
-        const uint64_t dev_id, const uint16_t pan_id, double* inter_func_tim_consum) {
+        const uint64_t dev_id, const uint16_t pan_id, uint64_t* inter_func_tim_consum) {
 
-    double tim_consum_init;
+    uint64_t tim_consum_init;
     if(!get_sys_time(&tim_consum_init)) {
         return false;
     }
@@ -1466,11 +1492,11 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
     sys_evt_sts_format sys_evt_sts_f;
     int tries_attemp = 0;
 
-    double tim_consum_end;
+    uint64_t tim_consum_end;
     if(!get_sys_time(&tim_consum_end)) {
         return false;
     }
-    *inter_func_tim_consum = tim_consum_end - tim_consum_init;
+    *inter_func_tim_consum = _dw_calc_elapsed_time(tim_consum_init, tim_consum_end);
 
     RETRY_SEARCH:
 
@@ -1615,7 +1641,7 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
         if(!get_sys_time(&tim_consum_end)) {
             return false;
         }
-        *inter_func_tim_consum += tim_consum_end - tim_consum_init;
+        *inter_func_tim_consum += _dw_calc_elapsed_time(tim_consum_init, tim_consum_end);
 
         return false;
     }
@@ -1630,7 +1656,7 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
     if(!get_sys_time(&tim_consum_end)) {
         return false;
     }
-    *inter_func_tim_consum += tim_consum_end - tim_consum_init;
+    *inter_func_tim_consum += _dw_calc_elapsed_time(tim_consum_init, tim_consum_end);
 
     return true;
 }

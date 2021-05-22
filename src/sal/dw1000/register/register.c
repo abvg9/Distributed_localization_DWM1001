@@ -333,8 +333,8 @@ bool set_sys_cfg(sys_cfg_format* sys_cfg_f) {
     return _dw_write_reg(SYS_CFG, 0, (void*) sys_cfg_f);
 }
 
-bool get_sys_time(double* seconds) {
-    return _dw_read_reg(SYS_TIME, 0, (void*) seconds);
+bool get_sys_time(uint64_t* reg_value) {
+    return _dw_read_reg(SYS_TIME, 0, (void*) reg_value);
 }
 
 bool get_tx_fctrl(tx_fctrl_format* tx_fctrl_f, const tx_fctrl_subregister subregister) {

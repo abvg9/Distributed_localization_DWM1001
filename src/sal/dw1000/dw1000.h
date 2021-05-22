@@ -253,7 +253,7 @@ bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api
  *
  */
 bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int wait_tries,
-        const uint64_t dev_id, const uint16_t pan_id, double* inter_func_tim_consum);
+        const uint64_t dev_id, const uint16_t pan_id, uint64_t* inter_func_tim_consum);
 
 /**
  * @brief Resets the dw1000.
@@ -292,7 +292,7 @@ void dw_reset(void);
  *
  */
 bool dw_send_message(uwb_frame_format* frame, const bool ranging, const uint8_t mode, const uint64_t dev_id,
-        const uint16_t pan_id, double* inter_func_tim_consum);
+        const uint16_t pan_id, uint64_t* inter_func_tim_consum);
 
 /**
  * @brief Sets the rate SPI communication of the dwm1000(8MBPS).
