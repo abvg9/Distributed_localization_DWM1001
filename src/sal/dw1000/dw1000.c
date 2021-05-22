@@ -1188,7 +1188,7 @@ bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api
             }
 
             tx_msg.api_message_t = CALC_DISTANCE_RESP_TX;
-            tx_msg.tx_stamp = tx_time_f.tx_stamp;
+            tx_msg.tx_stamp = tx_time_f.tx_stamp - DEFAULT_API_DELAY_CALC_DIST_RESP_STU;
 
             dw_sleep(DEFAULT_API_DELAY_CALC_DIST_RESP_STU);
             if(!dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE, frame.sour_addr, frame.sour_PAN_id)){
