@@ -1377,7 +1377,6 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
     if(!get_sys_time(&tim_consum_end)) {
         return false;
     }
-    *inter_func_tim_consum += _dw_calc_elapsed_time(tim_consum_init, tim_consum_end);
 
     return true;
 }
@@ -1641,7 +1640,6 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
         if(!get_sys_time(&tim_consum_end)) {
             return false;
         }
-        *inter_func_tim_consum += _dw_calc_elapsed_time(tim_consum_init, tim_consum_end);
 
         return false;
     }
@@ -1656,7 +1654,6 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
     if(!get_sys_time(&tim_consum_end)) {
         return false;
     }
-    *inter_func_tim_consum += _dw_calc_elapsed_time(tim_consum_init, tim_consum_end);
 
     return true;
 }

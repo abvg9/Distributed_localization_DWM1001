@@ -190,9 +190,9 @@ size_t sys_cfg_unformatter(void *format, spi_frame fr, const size_t sub_register
 
 #define STR_COUNTER_WRAP_PERIOD 17.2074 // (seconds)
 #define STR_COUNTER_RESOLUTION pow(2, 40)
-#define STR_K STR_COUNTER_WRAP_PERIOD/STR_COUNTER_RESOLUTION
-#define str_calculate_seconds(register_value) register_value * STR_K
-#define str_calculate_register_val(seconds) seconds / STR_K
+#define STR_K (STR_COUNTER_WRAP_PERIOD/STR_COUNTER_RESOLUTION)
+#define str_calculate_seconds(register_value) (register_value * STR_K)
+#define str_calculate_register_val(seconds) (seconds / STR_K)
 
 /**
  * @brief Formats a spi_frame to an uint64_t.
