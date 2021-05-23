@@ -179,7 +179,8 @@ bool dw_calc_dist(const uint64_t dev_id, const uint16_t pan_id, double* distance
     }
 
     // Send a message to request distance calculation.
-    if(dw_send_message(&tx_msg, false, DW_START_TX_IMMEDIATE, dev_id, pan_id)) {
+    uint64_t cons_recv_tim;
+    if(dw_send_message(&tx_msg, false, DW_START_TX_IMMEDIATE, dev_id, pan_id, &cons_recv_tim)) {
 
         // Get tx stamp.
         tx_time_format tx_time_f;
@@ -188,9 +189,10 @@ bool dw_calc_dist(const uint64_t dev_id, const uint16_t pan_id, double* distance
         }
 
         // Wait for response, and if we receive it, get the RX stamp of the message.
-        if(dw_receive_message(&rx_msg, DW_START_RX_IMMEDIATE, wait_tries, dev_id, pan_id)) {
+        uint64_t cons_send_tim;
+        if(dw_receive_message(&rx_msg, DW_START_RX_IMMEDIATE, wait_tries, dev_id, pan_id, &cons_send_tim)) {
 
-            if(!dw_parse_API_message(rx_msg, CALC_DISTANCE_RESP_RX)) {
+            if(!dw_parse_API_message(rx_msg, CALC_DISTANCE_RESP_RX, cons_send_tim)) {
                 return false;
             }
 
@@ -207,9 +209,10 @@ bool dw_calc_dist(const uint64_t dev_id, const uint16_t pan_id, double* distance
             const uint64_t rx_stamp = rx_msg.rx_stamp;
 
             // Wait for response, and if we receive it, get the TX stamp of the message.
-            if(dw_receive_message(&rx_msg, DW_START_RX_IMMEDIATE, wait_tries, dev_id, pan_id)) {
+            uint64_t cons_recv_tim2;
+            if(dw_receive_message(&rx_msg, DW_START_RX_IMMEDIATE, wait_tries, dev_id, pan_id, &cons_recv_tim2)) {
 
-                if(!dw_parse_API_message(rx_msg, CALC_DISTANCE_RESP_TX)) {
+                if(!dw_parse_API_message(rx_msg, CALC_DISTANCE_RESP_TX, cons_recv_tim2)) {
                     return false;
                 }
 
@@ -1156,7 +1159,7 @@ bool dw_initialise(const int config_flags) {
     return true;
 }
 
-bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api_msg_t) {
+bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api_msg_t, const uint64_t consumed_time) {
 
     switch(frame.api_message_t) {
         case CALC_DISTANCE: {
@@ -1176,8 +1179,9 @@ bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api
             tx_msg.api_message_t = CALC_DISTANCE_RESP_RX;
             tx_msg.rx_stamp = rx_time_f.rx_stamp;
 
+            uint64_t cons_send_tim;
             dw_sleep(DEFAULT_API_DELAY_CALC_DIST_RESP_STU);
-            if(!dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE, frame.sour_addr, frame.sour_PAN_id)){
+            if(!dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE, frame.sour_addr, frame.sour_PAN_id, &cons_send_tim)){
                 return false;
             }
 
@@ -1188,10 +1192,11 @@ bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api
             }
 
             tx_msg.api_message_t = CALC_DISTANCE_RESP_TX;
-            tx_msg.tx_stamp = tx_time_f.tx_stamp - DEFAULT_API_DELAY_CALC_DIST_RESP_STU;
+            tx_msg.tx_stamp = tx_time_f.tx_stamp - DEFAULT_API_DELAY_CALC_DIST_RESP_STU + cons_send_tim;
 
+            uint64_t cons_send_tim2;
             dw_sleep(DEFAULT_API_DELAY_CALC_DIST_RESP_STU);
-            if(!dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE, frame.sour_addr, frame.sour_PAN_id)){
+            if(!dw_send_message(&tx_msg, true, DW_START_TX_IMMEDIATE, frame.sour_addr, frame.sour_PAN_id, &cons_send_tim2)){
                 return false;
             }
 
@@ -1219,7 +1224,15 @@ bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api
 }
 
 bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const uint64_t dev_id,
-        const uint16_t pan_id) {
+        const uint16_t pan_id, uint64_t* consumed_time) {
+
+    uint64_t init_ts;
+    uint64_t end_ts;
+    *consumed_time = 0;
+
+    if(!get_sys_time(&init_ts)) {
+        return false;
+    }
 
     pan_adr_format pan_adr_f;
     if(!get_pan_adr(&pan_adr_f)) {
@@ -1298,6 +1311,11 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
             return false;
         }
 
+        if(!get_sys_time(&end_ts)) {
+            return false;
+        }
+        *consumed_time = _dw_calc_elapsed_time(init_ts, end_ts);
+
         if(!get_sys_event_sts(&sys_evt_sts_f, -1)) {
             return false;
         }
@@ -1323,6 +1341,11 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
             return false;
         }
 
+        if(!get_sys_time(&end_ts)) {
+            return false;
+        }
+        *consumed_time = _dw_calc_elapsed_time(init_ts, end_ts);
+
     }
 
     // Set masks of the events related to the sending of messages.
@@ -1331,6 +1354,10 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
     sys_evt_msk_f.mtxfrs = true;
 
     sys_evt_sts_f = dw_wait_irq_event(sys_evt_msk_f);
+
+    if(!get_sys_time(&init_ts)) {
+        return false;
+    }
 
     if(!sys_evt_sts_f.txfrs) {
 
@@ -1399,11 +1426,24 @@ bool dw_send_message(uwb_frame_format* frame, bool ranging, uint8_t mode, const 
 
     frame->seq_num++;
 
+    if(!get_sys_time(&end_ts)) {
+        return false;
+    }
+    *consumed_time += _dw_calc_elapsed_time(init_ts, end_ts);
+
     return true;
 }
 
 bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int wait_tries,
-        const uint64_t dev_id, const uint16_t pan_id) {
+        const uint64_t dev_id, const uint16_t pan_id, uint64_t* consumed_time) {
+
+    uint64_t init_ts;
+    uint64_t end_ts;
+    *consumed_time = 0;
+
+    if(!get_sys_time(&init_ts)) {
+        return false;
+    }
 
     frame_type_value expected_type = frame->frame_t;
 
@@ -1449,6 +1489,11 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
     if(!set_sys_ctrl(&sys_ctrl_f)) {
         return false;
     }
+
+    if(!get_sys_time(&end_ts)) {
+        return false;
+    }
+    *consumed_time = _dw_calc_elapsed_time(init_ts, end_ts);
 
     // Check for errors.
     if (mode & DW_START_RX_DELAYED) {
@@ -1526,6 +1571,10 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
         }
 
         sys_evt_sts_f = dw_wait_irq_event(sys_evt_msk_f);
+    }
+
+    if(!get_sys_time(&init_ts)) {
+        return false;
     }
 
     if (sys_evt_sts_f.rxfcg) {
@@ -1652,6 +1701,11 @@ bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int w
             return false;
         }
     }
+
+    if(!get_sys_time(&end_ts)) {
+        return false;
+    }
+    *consumed_time += _dw_calc_elapsed_time(init_ts, end_ts);
 
     return true;
 }

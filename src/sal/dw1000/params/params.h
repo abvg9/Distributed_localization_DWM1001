@@ -172,8 +172,8 @@ extern const uint16_t lde_replicaCoeff[PCODES];
  * device should have its own antenna delay properly calibrated to get good precision when performing range measurements.
  * To calibrate this values, this API provides two functions calc_signal_power and calc_estimated_signal_power in dwm1001.c source.
  */
-#define TX_ANT_DLY 3.5830325*pow(10,-7)
-#define RX_ANT_DLY 3.5830325*pow(10,-7)
+#define TX_ANT_DLY 2.5830325*pow(10,-7)
+#define RX_ANT_DLY 2.5830325*pow(10,-7)
 
 // In seconds.
 #define DEFAULT_API_DELAY_CALC_DIST_RESP_S (0.5)
