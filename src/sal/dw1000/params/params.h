@@ -154,17 +154,6 @@ extern const uint8_t chan_idx[NUM_CH_SUPPORTED];
 #define LDE_REPC_PCODE_24       0x3850
 extern const uint16_t lde_replicaCoeff[PCODES];
 
-// Multiplication factors to convert frequency offset in Hertz to PPM crystal offset
-// NB: also changes sign so a positive value means the local RX clock is running slower than the remote TX device.
-#define HERTZ_TO_PPM_MULTIPLIER_CHAN_1 -1.0e6/3494.4e6
-#define HERTZ_TO_PPM_MULTIPLIER_CHAN_2 -1.0e6/3993.6e6
-#define HERTZ_TO_PPM_MULTIPLIER_CHAN_3 -1.0e6/4492.8e6
-#define HERTZ_TO_PPM_MULTIPLIER_CHAN_5 -1.0e6/6489.6e6
-
-// Multiplication factors to convert carrier integrator value to a frequency offset in hertz.
-#define FREQ_OFFSET_MULTIPLIER          (998.4e6/2.0/1024.0/131072.0)
-#define FREQ_OFFSET_MULTIPLIER_110KB    (998.4e6/2.0/8192.0/131072.0)
-
 // Default antenna delay values for 64 MHz PRF.
 /* IMPORTANT NOTE:
  * The sum of the values is the TX to RX antenna delay, this should be experimentally determined by a calibration process. Here we use a hard coded
@@ -175,8 +164,19 @@ extern const uint16_t lde_replicaCoeff[PCODES];
 #define TX_ANT_DLY 2.5830325*pow(10,-7)
 #define RX_ANT_DLY 2.5830325*pow(10,-7)
 
+// Multiplication factors to convert carrier integrator value to a frequency offset in Hertz.
+#define FREQ_OFFSET_MULTIPLIER          (998.4e6/2.0/1024.0/131072.0)
+#define FREQ_OFFSET_MULTIPLIER_110KB    (998.4e6/2.0/8192.0/131072.0)
+
+// Multiplication factors to convert frequency offset in Hertz to PPM crystal offset
+// NB: also changes sign so a positive value means the local RX clock is running slower than the remote TX device.
+#define HERTZ_TO_PPM_MULTIPLIER_CHAN_1     (-1.0e6/3494.4e6)
+#define HERTZ_TO_PPM_MULTIPLIER_CHAN_2     (-1.0e6/3993.6e6)
+#define HERTZ_TO_PPM_MULTIPLIER_CHAN_3     (-1.0e6/4492.8e6)
+#define HERTZ_TO_PPM_MULTIPLIER_CHAN_5     (-1.0e6/6489.6e6)
+
 // In seconds.
-#define DEFAULT_API_DELAY_CALC_DIST_RESP_S (0.5)
+#define DEFAULT_API_DELAY_CALC_DIST_RESP_S (0.001)
 
 // In system time units.
 #define DEFAULT_API_DELAY_CALC_DIST_RESP_STU                   \

@@ -222,7 +222,6 @@ bool dw_initialise(const int config_flags);
  *
  * @param frame[in]: Received message.
  * @param api_msg_t[in]: Expected API message type.
- * @param consumed_time[out]: Amount of time that the called functions have consumed to carry out the reception of the message. (System time units)
  *
  * @note: This function must be called after the receive_message function and
  *        must receive as a parameter the frame that was passed as input to receive_message.
@@ -230,7 +229,7 @@ bool dw_initialise(const int config_flags);
  * @return bool: True if the message can be parsed, otherwise false.
  *
  */
-bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api_msg_t, const uint64_t consumed_time);
+bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api_msg_t);
 
 // Defined constants for "mode" bitmask parameter passed into dw_receive_message() function.
 #define DW_START_RX_IMMEDIATE  0
@@ -253,7 +252,6 @@ bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api
  *                        If wait_tries < 0, it will wait infinitely.
  * @param dev_id[in]: Identifier of the sender. If this value is equal to zero, means that it will wait for any sender.
  * @param pan_id[in]: PAN id of the sender.
- * @param consumed_time[out]: Amount of time that the called functions have consumed to carry out the reception of the message. (System time units)
  *
  * @note: See function get_rx_buffer to understand better this function.
  *
@@ -261,7 +259,7 @@ bool dw_parse_API_message(const uwb_frame_format frame, const api_flag_value api
  *
  */
 bool dw_receive_message(uwb_frame_format* frame, const uint8_t mode, const int wait_tries,
-        const uint64_t dev_id, const uint16_t pan_id, uint64_t* consumed_time);
+        const uint64_t dev_id, const uint16_t pan_id);
 
 /**
  * @brief Resets the dw1000.
@@ -287,7 +285,6 @@ void dw_reset(void);
  *                    means is a broadcast message.
  * @param pan_id[in]: Network identifier where the receiver is located. If frame.intra_PAN == true,
  *                    this parameter will be ignored.
- * @param consumed_time[out]: Amount of time that the called functions have consumed to carry out the transmission of the message. (System time units)
  *
  * @note: Standard PHR mode allows up to 127 bytes
  *        if > 127 is programmed, DWT_PHRMODE_EXT needs to be set in the phrMode configuration
@@ -299,7 +296,7 @@ void dw_reset(void);
  *
  */
 bool dw_send_message(uwb_frame_format* frame, const bool ranging, const uint8_t mode, const uint64_t dev_id,
-        const uint16_t pan_id, uint64_t* consumed_time);
+        const uint16_t pan_id);
 
 /**
  * @brief Sets the rate SPI communication of the dwm1000(8MBPS).
