@@ -3,4 +3,4 @@
 	url = https://github.com/ChibiOS/ChibiOS.git
 [submodule "ext/ChibiOS-Contrib"]
 	path = ext/ChibiOS-Contrib
-	url = https://github.com/UCM-237/ChibiOS-Contrib
+	url = https://github.com/abvg9/ChibiOS-Contrib
