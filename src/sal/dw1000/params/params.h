@@ -1,6 +1,6 @@
 /**
  * This file is part of the abvg9 distribution (https://github.com/abvg9/Distributed_localization_DWM1001).
- * Copyright (c) 2021 Álvaro Velsco García, Madrid, Spain.
+ * Copyright (c) 2021 Álvaro Velasco García, Madrid, Spain.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,6 +15,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
  */
+
 #ifndef _PARAMS_H_
 #define _PARAMS_H_
 
